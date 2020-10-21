@@ -1,0 +1,4 @@
+states=2161
+transitions=11817
+init_time=0.06451408700002048
+promptness_deadline=1000
