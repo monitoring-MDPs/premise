@@ -5,9 +5,10 @@ Based on:
 
 The code and explanations are to support experiments with the prototype. This is *not* a tool. 
 
-## Dependencies
+## Dependencies 
 
-- Install Storm with Python APIs in the usual way.
+(Users of an artefact can skip these steps). 
+- Install Storm with Python APIs in [the usual way](https://moves-rwth.github.io/stormpy/installation.html).
 - Run `pip install tqdm click`
 
 ## How to run
