@@ -9,7 +9,7 @@ The code and explanations are to support experiments with the prototype. This is
 
 (Users of an artefact can skip these steps). 
 - Install Storm with Python APIs in [the usual way](https://moves-rwth.github.io/stormpy/installation.html).
-- Run `pip install tqdm click`
+- Run `pip install tqdm click pandas`
 
 ## How to run
 
@@ -25,12 +25,29 @@ To speed up the computation, consider reducing the number of traces (by editing 
 Notice that this creates a new folder in stats for every benchmark. 
 If such a folder already exists, the benchmark is skipped (irrespectively of the content of the folder). 
 
+## How to evaluate
+
+Run:
+```
+python load_data.py 
+```
+
+This creates texfiles for two tables table1.tex and table2.tex. 
+To render these tables, run
+
+```
+cd util && pdflatex stats_main.tex
+```
+
+The file `stats_main.pdf` now contains the tables as in the paper. 
+
+
 ## Algorithms
 
 The actual algorithms have been integrated into the source code of [storm](https://www.stormchecker.org). Their entry points are:
 
-- [Unfolding (header)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/transformer/ObservationTraceUnfolder.h) and [Unfolding (implementation)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/transformer/ObservationTraceUnfolder.h) 
-- [Forward Filter (header)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/generator/NondeterministicBeliefTracker.h) and [Forward filter (implementation)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/generator/NondeterministicBeliefTracker.h)
+- [Unfolding (header)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/transformer/ObservationTraceUnfolder.h) and [Unfolding (implementation)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/transformer/ObservationTraceUnfolder.cpp) 
+- [Forward Filter (header)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/generator/NondeterministicBeliefTracker.h) and [Forward filter (implementation)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/generator/NondeterministicBeliefTracker.cpp)
 
 ## Source code
 
