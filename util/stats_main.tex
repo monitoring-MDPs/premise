@@ -1,0 +1,29 @@
+\documentclass[10pt]{article}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\newcommand{\highlightPASS}[1]{\textbf{#1}}
+\newcommand{\highlightFAIL}[1]{\textbf{\color{red}#1\color{black}}}
+\newcommand{\trace}{\tau}
+\newcommand{\benchmark}[1]{\textsc{#1}}
+\setlength{\tabcolsep}{3pt} % General space between cols (6pt standard)
+
+\begin{document}
+\begin{table}
+\centering
+	\caption{Performance for promptness of online monitoring on various benchmarks.}
+	{\footnotesize
+\input{../table1.tex}
+}
+\end{table}
+\begin{table}
+\caption{Summarized performance for online monitoring}
+\centering
+{\footnotesize
+\input{../table2.tex}
+}
+\end{table}
+\end{document}

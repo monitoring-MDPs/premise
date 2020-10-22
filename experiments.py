@@ -43,6 +43,6 @@ if __name__ == "__main__":
     for benchmark in benchmarks:
         for config in configurations:
             try:
-                demo.monitor(benchmark.modelpath, benchmark.risk_def, benchmark.constants, trace_length, config, verbose=True, promptness_deadline=promtness_deadline, simulator_seed=range(nr_traces), model_id=benchmark.name)
+                demo.monitor(benchmark.modelpath, benchmark.risk_def, benchmark.constants, trace_length, config, verbose=False, promptness_deadline=promtness_deadline, simulator_seed=range(nr_traces), model_id=benchmark.name)
             except RuntimeWarning:
                 pass

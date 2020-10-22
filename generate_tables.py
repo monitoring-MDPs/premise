@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import logging
+import argparse
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename="load_data.log")
@@ -9,6 +10,13 @@ method_based_online_stats = {
     "unf" : [("McTime", "mc_time"), ("UnfTime", "unf_time"), ("TotalTime", "totaltime"), ("MdpStates", "mdp_states")],
     "ff" : [("TrackTime", "track_time"), ("ReduceTime", "red_time"), ("TotalTime", "totaltime"),("NrBeliefsBR", "origcard") , ("NrBeliefsAR", "redcard") , ("Dimension", "dim")] ,
 }
+
+parser = argparse.ArgumentParser(description='Process stats.')
+parser.add_argument('folder', type=str,
+                   help='stats from which folder to use')
+
+args = parser.parse_args()
+stats_folder = args.folder
 
 def compute_online_statistics(folder, TPs, method):
     tables = {}
@@ -57,7 +65,6 @@ def compute_offline_statistics(folder, TPs, method):
             continue
         with open(os.path.join(folder, filename), 'r') as f:
             tables[filename] = pd.read_csv(f)
-    print(len(tables))
 
     tp_tables = {}
     tp_statistics = {}
@@ -71,7 +78,6 @@ def compute_offline_statistics(folder, TPs, method):
                 logger.warning(f"Time out for tp={tp} in file {filename}")
                 continue
             filtered_tables.append(table)
-        print(len(filtered_tables))
         tp_statistics[tp] = { "timedOut": len(tables) - len(filtered_tables),"passed": len(filtered_tables)}
 
         if len(filtered_tables) > 0:
@@ -116,12 +122,12 @@ def export_online_stats():
     tablefooter = r"""
     \end{tabular}
     """
-    with open("promptnessstable.tex", 'w') as texfile:
+    with open("table1.tex", 'w') as texfile:
         texfile.write(tablehead + "\n")
         for idx, benchmark in enumerate(experiments):
             nr_states = None
             nr_transitions = None
-            with open (f"stats/{benchmark}-unf-ea/stats.out") as statfile:
+            with open (f"{stats_folder}/{benchmark}-unf-ea/stats.out") as statfile:
                 for line in statfile:
                     if line.startswith("//"):
                         continue
@@ -141,8 +147,8 @@ def export_online_stats():
             texfile.write(nr_states)
             texfile.write("}\t& \multirow{2}{*}{")
             texfile.write(nr_transitions)
-            ffstats = compute_online_statistics(f"stats/{benchmark}-ff-ch-ea", tracelengths[benchmark], "ff")
-            unfstats = compute_online_statistics(f"stats/{benchmark}-unf-ea", tracelengths[benchmark], "unf")
+            ffstats = compute_online_statistics(f"{stats_folder}/{benchmark}-ff-ch-ea", tracelengths[benchmark], "ff")
+            unfstats = compute_online_statistics(f"{stats_folder}/{benchmark}-unf-ea", tracelengths[benchmark], "unf")
             texfile.write("} & ")
             for tl in tracelengths[benchmark]:
                 if tl != tracelengths[benchmark][0]:
@@ -175,8 +181,13 @@ def export_online_stats():
                     texfile.write("\t& ")
                     texfile.write("\t& ")
                 texfile.write("\t& ")
+                if unfstats[tl]["timedOut"] > 0:
+                    texfile.write("\\highlightFAIL{")
+                else:
+                    assert unfstats[tl]["timedOut"] == 0
+                    texfile.write("\\highlightPASS{")
                 texfile.write("{}".format(unfstats[tl]["passed"]))
-                texfile.write("\t& ")
+                texfile.write("}\t& ")
                 if unfstats[tl]["passed"] > 0:
                     texfile.write("{:.2f}".format(unfstats[tl]["totaltime_avg"]))
                     texfile.write("\t& ")
@@ -195,7 +206,7 @@ def export_online_stats():
         texfile.write(tablefooter)
 
 def export_totals_table():
-    with open("totals-table.tex", 'w') as texfile:
+    with open("table2.tex", 'w') as texfile:
         tableheader = r"""
           \begin{tabular}{lr|rrrrr|rrrr|rrrrr|rrr|}
              &      &  \multicolumn{5}{c|}{FF w/ CH}  &  \multicolumn{4}{c|}{FF w/o CH}      & \multicolumn{5}{c|}{UNR (exact)} & \multicolumn{3}{c|}{UNR (ovi)}   \\
@@ -210,14 +221,12 @@ def export_totals_table():
             texfile.write(f"% {benchmark}\n")
             texfile.write(str(idx+1))
             texfile.write("\t& ")
-            ff_nr_stats = compute_offline_statistics(f"stats/{benchmark}-ff-nr-ea", tracelengths[benchmark], "ff")
-            ff_ch_stats = compute_offline_statistics(f"stats/{benchmark}-ff-ch-ea", tracelengths[benchmark], "ff")
-            #ff_fl_stats = compute_offline_statistics(f"stats/{benchmark}-ff-ch-fl", tracelengths[benchmark], "ff")
-            unf_ea_stats = compute_offline_statistics(f"stats/{benchmark}-unf-ea", tracelengths[benchmark], "unf")
-            unf_fl_stats = compute_offline_statistics(f"stats/{benchmark}-unf-fl", tracelengths[benchmark], "unf")
+            ff_nr_stats = compute_offline_statistics(f"{stats_folder}/{benchmark}-ff-nr-ea", tracelengths[benchmark], "ff")
+            ff_ch_stats = compute_offline_statistics(f"{stats_folder}/{benchmark}-ff-ch-ea", tracelengths[benchmark], "ff")
+            unf_ea_stats = compute_offline_statistics(f"{stats_folder}/{benchmark}-unf-ea", tracelengths[benchmark], "unf")
+            unf_fl_stats = compute_offline_statistics(f"{stats_folder}/{benchmark}-unf-fl", tracelengths[benchmark], "unf")
             # texfile.write(" & ")
             for tl in tracelengths[benchmark]:
-                 print(unf_ea_stats[tl])
                  if tl != tracelengths[benchmark][0]:
                      texfile.write("\t\t\t&\t")
                  texfile.write(str(tl))
