@@ -29,7 +29,7 @@ If such a folder already exists, the benchmark is skipped (irrespectively of the
 
 Run:
 ```
-python load_data.py 
+python generate_tables.py stats
 ```
 
 This creates texfiles for two tables table1.tex and table2.tex. 
@@ -40,6 +40,7 @@ cd util && pdflatex stats_main.tex
 ```
 
 The file `stats_main.pdf` now contains the tables as in the paper. 
+To recreate the original tables, please run  `python generate_tables.py paper_stats`.
 
 
 ## Algorithms
