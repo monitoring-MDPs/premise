@@ -5,10 +5,11 @@ Based on:
 
 The code and explanations are to support experiments with the prototype. This is *not* a tool. 
 
-## Dependencies
+## Dependencies 
 
-- Install Storm with Python APIs in the usual way.
-- Run `pip install tqdm click`
+(Users of an artefact can skip these steps). 
+- Install Storm with Python APIs in [the usual way](https://moves-rwth.github.io/stormpy/installation.html).
+- Run `pip install tqdm click pandas`
 
 ## How to run
 
@@ -24,12 +25,30 @@ To speed up the computation, consider reducing the number of traces (by editing 
 Notice that this creates a new folder in stats for every benchmark. 
 If such a folder already exists, the benchmark is skipped (irrespectively of the content of the folder). 
 
+## How to evaluate
+
+Run:
+```
+python generate_tables.py stats
+```
+
+This creates texfiles for two tables table1.tex and table2.tex. 
+To render these tables, run
+
+```
+cd util && pdflatex stats_main.tex
+```
+
+The file `stats_main.pdf` now contains the tables as in the paper. 
+To recreate the original tables, please run  `python generate_tables.py paper_stats`.
+
+
 ## Algorithms
 
 The actual algorithms have been integrated into the source code of [storm](https://www.stormchecker.org). Their entry points are:
 
-- [Unfolding (header)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/transformer/ObservationTraceUnfolder.h) and [Unfolding (implementation)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/transformer/ObservationTraceUnfolder.h) 
-- [Forward Filter (header)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/generator/NondeterministicBeliefTracker.h) and [Forward filter (implementation)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/generator/NondeterministicBeliefTracker.h)
+- [Unfolding (header)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/transformer/ObservationTraceUnfolder.h) and [Unfolding (implementation)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/transformer/ObservationTraceUnfolder.cpp) 
+- [Forward Filter (header)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/generator/NondeterministicBeliefTracker.h) and [Forward filter (implementation)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/generator/NondeterministicBeliefTracker.cpp)
 
 ## Source code
 
