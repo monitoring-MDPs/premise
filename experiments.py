@@ -1,6 +1,5 @@
 import stormpy as sp
-import click
-
+import argparse
 import demo
 
 class Benchmark:
@@ -31,18 +30,25 @@ benchmarks = [
 if __name__ == "__main__":
     # Wait for termination, never crash.
     sp.set_settings(["--signal-timeout", "100000"])
+    parser = argparse.ArgumentParser(description="Run experiments with premise.")
+    parser.add_argument("--number-traces", default=50, type=int, help="How many traces to run")
+    parser.add_argument("--trace-length", default=500, type=int, help="How long should the traces be?")
+    parser.add_argument("--promptness-deadline", default=1000, type=int, help="How long may one iteration take at most?")
+    parser.add_argument("--verbose", action='store_true', help="Enable extra output")
+    args = parser.parse_args()
 
-
-    nr_traces = 50
-    trace_length = 500
-    promtness_deadline = 1000 # in ms
+    nr_traces = args.number_traces
+    trace_length =args.trace_length
+    promtness_deadline = args.promptness_deadline # in ms
     configurations = [demo.UnfoldingOptions(exact_arithmetic=True),
                       demo.UnfoldingOptions(exact_arithmetic=False),
                       demo.ForwardFilteringOptions(exact_arithmetic=True, convex_hull_reduction=False),
                       demo.ForwardFilteringOptions(exact_arithmetic=True, convex_hull_reduction=True)]
     for benchmark in benchmarks:
         for config in configurations:
+            print(f"Running {benchmark.name} with {str(config)}")
             try:
-                demo.monitor(benchmark.modelpath, benchmark.risk_def, benchmark.constants, trace_length, config, verbose=False, promptness_deadline=promtness_deadline, simulator_seed=range(nr_traces), model_id=benchmark.name)
+                demo.monitor(benchmark.modelpath, benchmark.risk_def, benchmark.constants, trace_length, config, verbose=args.verbose, promptness_deadline=promtness_deadline, simulator_seed=range(nr_traces), model_id=benchmark.name)
             except RuntimeWarning:
+                print("Skipped (likely, the folder exists)")
                 pass

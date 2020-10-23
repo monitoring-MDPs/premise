@@ -166,6 +166,9 @@ class ForwardFilteringOptions:
         self.convex_hull_reduction = convex_hull_reduction
         self.exact_arithmetic = exact_arithmetic
 
+    def __str__(self):
+        return f"ForwardFiltering(exact_numbers={self.exact_arithmetic},chreduction={self.convex_hull_reduction})"
+
     @property
     def method_id(self):
         redstr = "ch" if self.convex_hull_reduction else "nr"
@@ -178,6 +181,9 @@ class UnfoldingOptions:
     """
     def __init__(self, exact_arithmetic=True):
         self.exact_arithmetic = exact_arithmetic
+
+    def __str__(self):
+        return f"Unfolding(exact_numbers={self.exact_arithmetic})"
 
     @property
     def method_id(self):
