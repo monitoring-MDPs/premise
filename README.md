@@ -4,26 +4,28 @@ Based on:
 - [1] "Runtime Monitoring for Markov Decision Processes" by Sebastian Junges, Hazem Torfah, and Sanjit A. Seshia. We include a longer variant in paper.pdf. This paper additionally contains an outline of the proof of Theorem 3.
 
 The code and explanations are to support experiments with the prototype. This is *not* a tool. 
+This project is hosted on `https://github.com/monitoring-MDPs/premise` 
 
 ## Dependencies 
 
 (Users of an artefact can skip these steps). 
 - Install Storm with Python APIs in [the usual way](https://moves-rwth.github.io/stormpy/installation.html).
-- Run `pip install tqdm click pandas`
+- Run `pip install tqdm pandas`
 
-## How to run
+## How to run experiments?
 
 Very simple: 
 ```
 python experiments.py
 ```
 
-We expect that you run this within ~3 hours (and using no more than 6 GB of RAM).
+We expect that this runs within ~3 hours (and using no more than 6 GB of RAM).
 To select benchmarks, please edit experiments.py (in particular, the benchmarks array).
-To speed up the computation, consider reducing the number of traces (by editing the file).
+To speed up the computation, consider reducing the number of traces `--nr-traces X`.
 
-Notice that this creates a new folder in stats for every benchmark. 
+Notice that running the experiments this creates a new folder in `stats/` for every benchmark. 
 If such a folder already exists, the benchmark is skipped (irrespectively of the content of the folder). 
+A warning is then printed.
 
 ## How to evaluate
 
@@ -32,7 +34,7 @@ Run:
 python generate_tables.py stats
 ```
 
-This creates texfiles for two tables table1.tex and table2.tex. 
+This creates texfiles for two tables `table1.tex` and `table2.tex`. 
 To render these tables, run
 
 ```
