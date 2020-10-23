@@ -1,14 +1,14 @@
 # Premise (PREdictive Monitoring with Imprecise Sensors)
 
 Based on: 
-- [1] "Runtime Monitoring for Markov Decision Processes" by Sebastian Junges, Hazem Torfah, and Sanjit A. Seshia. We include a longer variant in paper.pdf. This paper additionally contains an outline of the proof of Theorem 3.
+- [1] "Runtime Monitoring for Markov Decision Processes" by Sebastian Junges, Hazem Torfah, and Sanjit A. Seshia. 
 
 The code and explanations are to support experiments with the prototype. This is *not* a tool. 
-This project is hosted on `https://github.com/monitoring-MDPs/premise` 
+This project is hosted on [GitHub](https://github.com/monitoring-MDPs/premise). 
 
 ## Dependencies 
 
-(Users of an artefact can skip these steps). 
+(Users of an artifact can skip these steps). 
 - Install Storm with Python APIs in [the usual way](https://moves-rwth.github.io/stormpy/installation.html).
 - Run `pip install tqdm pandas`
 
@@ -27,7 +27,7 @@ Notice that running the experiments this creates a new folder in `stats/` for ev
 If such a folder already exists, the benchmark is skipped (irrespectively of the content of the folder). 
 A warning is then printed.
 
-## How to evaluate
+## How to evaluate the experiments?
 
 Run:
 ```
