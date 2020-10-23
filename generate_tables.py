@@ -6,10 +6,22 @@ import argparse
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename="load_data.log")
 
-method_based_online_stats = {
-    "unf" : [("McTime", "mc_time"), ("UnfTime", "unf_time"), ("TotalTime", "totaltime"), ("MdpStates", "mdp_states")],
-    "ff" : [("TrackTime", "track_time"), ("ReduceTime", "red_time"), ("TotalTime", "totaltime"),("NrBeliefsBR", "origcard") , ("NrBeliefsAR", "redcard") , ("Dimension", "dim")] ,
-}
+
+tracelengths = { "airportA-3-50-30" : [100,500],
+                 "airportB-3-50-30" : [100,500],
+                 "airportA-7-50-30": [100, 500],
+                 "airportB-7-50-30": [100, 500],
+                 "evadeI-10" : [100,500],
+                 "evadeI-15": [100, 500],
+                 "refuelA-12-50": [100, 500],
+                 "refuelB-12-50": [100, 500],
+                 "evadeV-5-3" : [100,500],
+                 "evadeV-6-3": [100, 500]
+                 }
+
+experiments = [ "airportA-7-50-30","airportB-3-50-30", "airportB-7-50-30",
+                 "refuelA-12-50", "refuelB-12-50","evadeI-15", "evadeV-5-3", "evadeV-6-3"]
+
 
 parser = argparse.ArgumentParser(description='Process stats.')
 parser.add_argument('folder', type=str,
@@ -18,8 +30,17 @@ parser.add_argument('folder', type=str,
 args = parser.parse_args()
 stats_folder = args.folder
 
+
+method_based_online_stats = {
+    "unf" : [("McTime", "mc_time"), ("UnfTime", "unf_time"), ("TotalTime", "totaltime"), ("MdpStates", "mdp_states")],
+    "ff" : [("TrackTime", "track_time"), ("ReduceTime", "red_time"), ("TotalTime", "totaltime"),("NrBeliefsBR", "origcard") , ("NrBeliefsAR", "redcard") , ("Dimension", "dim")] ,
+}
+
 def compute_online_statistics(folder, TPs, method):
     tables = {}
+    if not os.path.isdir(folder):
+        print(f"Warning! {folder} not found.")
+        return {}
     for filename in os.listdir(folder):
         if filename.endswith(".out"):
             continue
@@ -53,13 +74,12 @@ def compute_online_statistics(folder, TPs, method):
     return tp_statistics
 
 
-method_based_offline_stats = {
-    "unf" : [("UnfFrac", "unffrac"), ("TotalTime", "totaltime"), ],
-    "ff" : [("TrackTime", "track_time"), ("ReduceTime", "red_time"), ("TotalTime", "totaltime"),("NrBeliefsBR", "origcard") , ("NrBeliefsAR", "redcard") , ("BElim", "elimcard") , ("Dimension", "dim")] ,
-}
 
 def compute_offline_statistics(folder, TPs, method):
     tables = {}
+    if not os.path.isdir(folder):
+        print(f"Warning! {folder} not found.")
+        return {}
     for filename in os.listdir(folder):
         if filename.endswith(".out"):
             continue
@@ -97,20 +117,6 @@ def compute_offline_statistics(folder, TPs, method):
     return tp_statistics
 
 
-tracelengths = { "airportA-3-50-30" : [100,500],
-                 "airportB-3-50-30" : [100,500],
-                 "airportA-7-50-30": [100, 500],
-                 "airportB-7-50-30": [100, 500],
-                 "evadeI-10" : [100,500],
-                 "evadeI-15": [100, 500],
-                 "refuelA-12-50": [100, 500],
-                 "refuelB-12-50": [100, 500],
-                 "evadeV-5-3" : [100,500],
-                 "evadeV-6-3": [100, 500]
-                 }
-
-experiments = [ "airportA-7-50-30","airportB-3-50-30", "airportB-7-50-30",
-                 "refuelA-12-50", "refuelB-12-50","evadeI-15", "evadeV-5-3", "evadeV-6-3"]
 
 def export_online_stats():
     tablehead = r"""
@@ -125,17 +131,20 @@ def export_online_stats():
     with open("table1.tex", 'w') as texfile:
         texfile.write(tablehead + "\n")
         for idx, benchmark in enumerate(experiments):
-            nr_states = None
-            nr_transitions = None
-            with open (f"{stats_folder}/{benchmark}-unf-ea/stats.out") as statfile:
-                for line in statfile:
-                    if line.startswith("//"):
-                        continue
-                    kv = line.strip().split("=")
-                    if kv[0] == "states":
-                        nr_states = kv[1]
-                    if kv[0] == "transitions":
-                        nr_transitions = kv[1]
+            nr_states = "not-found"
+            nr_transitions = "not-found"
+            try:
+                with open (f"{stats_folder}/{benchmark}-unf-ea/stats.out") as statfile:
+                    for line in statfile:
+                        if line.startswith("//"):
+                            continue
+                        kv = line.strip().split("=")
+                        if kv[0] == "states":
+                            nr_states = kv[1]
+                        if kv[0] == "transitions":
+                            nr_transitions = kv[1]
+            except:
+                print(f"Warning. (Likely: File {stats_folder}/{benchmark}-unf-ea/stats.out not found.)")
             data = benchmark.split("-")
             texfile.write("\multirow{2}{*}{")
             texfile.write(str(idx+1))
@@ -155,14 +164,17 @@ def export_online_stats():
                     texfile.write("\t\t\t&\t&\t&\t&\t&")
                 texfile.write(str(tl))
                 texfile.write("\t&")
-                if ffstats[tl]["timedOut"] > 0:
-                    texfile.write("\\highlightFAIL{")
+                if len(ffstats) == 0:
+                    texfile.write("\t&")
                 else:
-                    assert ffstats[tl]["timedOut"] == 0
-                    texfile.write("\\highlightPASS{")
-                texfile.write("{}".format(ffstats[tl]["passed"]))
-                texfile.write("}\t& ")
-                if ffstats[tl]["passed"] > 0:
+                    if ffstats[tl]["timedOut"] > 0:
+                        texfile.write("\\highlightFAIL{")
+                    else:
+                        assert ffstats[tl]["timedOut"] == 0
+                        texfile.write("\\highlightPASS{")
+                    texfile.write("{}".format(ffstats[tl]["passed"]))
+                    texfile.write("}\t& ")
+                if len(ffstats) > 0 and ffstats[tl]["passed"] > 0:
                     texfile.write("{:.2f}".format(ffstats[tl]["totaltime_avg"]))
                     texfile.write("\t& ")
                     texfile.write("{:.2f}".format(ffstats[tl]["totaltime_max"]))
@@ -181,14 +193,18 @@ def export_online_stats():
                     texfile.write("\t& ")
                     texfile.write("\t& ")
                 texfile.write("\t& ")
-                if unfstats[tl]["timedOut"] > 0:
-                    texfile.write("\\highlightFAIL{")
+                if len(unfstats) == 0:
+                    texfile.write("\t&")
                 else:
-                    assert unfstats[tl]["timedOut"] == 0
-                    texfile.write("\\highlightPASS{")
-                texfile.write("{}".format(unfstats[tl]["passed"]))
-                texfile.write("}\t& ")
-                if unfstats[tl]["passed"] > 0:
+                    if unfstats[tl]["timedOut"] > 0:
+                        texfile.write("\\highlightFAIL{")
+                    else:
+                        assert unfstats[tl]["timedOut"] == 0
+                        texfile.write("\\highlightPASS{")
+                    texfile.write("{}".format(unfstats[tl]["passed"]))
+                    texfile.write("}\t& ")
+
+                if len(unfstats) > 0 and unfstats[tl]["passed"] > 0:
                     texfile.write("{:.2f}".format(unfstats[tl]["totaltime_avg"]))
                     texfile.write("\t& ")
                     texfile.write("{:.2f}".format(unfstats[tl]["totaltime_max"]))
@@ -231,14 +247,17 @@ def export_totals_table():
                      texfile.write("\t\t\t&\t")
                  texfile.write(str(tl))
                  texfile.write("\t& ")
-                 if ff_ch_stats[tl]["timedOut"] > 0:
-                     texfile.write("\\highlightFAIL{")
+                 if len(ff_ch_stats) == 0:
+                     texfile.write("\t& ")
                  else:
-                     assert ff_ch_stats[tl]["timedOut"] == 0
-                     texfile.write("\\highlightPASS{")
-                 texfile.write("{}".format(ff_ch_stats[tl]["passed"]))
-                 texfile.write("}\t& ")
-                 if ff_ch_stats[tl]["passed"] > 0:
+                     if ff_ch_stats[tl]["timedOut"] > 0:
+                         texfile.write("\\highlightFAIL{")
+                     else:
+                         assert ff_ch_stats[tl]["timedOut"] == 0
+                         texfile.write("\\highlightPASS{")
+                     texfile.write("{}".format(ff_ch_stats[tl]["passed"]))
+                     texfile.write("}\t& ")
+                 if len(ff_ch_stats) > 0 and ff_ch_stats[tl]["passed"] > 0:
                      texfile.write("{:.1f}".format(ff_ch_stats[tl]["totaltime_avg"]))
                      texfile.write("\t& ")
                      texfile.write("{:.1f}".format(ff_ch_stats[tl]["totaltime_max"]))
@@ -251,32 +270,37 @@ def export_totals_table():
                      texfile.write("\t& ")
                      texfile.write("\t& ")
                  texfile.write("\t& ")
-                 if ff_nr_stats[tl]["timedOut"] > 0:
-                     texfile.write("\\highlightFAIL{")
+                 if len(ff_nr_stats) == 0:
+                     texfile.write("\t& ")
                  else:
-                     assert ff_nr_stats[tl]["timedOut"] == 0
-                     texfile.write("\\highlightPASS{")
-                 texfile.write("{}".format(ff_nr_stats[tl]["passed"]))
-                 if ff_nr_stats[tl]["passed"] > 0:
+                     if ff_nr_stats[tl]["timedOut"] > 0:
+                         texfile.write("\\highlightFAIL{")
+                     else:
+                         assert ff_nr_stats[tl]["timedOut"] == 0
+                         texfile.write("\\highlightPASS{")
+                     texfile.write("{}".format(ff_nr_stats[tl]["passed"]))
                      texfile.write("}\t& ")
+                 if len(ff_nr_stats) > 0 and ff_nr_stats[tl]["passed"] > 0:
                      texfile.write("{:.1f}".format(ff_nr_stats[tl]["totaltime_avg"]))
                      texfile.write("\t& ")
                      texfile.write("{:.1f}".format(ff_nr_stats[tl]["totaltime_max"]))
                      texfile.write("\t& ")
                      texfile.write("{:.0f}".format(ff_nr_stats[tl]["redcard_avg"]))
                  else:
-                     texfile.write("}\t& ")
                      texfile.write("\t& ")
                      texfile.write("\t& ")
                  texfile.write("\t& ")
-                 if unf_ea_stats[tl]["timedOut"] > 0:
-                     texfile.write("\\highlightFAIL{")
+                 if len(unf_ea_stats) == 0:
+                     texfile.write("\t& ")
                  else:
-                     assert unf_ea_stats[tl]["timedOut"] == 0
-                     texfile.write("\\highlightPASS{")
-                 texfile.write("{}".format(unf_ea_stats[tl]["passed"]))
-                 texfile.write("}\t& ")
-                 if unf_ea_stats[tl]["passed"] > 0:
+                     if unf_ea_stats[tl]["timedOut"] > 0:
+                         texfile.write("\\highlightFAIL{")
+                     else:
+                         assert unf_ea_stats[tl]["timedOut"] == 0
+                         texfile.write("\\highlightPASS{")
+                     texfile.write("{}".format(unf_ea_stats[tl]["passed"]))
+                     texfile.write("}\t& ")
+                 if len(unf_ea_stats) > 0 and unf_ea_stats[tl]["passed"] > 0:
                      texfile.write("{:.1f}".format(unf_ea_stats[tl]["totaltime_avg"]))
                      texfile.write("\t& ")
                      texfile.write("{:.1f}".format(unf_ea_stats[tl]["totaltime_max"]))
@@ -290,19 +314,21 @@ def export_totals_table():
                      texfile.write("\t& ")
                      texfile.write("\t& ")
                      texfile.write("\t& ")
-                 if unf_fl_stats[tl]["timedOut"] > 0:
-                     texfile.write("\\highlightFAIL{")
-                 else:
-                     assert unf_fl_stats[tl]["timedOut"] == 0
-                     texfile.write("\\highlightPASS{")
-                 texfile.write("{}".format(unf_fl_stats[tl]["passed"]))
-                 if unf_fl_stats[tl]["passed"] > 0:
+                 if len(unf_fl_stats) > 0:
+                     if unf_fl_stats[tl]["timedOut"] > 0:
+                         texfile.write("\\highlightFAIL{")
+                     else:
+                         assert unf_fl_stats[tl]["timedOut"] == 0
+                         texfile.write("\\highlightPASS{")
+                     texfile.write("{}".format(unf_fl_stats[tl]["passed"]))
                      texfile.write("}\t& ")
+                 else:
+                     texfile.write("\t& ")
+                 if len(unf_fl_stats) > 0 and unf_fl_stats[tl]["passed"] > 0:
                      texfile.write("{:.1f}".format(unf_fl_stats[tl]["totaltime_avg"]))
                      texfile.write("\t& ")
                      texfile.write("{:.1f}".format(unf_fl_stats[tl]["totaltime_max"]))
                  else:
-                     texfile.write("}\t& ")
                      texfile.write("\t& ")
                  texfile.write("\\\\\n")
             texfile.write("\\hline\n")
