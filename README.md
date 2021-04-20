@@ -1,4 +1,4 @@
-# PreMISe (Predictive Monitoring with Imprecise Sensors)
+q# PreMISe (Predictive Monitoring with Imprecise Sensors)
 
 Based on: 
 - [1] "Runtime Monitoring for Markov Decision Processes" by Sebastian Junges, Hazem Torfah, and Sanjit A. Seshia, CAV 2021 
@@ -16,12 +16,12 @@ This project is hosted on [GitHub](https://github.com/monitoring-MDPs/premise).
 
 For filtering, run: 
 ```
-python demo.py --filtering --exact --name "testname" --model examples/airportA-3.nm --constants "DMAX=5,PMAX=5" --risk "Pmax=? [F \"crash\"]"
+python premise/demo.py --filtering --exact --name "testname" --model examples/airportA-3.nm --constants "DMAX=5,PMAX=5" --risk "Pmax=? [F \"crash\"]"
 ```
 
 For unfolding, run: 
 ```
-python demo.py --unfolding --exact --name "testname" --model examples/airportA-3.nm --constants "DMAX=5,PMAX=5" --risk "Pmax=? [F \"crash\"]"
+python premise/demo.py --unfolding --exact --name "testname" --model examples/airportA-3.nm --constants "DMAX=5,PMAX=5" --risk "Pmax=? [F \"crash\"]"
 ```
 
 #### Input
@@ -44,7 +44,7 @@ In particular,
 
 #### Options
 
-Please run `python demo.py -h` for a list of options.
+Please run `python premise/demo.py -h` for a list of options.
 
 
  
@@ -60,7 +60,7 @@ We describe how to reproduce the experimental section of [1].
 
 Very simple: 
 ```
-python experiments.py
+python premise/experiments.py
 ```
 
 We expect that this runs within ~3 hours (and using no more than 6 GB of RAM).
@@ -75,7 +75,7 @@ A warning is then printed.
 
 Run:
 ```
-python generate_tables.py stats
+python premise/generate_tables.py stats
 ```
 
 This creates texfiles for two tables `table1.tex` and `table2.tex`. 
@@ -86,7 +86,7 @@ cd util && pdflatex stats_main.tex
 ```
 
 The file `stats_main.pdf` now contains the tables as in the paper. 
-To recreate the original tables, please run  `python generate_tables.py paper_stats`.
+To recreate the original tables, please run  `python premise/generate_tables.py paper_stats`.
 
 
 ### Reference statistics
@@ -102,6 +102,8 @@ The actual algorithms have been integrated into the source code of [storm](https
 - [Forward Filter (header)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/generator/NondeterministicBeliefTracker.h) and [Forward filter (implementation)](https://github.com/moves-rwth/storm/blob/master/src/storm-pomdp/generator/NondeterministicBeliefTracker.cpp)
 
 ## Source code
+
+In the premise folder, you can find the following sources.
 
 - `monitoring.py` contains a lightweight wrapper along the lines in [1, Fig. 5]: 
 most of the ~200 lines of code are for logging statistics.
