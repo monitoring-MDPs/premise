@@ -1,6 +1,6 @@
 import stormpy as sp
 import argparse
-import demo
+import monitoring
 
 class Benchmark:
     """
@@ -38,17 +38,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     nr_traces = args.number_traces
-    trace_length =args.trace_length
+    trace_length = args.trace_length
     promtness_deadline = args.promptness_deadline # in ms
-    configurations = [demo.UnfoldingOptions(exact_arithmetic=True),
-                      demo.UnfoldingOptions(exact_arithmetic=False),
-                      demo.ForwardFilteringOptions(exact_arithmetic=True, convex_hull_reduction=False),
-                      demo.ForwardFilteringOptions(exact_arithmetic=True, convex_hull_reduction=True)]
+    configurations = [monitoring.UnfoldingOptions(exact_arithmetic=True),
+                      monitoring.UnfoldingOptions(exact_arithmetic=False),
+                      monitoring.ForwardFilteringOptions(exact_arithmetic=True, convex_hull_reduction=False),
+                      monitoring.ForwardFilteringOptions(exact_arithmetic=True, convex_hull_reduction=True)]
     for benchmark in benchmarks:
         for config in configurations:
             print(f"Running {benchmark.name} with {str(config)}")
             try:
-                demo.monitor(benchmark.modelpath, benchmark.risk_def, benchmark.constants, trace_length, config, verbose=args.verbose, promptness_deadline=promtness_deadline, simulator_seed=range(nr_traces), model_id=benchmark.name)
+                monitoring.monitor(benchmark.modelpath, benchmark.risk_def, benchmark.constants, trace_length, config, verbose=args.verbose, promptness_deadline=promtness_deadline, simulator_seed=range(nr_traces), model_id=benchmark.name)
             except RuntimeWarning:
                 print("Skipped (likely, the folder exists)")
                 pass
