@@ -36,6 +36,12 @@ method_based_online_stats = {
     "ff" : [("TrackTime", "track_time"), ("ReduceTime", "red_time"), ("TotalTime", "totaltime"),("NrBeliefsBR", "origcard") , ("NrBeliefsAR", "redcard") , ("Dimension", "dim")] ,
 }
 
+
+method_based_offline_stats = {
+    "unf" : [("UnfFrac", "unffrac"), ("TotalTime", "totaltime"), ],
+    "ff" : [("TrackTime", "track_time"), ("ReduceTime", "red_time"), ("TotalTime", "totaltime"),("NrBeliefsBR", "origcard") , ("NrBeliefsAR", "redcard") , ("BElim", "elimcard") , ("Dimension", "dim")] ,
+}
+
 def compute_online_statistics(folder, TPs, method):
     tables = {}
     if not os.path.isdir(folder):
