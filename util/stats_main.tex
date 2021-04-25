@@ -11,13 +11,39 @@
 \newcommand{\benchmark}[1]{\textsc{#1}}
 \setlength{\tabcolsep}{3pt} % General space between cols (6pt standard)
 
+\usepackage{fancyhdr}
+\usepackage[yyyymmdd,hhmmss]{datetime}
+\pagestyle{fancy}
+\rfoot{Compiled on \today\ at \currenttime}
+\cfoot{}
+\lfoot{Page \thepage}
+
+\title{Experiment Report}
+\author{Premise (auto-generated)}
 \begin{document}
+\maketitle
+
+
+In Table~\ref{tab:promptness}, we give an ID for every benchmark name and instance, along with the size of the MDP (nr.\ of states $|S|$ and transitions $|P|$) our algorithms operate on.
+We consider the promptness after prefixes of length $|\trace|$.
+In particular, for forward filtering with the convex hull optimization, we give the number $N$ of traces that did not time out before, and consider the average $T_\text{avg}$ and maximal time $T_\text{max}$ needed (over all sampled traces that did not time-out before).
+Furthermore, we give the average, $B_\text{avg}$, and maximal, $B_\text{max}$, number of beliefs stored (after reduction), and the average, $D_\text{avg}$, and maximal, $D_\text{max}$,  dimension of the belief support.
+Likewise, for unrolling with exact model checking, we give the number $N$ of traces that did not time out before, and we consider average $T_\text{avg}$ and maximal time $T_\text{max}$, as well as the average size and maximal number of states of the unfolded MDP.
+
+In Table~\ref{tab:performance}, we consider for the benchmarks above the cumulative performance. In particular, this table also considers an alternative implementation for both FF and UNR.
+We use the IDs to identify the instance, and sum for each prefix of length $|\trace|$ the time.
+For filtering, we recall the number of traces $N$ that did not time out, the average and maximal cumulative time along the trace, the average cumulative number of beliefs that were considered, and the average cumulative number of beliefs eliminated. For the case without convex hull, we do not eliminate any vertices.
+For unrolling, we report average $T_\text{avg}$ and maximal cumulative time using EPI, as well as the time required for model building, $\mathit{Bld^{\%}}$ (relative to the total time, per trace).
+We compare this to the average and maximal cumulative time for using OVI (notice that building times remain approximately the same).
+
+
 \begin{table}
 \centering
 	\caption{Performance for promptness of online monitoring on various benchmarks.}
 	{\footnotesize
 \input{../table1.tex}
 }
+\label{tab:promptness}
 \end{table}
 \begin{table}
 \caption{Summarized performance for online monitoring}
@@ -25,5 +51,6 @@
 {\footnotesize
 \input{../table2.tex}
 }
+\label{tab:performance}
 \end{table}
 \end{document}
