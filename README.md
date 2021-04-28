@@ -45,7 +45,7 @@ python premise/demo.py --unfolding --exact --name "testname" --model examples/ai
 ```
 
 #### Input
-This will run filtering on the model `examples/airportA-3.nm` (with constants `DMAX=5,PMAX=5`). 
+This will run filtering/unfolding on the model `examples/airportA-3.nm` (with constants `DMAX=5,PMAX=5` defining the airport dimensions). 
 The risk is defined as the maximal probability of eventually crashing (in standard PRISM syntax).
 The `testname` is used to identify the run in the created output. 
 
@@ -56,7 +56,7 @@ These traces are each fed into a monitor that runs filtering.
 The risk after every step, along with further statistics is written to `stats/testname-ff-ch-ea/` 
 
 - `stats.out` contains some general model-dependent statistics.
-- `...-SEED.csv` contains information for every trace. 
+- `...-0.csv`...`...-49.csv` contains information for every trace. 
 In particular, 
     - `Index` is the time step, 
     - `Observation` is an integer encoding the observed information, 
@@ -76,7 +76,7 @@ We describe how to reproduce the experimental section of [1].
 
 ### How to run experiments?
 
-Very simple. First, be sure that `stats/` is empty (just to be sure). Then run
+First, be sure that `stats/` is empty (just to be sure). Then run
 ```
 python premise/experiments.py
 ```
@@ -97,13 +97,18 @@ python premise/generate_tables.py stats
 ```
 
 This creates texfiles for two tables `table1.tex` and `table2.tex`. 
-To render these tables, run
+Optionally, to render these tables, run
 
 ```
 cd util && pdflatex stats_main.tex
 ```
 
 The file `stats_main.pdf` now contains the tables as in the paper. 
+To inspect the pdf you must copy the pdf to your host system, using 
+```
+cp stats_main.pdf /data/
+```
+You can now open the pdf in your host system.
 
 
 ### Reference statistics
