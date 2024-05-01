@@ -20,6 +20,8 @@ def main():
     parser.add_argument("--verbose", action='store_true', help="Enable extra output")
     parser.add_argument("--seed", help="Set a random seed for reproducible experiments")
     parser.add_argument("--no-convexhull-reduction", help="Disable Convexhull Reduction", dest="convexhull", action='store_false')
+    parser.add_argument("--dump-models", type=str, help="Path for dumping models. If none given, no models are dumped.")
+    parser.add_argument("--unfolding-mode", choices=["rejection_sampling", "linear"], default="rejection_sampling")
     args = parser.parse_args()
 
     trace_length = args.trace_length
@@ -33,7 +35,7 @@ def main():
     if args.filtering:
         options = monitoring.ForwardFilteringOptions(exact_arithmetic=args.exact, convex_hull_reduction=args.convexhull)
     elif args.unfolding:
-        options = monitoring.UnfoldingOptions(exact_arithmetic=args.exact)
+        options = monitoring.UnfoldingOptions(exact_arithmetic=args.exact, export_models_path=args.dump_models)
     else:
         RuntimeError("Unknown method!")
 

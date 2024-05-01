@@ -27,6 +27,28 @@ benchmarks = [
     Benchmark("refuelB-12-50","examples/refuelB.nm", "N=12,ENERGY=50", "Pmax=? [F<=12 \"empty\"]")
 ]
 
+challenges = [
+   # Benchmark("airportA-7-400-40", "examples/airportA-7.nm", "DMAX=400,PMAX=40", "Pmax=? [F \"crash\"]"),
+   # Benchmark("airportB-3-200-30", "examples/airportB-3.nm", "DMAX=200,PMAX=30", "Pmax=? [F \"crash\"]"),
+   # Benchmark("airportB-7-200-30", "examples/airportB-7.nm", "DMAX=200,PMAX=30", "Pmax=? [F \"crash\"]"),
+#    Benchmark("evadeI-10", "examples/hidden-incentive.nm", "N=10", "Pmax=? [F<=12 \"crash\"]"),
+   #  Benchmark("evadeI-19", "examples/hidden-incentive.nm", "N=19", "Pmax=? [F<=20 \"crash\"]"),
+#     Benchmark("evadeV-5-3", "examples/evade-monitoring.nm", "N=5,RADIUS=3", "Pmax=? [F<=12 \"crash\"]"),
+ #    Benchmark("evadeV-9-3", "examples/evade-monitoring.nm", "N=9,RADIUS=3", "Pmax=? [F<=12 \"crash\"]"),
+    #Benchmark("evadeV-14-4", "examples/evade-monitoring.nm", "N=14,RADIUS=4", "Pmax=? [F<=12 \"crash\"]"),
+    Benchmark("refuelA-35-80", "examples/refuel.nm", "N=35,ENERGY=80", "Pmax=? [F<=20 \"empty\"]"),
+  #   Benchmark("refuelB-14-200","examples/refuelB.nm", "N=18,ENERGY=200", "Pmax=? [F<=8 \"empty\"]")
+]
+
+environment = sp.Environment()
+#environment.solver_environment.minmax_solver_environment.method = sp.MinMaxMethod.linear_programming
+environment.solver_environment.minmax_solver_environment.precision = sp.Rational("0.01")
+
+configurations = [#monitoring.UnfoldingOptions(environment, exact_arithmetic=True),
+                  monitoring.UnfoldingOptions(environment, exact_arithmetic=True, custom_str="chnothingnew")]
+                  #monitoring.ForwardFilteringOptions(exact_arithmetic=True, convex_hull_reduction=False),
+                  #monitoring.ForwardFilteringOptions(exact_arithmetic=True, convex_hull_reduction=True)]
+
 if __name__ == "__main__":
     # Wait for termination, never crash.
     sp.set_settings(["--signal-timeout", "100000"])
@@ -40,10 +62,6 @@ if __name__ == "__main__":
     nr_traces = args.number_traces
     trace_length = args.trace_length
     promtness_deadline = args.promptness_deadline # in ms
-    configurations = [monitoring.UnfoldingOptions(exact_arithmetic=True),
-                      monitoring.UnfoldingOptions(exact_arithmetic=False),
-                      monitoring.ForwardFilteringOptions(exact_arithmetic=True, convex_hull_reduction=False),
-                      monitoring.ForwardFilteringOptions(exact_arithmetic=True, convex_hull_reduction=True)]
     for benchmark in benchmarks:
         for config in configurations:
             print(f"Running {benchmark.name} with {str(config)}")

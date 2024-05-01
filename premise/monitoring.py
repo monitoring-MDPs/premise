@@ -44,7 +44,7 @@ def analyse_model(model, prop):
     return stormpy.model_checking(model, prop.raw_formula, force_fully_observable=True)
 
 
-def filtering(simulator, tracker, trace_length, convex_reduction, stats_file, verbose, observation_valuations = None, terminate_on_deadline = True, deadline=None):
+def filtering(stormpy_environment, simulator, tracker, trace_length, convex_reduction, stats_file, verbose, observation_valuations = None, terminate_on_deadline = True, deadline=None):
     """
 
     :param simulator: The simulator that spits out the observations
@@ -67,7 +67,7 @@ def filtering(simulator, tracker, trace_length, convex_reduction, stats_file, ve
         writer.writerow(["Index", "Observation", "Risk", "TrackTime", "ReduceTime","TotalTime", "NrBeliefsBR", "NrBeliefsAR", "Dimension", "TimedOut"])
         iterator = tqdm(range(trace_length))
         for i in iterator:
-            observation, _ = simulator.random_step()
+            observation, _, _ = simulator.random_step()
             if verbose:
                 hl_obs = observation_valuations.get_string(observation, pretty=True)[1:-1].replace("\t", " ")
                 print(f"Observe {hl_obs}")
@@ -105,67 +105,77 @@ def filtering(simulator, tracker, trace_length, convex_reduction, stats_file, ve
     return True
 
 
-def unfolding(simulator, unfolder, trace_length, stats_file, deadline=None, terminate_on_deadline = True, use_ovi=False):
+def unfolding(stormpy_environment, simulator, unfolder, trace_length, stats_file, deadline=None, terminate_on_deadline = True, dump_file_path = None, do_model_checking = False):
     """
 
+    :param stormpy_environment: The stormpy environment to use
     :param simulator: The simulator that spits out the observations
-    :param tracker: The tracker that keeps track of the state estimation
+    :param unfolder: The tracker that keeps track of the state estimation
     :param trace_length: How many steps to take.
     :param stats_file: The file to output all the statistics to.
     :param deadline: The deadline for every computation step
     :param terminate_on_deadline: Should we abort the trace if we exceeded computation time
-    :param use_ovi: Whether to use OVI or not.
+    :param dump_file_path: Path to dump model files. None to disable dumping them.
+    :param do_model_checking: Whether to actually verify the unfolding (Set to false if one is only interested in generating models)
     :return:
     """
     #TODO make the stats_file optional
-    observation, _ = simulator.restart()
+    observation, _, _ = simulator.restart()
     unfolder.reset(observation)
-    env = stormpy.Environment()
-    if use_ovi:
-        env.solver_environment.minmax_solver_environment.method = stormpy.MinMaxMethod.optimistic_value_iteration
-        env.solver_environment.minmax_solver_environment.precision = stormpy.Rational("0.01")
 
     with open(stats_file, 'w') as file:
         writer = csv.writer(file)
         writer.writerow(["Index", "Observation", "Risk", "UnfTime", "McTime", "TotalTime", "MdpStates", "MdpTransitions", "TimedOut"])
         for i in tqdm(range(trace_length)):
-            observation, _ = simulator.random_step()
+            observation, _, _ = simulator.random_step()
             start_time = time.monotonic()
             mdp = unfolder.extend(observation)
             end_time = time.monotonic()
             unfold_time = end_time - start_time
-            #stormpy.export_to_drn(mdp,"unrolling.out")
+            if dump_file_path is not None and (i+1) % (int(trace_length/10)) == 0:
+                path = dump_file_path +  f"-{i+1}.drn"
+                logging.info(f"Export MDP to {path}")
+                stormpy.export_to_drn(mdp, path)
             prop = sp.parse_properties("Pmax=? [F \"_goal\"]")[0]
-            #
-            #mdpl = stormpy.build_model_from_drn("unrolling.out")
             timeout = False
             start_time = time.monotonic()
-            stormpy.reset_timeout()
-            stormpy.set_timeout(int(deadline/1000))
-            stormpy.install_signal_handlers()
-            try:
-                result = stormpy.model_checking(mdp, prop, environment=env, only_initial_states=True)
-                risk = result.at(0)
-            except RuntimeError:
-                timeout = True
-            stormpy.reset_timeout()
-            end_time = time.monotonic()
-            mc_time = end_time - start_time
-            total_time = unfold_time + mc_time
-            if deadline and total_time * 1000 > deadline:
-                timeout = True
-            writer.writerow([i, observation, risk, unfold_time, mc_time, total_time, mdp.nr_states, mdp.nr_transitions, timeout])
+            if do_model_checking:
+                stormpy.reset_timeout()
+                stormpy.set_timeout(int(deadline / 1000))
+
+                try:
+                    result = stormpy.model_checking(mdp, prop, environment=stormpy_environment, only_initial_states=True)
+                    risk = result.at(0)
+                except RuntimeError:
+                    timeout = True
+                stormpy.reset_timeout()
+                end_time = time.monotonic()
+                mc_time = end_time - start_time
+                total_time = unfold_time + mc_time
+                if deadline and total_time * 1000 > deadline:
+                    timeout = True
+                writer.writerow([i, observation, risk, unfold_time, mc_time, total_time, mdp.nr_states, mdp.nr_transitions, timeout])
+            else:
+                writer.writerow(
+                    [i, observation, "NA", unfold_time, "NA", "NA", mdp.nr_states, mdp.nr_transitions,
+                     timeout])
             file.flush()
             if terminate_on_deadline and timeout:
                 return False
     return True
 
 
-class ForwardFilteringOptions:
+class StormConfigOptions:
+    def __init__(self, env):
+        self.stormpy_environment = env
+
+
+class ForwardFilteringOptions(StormConfigOptions):
     """
     Container to configure forward filtering.
     """
-    def __init__(self, convex_hull_reduction=True, exact_arithmetic=True):
+    def __init__(self, env=sp.Environment(), convex_hull_reduction=True, exact_arithmetic=True):
+        super().__init__(env)
         self.convex_hull_reduction = convex_hull_reduction
         self.exact_arithmetic = exact_arithmetic
 
@@ -179,19 +189,26 @@ class ForwardFilteringOptions:
         return "ff-{}-{}".format(redstr, numstr)
 
 
-class UnfoldingOptions:
+class UnfoldingOptions(StormConfigOptions):
     """
     Container to configure unfolding.
     """
-    def __init__(self, exact_arithmetic=True):
+    def __init__(self, env=sp.Environment(), exact_arithmetic=True, use_rejection_sampling = True, custom_str=None, export_models_path = None):
+        super().__init__(env)
         self.exact_arithmetic = exact_arithmetic
+        self._numstr = custom_str
+        self.export_models_path = export_models_path
+        self.use_rejection_sampling = use_rejection_sampling
 
     def __str__(self):
         return f"Unfolding(exact_numbers={self.exact_arithmetic})"
 
     @property
     def method_id(self):
-        numstr = "ea" if self.exact_arithmetic else "fl"
+        if self._numstr is not None:
+            numstr = self._numstr
+        else:
+            numstr = "ea" if self.exact_arithmetic else "fl"
         return "unf-{}".format(numstr)
 
 
@@ -244,17 +261,20 @@ def monitor(path, risk_property, constants, trace_length, options, verbose=False
         logger.info("Initialize tracker...")
         tracker = stormpy.pomdp.create_nondeterminstic_belief_tracker(model, promptness_deadline, promptness_deadline)
         tracker.set_risk(risk_assessment)
-    if use_unfolding:
+    else:
+        assert use_unfolding
+        logger.info("Initialize unfolder...")
         expr_manager = stormpy.ExpressionManager()
         unfolder = stormpy.pomdp.create_observation_trace_unfolder(model, risk_assessment, expr_manager)
 
     initialize_time = time.monotonic() - start_time
-    #stormpy.export_to_drn(model, "model.drn")
+    stormpy_environment = options.stormpy_environment
     stats_folder = f"stats/{model_id}-{options.method_id}/"
     if not os.path.isdir(stats_folder):
         os.makedirs(stats_folder)
     else:
         raise RuntimeWarning(f"We are writing to an existing folder '{stats_folder}'.")
+
     with open(os.path.join(stats_folder,"stats.out"), 'w') as file:
         file.write(f"states={model.nr_states}\n")
         file.write(f"transitions={model.nr_transitions}\n")
@@ -264,13 +284,20 @@ def monitor(path, risk_property, constants, trace_length, options, verbose=False
     for seed in tqdm(simulator_seed_range):
         simulator.set_seed(seed)
         logger.info("Restart simulator...")
-        observation, _ = simulator.restart()
+        observation, _, _ = simulator.restart()
 
         stats_file = f"{stats_folder}/stats-{model_id}-{options.method_id}-{seed}.csv"
         if use_forward_filtering:
-            filtering(simulator, tracker, trace_length, options.convex_hull_reduction, stats_file, deadline=promptness_deadline, verbose=verbose, observation_valuations=model.observation_valuations)
-        if use_unfolding:
-            unfolding(simulator, unfolder, trace_length, stats_file, use_ovi=not options.exact_arithmetic, deadline=promptness_deadline)
-
-
-
+            filtering(stormpy_environment, simulator, tracker, trace_length, options.convex_hull_reduction, stats_file, deadline=promptness_deadline, verbose=verbose, observation_valuations=model.observation_valuations)
+        else:
+            assert use_unfolding
+            if options.export_models_path is not None:
+                models_folder = f"{options.export_models_path}/{model_id}"
+                if not os.path.isdir(models_folder):
+                    os.makedirs(models_folder)
+                unrolled_drn_file_prefix = f"{models_folder}-{seed}"
+                if not os.path.isdir(unrolled_drn_file_prefix):
+                    os.makedirs(unrolled_drn_file_prefix)
+            else:
+                unrolled_drn_file_prefix = None
+            unfolding(stormpy_environment, simulator, unfolder, trace_length, stats_file, deadline=promptness_deadline, dump_file_path=unrolled_drn_file_prefix)

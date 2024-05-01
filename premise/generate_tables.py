@@ -6,7 +6,6 @@ import argparse
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename="load_data.log")
 
-
 tracelengths = { "airportA-3-50-30" : [100,500],
                  "airportB-3-50-30" : [100,500],
                  "airportA-7-50-30": [100, 500],
