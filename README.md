@@ -11,14 +11,14 @@ This project is hosted on [GitHub](https://github.com/monitoring-MDPs/premise).
 
 (Users of an artifact can skip these steps). 
 - Install Storm with Python APIs in [the usual way](https://moves-rwth.github.io/stormpy/installation.html).
-- Run `python setup.py install` or equivalently `pip install .`
+- Run `pip install -e .`
 
 ## Using a Docker container
 
 We provide a docker container
 
 ```
-docker pull sjunges/premise:cav21
+docker pull sjunges/premise:0.2
 ```
 
 The container is based on an container for the probabilistic model checker as provided by the Storm developers, for details, 
@@ -26,7 +26,7 @@ see [this documentation](https://www.stormchecker.org/documentation/obtain-storm
 
 The following command will run the docker container (for Windows platforms, please see the documentation from the storm website).
 ```
-docker run --mount type=bind,source="$(pwd)",target=/data -w /opt/premise --rm -it --name premise sjunges/premise:cav21
+docker run --mount type=bind,source="$(pwd)",target=/data -w /opt/premise -it --name premise sjunges/premise:cav21
 ```
 Files that one copies into `/data` are available on the host system in the current working directory. 
 

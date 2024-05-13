@@ -1,8 +1,8 @@
-import premise.models as models
-import premise.monitor as monitor
-import premise.trace_generator as trace_generator
-import premise.traces as traces
-import premise.oracle as oracle
+import models
+import monitor
+import trace_generator
+import traces
+import oracle
 
 def construct_learning_interfaces(model_description : models.ModelDescription,
                                   premise_options : monitor.PremiseOptions) \
@@ -12,3 +12,11 @@ def construct_learning_interfaces(model_description : models.ModelDescription,
     tracegen = trace_generator.make_simulation_wrapper(model, risk_structure)
     tracemapper = traces.TraceMapper(model)
     return oracle.Oracle(mon), tracegen, tracemapper
+
+oracle_interface, generator, tracemapper = construct_learning_interfaces(models.default_models["evadeV-5-3"], monitor.PremiseOptions())
+trace = generator.generate_random_trace(20)
+hl_trace = tracemapper.trace_to_high_level(trace)
+assert tracemapper.trace_from_high_level_trace(hl_trace) == trace
+risk = oracle_interface.membership(trace, intermediate_results=True)
+assert len(risk) == len(trace)
+print(risk)

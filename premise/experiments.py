@@ -45,7 +45,7 @@ environment = sp.Environment()
 environment.solver_environment.minmax_solver_environment.precision = sp.Rational("0.01")
 
 configurations = [#monitoring.UnfoldingOptions(environment, exact_arithmetic=True),
-                  monitoring.UnfoldingOptions(environment, exact_arithmetic=True, custom_str="chnothingnew")]
+                  monitoring.UnfoldingOptions(environment, exact_arithmetic=True, custom_str="unfrefactored")]
                   #monitoring.ForwardFilteringOptions(exact_arithmetic=True, convex_hull_reduction=False),
                   #monitoring.ForwardFilteringOptions(exact_arithmetic=True, convex_hull_reduction=True)]
 
@@ -53,8 +53,8 @@ if __name__ == "__main__":
     # Wait for termination, never crash.
     sp.set_settings(["--signal-timeout", "100000"])
     parser = argparse.ArgumentParser(description="Run experiments with premise.")
-    parser.add_argument("--number-traces", default=50, type=int, help="How many traces to run")
-    parser.add_argument("--trace-length", default=500, type=int, help="How long should the traces be?")
+    parser.add_argument("--number-traces", default=10, type=int, help="How many traces to run")
+    parser.add_argument("--trace-length", default=100, type=int, help="How long should the traces be?")
     parser.add_argument("--promptness-deadline", default=1000, type=int, help="How long may one iteration take at most?")
     parser.add_argument("--verbose", action='store_true', help="Enable extra output")
     args = parser.parse_args()

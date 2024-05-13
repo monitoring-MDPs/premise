@@ -13,36 +13,6 @@ from tqdm import tqdm
 logger = logging.getLogger(__name__)
 
 
-def build_model(program, formula, exact_arithmetic):
-    """
-    Takes a model and a formula that describes the bad event.
-
-    :param program: PRISM program
-    :param formula: a PCTL specification for a bad event
-    :param exact_arithmetic: Flag for using exact arithmetic.
-    :return: A sparse MDP
-    """
-    options = sp.BuilderOptions([formula])
-    options.set_build_state_valuations()
-    options.set_build_observation_valuations()
-    options.set_build_choice_labels()
-    options.set_build_all_labels()
-    logger.debug("Start building the MDP")
-    if exact_arithmetic:
-        return sp.build_sparse_exact_model_with_options(program, options)
-    else:
-        return sp.build_sparse_model_with_options(program, options)
-
-
-def analyse_model(model, prop):
-    """
-    Analyse the MDP with respect to the given property. Assume full observability.
-    :param model:
-    :param prop:
-    :return:
-    """
-    return stormpy.model_checking(model, prop.raw_formula, force_fully_observable=True)
-
 
 def filtering(stormpy_environment, simulator, tracker, trace_length, convex_reduction, stats_file, verbose, observation_valuations = None, terminate_on_deadline = True, deadline=None):
     """
@@ -70,7 +40,6 @@ def filtering(stormpy_environment, simulator, tracker, trace_length, convex_redu
             observation, _, _ = simulator.random_step()
             if verbose:
                 hl_obs = observation_valuations.get_string(observation, pretty=True)[1:-1].replace("\t", " ")
-                print(f"Observe {hl_obs}")
                 for belief in tracker.obtain_beliefs():
                     print(belief)
             start_time = time.monotonic()
@@ -105,7 +74,7 @@ def filtering(stormpy_environment, simulator, tracker, trace_length, convex_redu
     return True
 
 
-def unfolding(stormpy_environment, simulator, unfolder, trace_length, stats_file, deadline=None, terminate_on_deadline = True, dump_file_path = None, do_model_checking = False):
+def unfolding(stormpy_environment, simulator, unfolder, trace_length, stats_file, deadline=None, terminate_on_deadline = True, dump_file_path = None, do_model_checking = True):
     """
 
     :param stormpy_environment: The stormpy environment to use
@@ -122,6 +91,7 @@ def unfolding(stormpy_environment, simulator, unfolder, trace_length, stats_file
     #TODO make the stats_file optional
     observation, _, _ = simulator.restart()
     unfolder.reset(observation)
+    prop = sp.parse_properties("Pmax=? [F \"_goal\"]")[0]
 
     with open(stats_file, 'w') as file:
         writer = csv.writer(file)
@@ -136,7 +106,6 @@ def unfolding(stormpy_environment, simulator, unfolder, trace_length, stats_file
                 path = dump_file_path +  f"-{i+1}.drn"
                 logging.info(f"Export MDP to {path}")
                 stormpy.export_to_drn(mdp, path)
-            prop = sp.parse_properties("Pmax=? [F \"_goal\"]")[0]
             timeout = False
             start_time = time.monotonic()
             if do_model_checking:
@@ -145,7 +114,7 @@ def unfolding(stormpy_environment, simulator, unfolder, trace_length, stats_file
 
                 try:
                     result = stormpy.model_checking(mdp, prop, environment=stormpy_environment, only_initial_states=True)
-                    risk = result.at(0)
+                    risk = result.at(mdp.initial_states[0])
                 except RuntimeError:
                     timeout = True
                 stormpy.reset_timeout()
@@ -211,6 +180,18 @@ class UnfoldingOptions(StormConfigOptions):
             numstr = "ea" if self.exact_arithmetic else "fl"
         return "unf-{}".format(numstr)
 
+def unrolled_model_path(options, model_id, seed):
+    if options.export_models_path is not None:
+        models_folder = f"{options.export_models_path}/{model_id}"
+        if not os.path.isdir(models_folder):
+            os.makedirs(models_folder)
+        unrolled_drn_file_prefix = f"{models_folder}-{seed}"
+        if not os.path.isdir(unrolled_drn_file_prefix):
+            os.makedirs(unrolled_drn_file_prefix)
+        return unrolled_drn_file_prefix
+    else:
+        return None
+
 
 def monitor(path, risk_property, constants, trace_length, options, verbose=False, simulator_seed=0, promptness_deadline=10000, model_id="no_id_given"):
     """
@@ -234,20 +215,7 @@ def monitor(path, risk_property, constants, trace_length, options, verbose=False
     assert not (use_forward_filtering and use_unfolding)
 
     logger.info("Parse MDP representation...")
-    prism_program = sp.parse_prism_program(path)
-    prop = sp.parse_properties_for_prism_program(risk_property, prism_program)[0]
-    prism_program, props = sp.preprocess_symbolic_input(prism_program, [prop], constants)
-    prop = props[0]
-    prism_program = prism_program.as_prism_program()
-    raw_formula = prop.raw_formula
-
-    logger.info("Construct MDP representation...")
-    model = build_model(prism_program, raw_formula, exact_arithmetic=options.exact_arithmetic)
-    if(verbose):
-        print(model)
-    assert model.has_observation_valuations()
-    logger.info("Compute risk per state")
-    risk_assessment = analyse_model(model, prop).get_values()
+    model, risk_assessment = build_model_and_risk(path, risk_property, constants, options, verbose)
 
     # The seed can be given as a single value or as a
     if isinstance(simulator_seed, Iterable):
@@ -255,8 +223,6 @@ def monitor(path, risk_property, constants, trace_length, options, verbose=False
     else:
         simulator_seed_range = range(simulator_seed,simulator_seed+1)
 
-    logger.info("Initialize simulator...")
-    simulator = sp.simulator.create_simulator(model)
     if use_forward_filtering:
         logger.info("Initialize tracker...")
         tracker = stormpy.pomdp.create_nondeterminstic_belief_tracker(model, promptness_deadline, promptness_deadline)
@@ -264,11 +230,13 @@ def monitor(path, risk_property, constants, trace_length, options, verbose=False
     else:
         assert use_unfolding
         logger.info("Initialize unfolder...")
+        stormpy_environment = options.stormpy_environment
         expr_manager = stormpy.ExpressionManager()
         unfolder = stormpy.pomdp.create_observation_trace_unfolder(model, risk_assessment, expr_manager)
+        ura = UnfoldingRiskAssessment(stormpy_environment, unfolder)
+        mon = Monitor(ura, promptness_deadline)
 
     initialize_time = time.monotonic() - start_time
-    stormpy_environment = options.stormpy_environment
     stats_folder = f"stats/{model_id}-{options.method_id}/"
     if not os.path.isdir(stats_folder):
         os.makedirs(stats_folder)
@@ -281,23 +249,24 @@ def monitor(path, risk_property, constants, trace_length, options, verbose=False
         file.write(f"init_time={initialize_time}\n")
         file.write(f"promptness_deadline={promptness_deadline}")
 
+
+    logger.info("Initialize simulator...")
+    simulator = sp.simulator.create_simulator(model)
     for seed in tqdm(simulator_seed_range):
         simulator.set_seed(seed)
+        stg = SimulationTraceGenerator(simulator, trace_length)
         logger.info("Restart simulator...")
-        observation, _, _ = simulator.restart()
 
         stats_file = f"{stats_folder}/stats-{model_id}-{options.method_id}-{seed}.csv"
+
         if use_forward_filtering:
             filtering(stormpy_environment, simulator, tracker, trace_length, options.convex_hull_reduction, stats_file, deadline=promptness_deadline, verbose=verbose, observation_valuations=model.observation_valuations)
         else:
             assert use_unfolding
-            if options.export_models_path is not None:
-                models_folder = f"{options.export_models_path}/{model_id}"
-                if not os.path.isdir(models_folder):
-                    os.makedirs(models_folder)
-                unrolled_drn_file_prefix = f"{models_folder}-{seed}"
-                if not os.path.isdir(unrolled_drn_file_prefix):
-                    os.makedirs(unrolled_drn_file_prefix)
-            else:
-                unrolled_drn_file_prefix = None
-            unfolding(stormpy_environment, simulator, unfolder, trace_length, stats_file, deadline=promptness_deadline, dump_file_path=unrolled_drn_file_prefix)
+            # unrolled_model_path(options, model_id, seed)
+            annotated_trace = execute_monitor(stg, mon)
+            trace_file = f"{stats_folder}/trace-{model_id}-{options.method_id}-{seed}.csv"
+            export_annotated_trace(annotated_trace, model, trace_file)
+
+
+            #unfolding(stormpy_environment, simulator, unfolder, trace_length, stats_file, deadline=promptness_deadline, dump_file_path=unrolled_drn_file_prefix)
