@@ -5,7 +5,7 @@ import premise.traces as traces
 import premise.oracle as oracle
 
 def construct_learning_interfaces(model_description : models.ModelDescription,
-                                  premise_options : monitor.PremiseOptions) \
+                                  premise_options : monitor.PremiseOptions = monitor.PremiseOptions()) \
         -> (oracle.Oracle, trace_generator.SimulationTraceGenerator):
     model, risk_structure = models.build_model_and_risk(model_description, premise_options)
     mon = monitor.initialize_monitor(model, risk_structure, premise_options)

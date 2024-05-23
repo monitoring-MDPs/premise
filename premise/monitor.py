@@ -4,7 +4,6 @@ import tqdm
 import time
 import stormpy as sp
 import stormpy.pomdp
-import stormpy.simulator
 from logging import getLogger
 
 logger = getLogger(__name__)
@@ -16,26 +15,6 @@ class PremiseOptions:
     promptness_deadline: int = 1000000000
     verbose: bool = False
 
-def execute_monitor(trace_generator, monitor, terminate_on_deadline = True, tqdm_bar = True):
-    annotated_trace = []
-    obs = trace_generator.initialize()
-    monitor.initialize(obs)
-    if tqdm_bar:
-        pbar = tqdm(total = trace_generator.max_length)
-    while not trace_generator.finished():
-        obs = trace_generator.step()
-        try:
-            time_out, risk = monitor.step(obs)
-        except MonitorTimeOutException:
-            if terminate_on_deadline:
-                annotated_trace.append([(obs, None)])
-                break
-        annotated_trace.append((obs, risk))
-        if tqdm_bar:
-            pbar.update(1)
-    if tqdm_bar:
-        pbar.close()
-    return annotated_trace
 
 
 class MonitorTimeOutException(Exception):
@@ -130,3 +109,23 @@ def initialize_monitor(model, risk_structure, premise_options) -> Monitor:
     return mon
 
 
+def execute_monitor(trace_generator, monitor : Monitor, terminate_on_deadline = True, tqdm_bar = True):
+    annotated_trace = []
+    obs = trace_generator.initialize()
+    monitor.initialize(obs)
+    if tqdm_bar:
+        pbar = tqdm.tqdm(total=trace_generator.max_length)
+    while not trace_generator.finished():
+        obs = trace_generator.step()
+        try:
+            risk = monitor.step(obs)
+        except MonitorTimeOutException:
+            if terminate_on_deadline:
+                annotated_trace.append([(obs, None)])
+                break
+        annotated_trace.append((obs, risk))
+        if tqdm_bar:
+            pbar.update(1)
+    if tqdm_bar:
+        pbar.close()
+    return annotated_trace

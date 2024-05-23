@@ -66,7 +66,7 @@ if __name__ == "__main__":
         for config in configurations:
             print(f"Running {benchmark.name} with {str(config)}")
             try:
-                monitoring.monitor(benchmark.modelpath, benchmark.risk_def, benchmark.constants, trace_length, config, verbose=args.verbose, promptness_deadline=promtness_deadline, simulator_seed=range(nr_traces), model_id=benchmark.name)
+                monitoring.run_monitor(benchmark.modelpath, benchmark.risk_def, benchmark.constants, trace_length, config, verbose=args.verbose, promptness_deadline=promtness_deadline, simulator_seed=range(nr_traces), model_id=benchmark.name)
             except RuntimeWarning:
                 print("Skipped (likely, the folder exists)")
                 pass

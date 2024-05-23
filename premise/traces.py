@@ -27,6 +27,12 @@ class TraceMapper:
         return tuple(int(obs.split("=")[1]) if "=" in obs else True if "!" not in obs else False for obs in
                             obs_tuple)
 
+    def annotated_trace_to_highlevel(self, trace):
+        high_level_trace = []
+        for observation, risk in trace:
+            high_level_trace.append((self._lowlevel_to_highlevel(observation), risk))
+        return high_level_trace
+
     def trace_to_high_level(self, trace):
         """
         Takes a trace and converts it to a high level trace.
@@ -56,4 +62,4 @@ def export_annotated_high_level(annotated_trace, model, trace_file):
                             in obs_tuple]
         csvfilewriter.writerow(obs_tuple_pruned + ["risk"])
         for (obs, risk) in annotated_trace:
-            csvfilewriter.writerow(obs + [risk])
+            csvfilewriter.writerow(list(obs) + [risk])

@@ -10,6 +10,11 @@ import stormpy.pomdp
 import stormpy.simulator
 from tqdm import tqdm
 
+import models
+import monitor
+import trace_generator
+import traces
+
 logger = logging.getLogger(__name__)
 
 
@@ -135,8 +140,9 @@ def unfolding(stormpy_environment, simulator, unfolder, trace_length, stats_file
 
 
 class StormConfigOptions:
-    def __init__(self, env):
+    def __init__(self, env, verbose = False):
         self.stormpy_environment = env
+        self.verbose = verbose
 
 
 class ForwardFilteringOptions(StormConfigOptions):
@@ -193,7 +199,7 @@ def unrolled_model_path(options, model_id, seed):
         return None
 
 
-def monitor(path, risk_property, constants, trace_length, options, verbose=False, simulator_seed=0, promptness_deadline=10000, model_id="no_id_given"):
+def run_monitor(path, risk_property, constants, trace_length, options, verbose=False, simulator_seed=0, promptness_deadline=10000, model_id="no_id_given"):
     """
 
     :param path: The path the the model file
@@ -215,13 +221,8 @@ def monitor(path, risk_property, constants, trace_length, options, verbose=False
     assert not (use_forward_filtering and use_unfolding)
 
     logger.info("Parse MDP representation...")
-    model, risk_assessment = build_model_and_risk(path, risk_property, constants, options, verbose)
+    model, risk_assessment = models.build_model_and_risk(models.ModelDescription(path, constants, risk_property), options)
 
-    # The seed can be given as a single value or as a
-    if isinstance(simulator_seed, Iterable):
-        simulator_seed_range = simulator_seed
-    else:
-        simulator_seed_range = range(simulator_seed,simulator_seed+1)
 
     if use_forward_filtering:
         logger.info("Initialize tracker...")
@@ -233,8 +234,8 @@ def monitor(path, risk_property, constants, trace_length, options, verbose=False
         stormpy_environment = options.stormpy_environment
         expr_manager = stormpy.ExpressionManager()
         unfolder = stormpy.pomdp.create_observation_trace_unfolder(model, risk_assessment, expr_manager)
-        ura = UnfoldingRiskAssessment(stormpy_environment, unfolder)
-        mon = Monitor(ura, promptness_deadline)
+        ura = monitor.UnfoldingRiskAssessment(stormpy_environment, unfolder)
+        mon = monitor.Monitor(ura, promptness_deadline)
 
     initialize_time = time.monotonic() - start_time
     stats_folder = f"stats/{model_id}-{options.method_id}/"
@@ -249,12 +250,16 @@ def monitor(path, risk_property, constants, trace_length, options, verbose=False
         file.write(f"init_time={initialize_time}\n")
         file.write(f"promptness_deadline={promptness_deadline}")
 
-
     logger.info("Initialize simulator...")
     simulator = sp.simulator.create_simulator(model)
+
+    if isinstance(simulator_seed, Iterable):
+        simulator_seed_range = simulator_seed
+    else:
+        simulator_seed_range = range(simulator_seed,simulator_seed+1)
+
     for seed in tqdm(simulator_seed_range):
-        simulator.set_seed(seed)
-        stg = SimulationTraceGenerator(simulator, trace_length)
+        stg = trace_generator.make_simulation_wrapper(model, trace_length)
         logger.info("Restart simulator...")
 
         stats_file = f"{stats_folder}/stats-{model_id}-{options.method_id}-{seed}.csv"
@@ -264,9 +269,10 @@ def monitor(path, risk_property, constants, trace_length, options, verbose=False
         else:
             assert use_unfolding
             # unrolled_model_path(options, model_id, seed)
-            annotated_trace = execute_monitor(stg, mon)
+            annotated_trace = monitor.execute_monitor(stg, mon)
+            trace_mapper = traces.TraceMapper(model)
             trace_file = f"{stats_folder}/trace-{model_id}-{options.method_id}-{seed}.csv"
-            export_annotated_trace(annotated_trace, model, trace_file)
+            traces.export_annotated_high_level(trace_mapper.annotated_trace_to_highlevel(annotated_trace), model, trace_file)
 
 
             #unfolding(stormpy_environment, simulator, unfolder, trace_length, stats_file, deadline=promptness_deadline, dump_file_path=unrolled_drn_file_prefix)
