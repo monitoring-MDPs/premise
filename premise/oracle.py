@@ -1,3 +1,5 @@
+import typing
+
 class Oracle:
     """
     This class provides an interface for running a premise-based oracle as a backend for an active learner.
@@ -5,7 +7,7 @@ class Oracle:
     def __init__(self, monitor):
         self._monitor = monitor
 
-    def membership(self, trace, threshold=None, intermediate_results=False):
+    def membership(self, trace : typing.List[int], threshold : float = None, intermediate_results : bool =False):
         """
         Provides the quantitative response after the trace.
         """
