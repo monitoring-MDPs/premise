@@ -14,6 +14,7 @@ class PremiseOptions:
     exact_arithmetic: bool = True
     promptness_deadline: int = 1000000000
     verbose: bool = False
+    use_unfolding: bool = True
 
 
 
@@ -44,21 +45,6 @@ class Monitor:
         if self._deadline and total_time * 1000 > self._deadline:
             raise MonitorTimeOutException
         return risk
-
-class FilterBasedRiskAssessment:
-    def __init__(self, tracker):
-        self._tracker = tracker
-
-    def initialize(self, observation):
-        self._tracker
-
-    def step(self, observation):
-        passed = self._tracker.track(observation)
-        if not passed:
-            return False
-
-    def get_risk(self):
-        pass
 
 
 class UnfoldingRiskAssessment:
@@ -99,12 +85,30 @@ class UnfoldingRiskAssessment:
         sp.reset_timeout()
         return True, risk
 
+class FilterBasedRiskAssessment:
+    def __init__(self, tracker):
+        self._tracker = tracker
+
+    def initialize(self, observation):
+        self._tracker.reset(observation)
+
+    def step(self, observation):
+        self._tracker.reduce()
+        passed = self._tracker.track(observation)
+        if not passed:
+            raise RuntimeError("Tracking failed")
+
+    def get_risk(self):
+        return self._tracker.obtain_current_risk()
+
+
 
 def initialize_monitor(model, risk_structure, premise_options) -> Monitor:
     stormpy_environment = premise_options.stormpy_environment
     expr_manager = sp.ExpressionManager()
-    unfolder = sp.pomdp.create_observation_trace_unfolder(model, risk_structure, expr_manager)
-    ura = UnfoldingRiskAssessment(stormpy_environment, unfolder)
+    if premise_options.use_unfolding:
+        unfolder = sp.pomdp.create_observation_trace_unfolder(model, risk_structure, expr_manager)
+        ura = UnfoldingRiskAssessment(stormpy_environment, unfolder)
     mon = Monitor(ura, premise_options.promptness_deadline)
     return mon
 

@@ -10,7 +10,14 @@ class TraceMapper:
         self._obsval = self._model.observation_valuations # Caching for efficiency (due to some stormpy issue)
         self._construct_inverse_observation_valuations()
 
-
+    def get_observation_names(self):
+        """
+        Gives the names of the high-level observations
+        """
+        obs_tuple = model.observation_valuations.get_string(0, pretty=True)[1:-1].replace("\t", " ").split(" & ")
+        obs_tuple_pruned = [obs.split("=")[0] if "=" in obs else obs if "!" not in obs else obs[1:] for obs
+                            in obs_tuple]
+        return obs_tuple_pruned
 
     def _construct_inverse_observation_valuations(self):
         """
