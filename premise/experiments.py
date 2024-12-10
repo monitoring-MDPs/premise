@@ -16,15 +16,15 @@ class Benchmark:
 # Benchmarks
 benchmarks = [
 #    Benchmark("airportA-3-50-30", "examples/airportA-3.nm", "DMAX=50,PMAX=30", "Pmax=? [F \"crash\"]"),
-    Benchmark("airportA-7-50-30", "examples/airportA-7.nm", "DMAX=50,PMAX=30", "Pmax=? [F \"crash\"]"),
-    Benchmark("airportB-3-50-30", "examples/airportB-3.nm", "DMAX=50,PMAX=30", "Pmax=? [F \"crash\"]"),
-    Benchmark("airportB-7-50-30", "examples/airportB-7.nm", "DMAX=50,PMAX=30", "Pmax=? [F \"crash\"]"),
+    # Benchmark("airportA-7-50-30", "examples/airportA-7.nm", "DMAX=50,PMAX=30", "Pmax=? [F \"crash\"]"),
+    # Benchmark("airportB-3-50-30", "examples/airportB-3.nm", "DMAX=50,PMAX=30", "Pmax=? [F \"crash\"]"),
+    # Benchmark("airportB-7-50-30", "examples/airportB-7.nm", "DMAX=50,PMAX=30", "Pmax=? [F \"crash\"]"),
 #    Benchmark("evadeI-10", "examples/hidden-incentive.nm", "N=10", "Pmax=? [F<=12 \"crash\"]"),
-    Benchmark("evadeI-15", "examples/hidden-incentive.nm", "N=15", "Pmax=? [F<=12 \"crash\"]"),
-    Benchmark("evadeV-5-3", "examples/evade-monitoring.nm", "N=5,RADIUS=3", "Pmax=? [F<=12 \"crash\"]"),
-    Benchmark("evadeV-6-3", "examples/evade-monitoring.nm", "N=6,RADIUS=3", "Pmax=? [F<=12 \"crash\"]"),
+    # Benchmark("evadeI-15", "examples/hidden-incentive.nm", "N=15", "Pmax=? [F<=12 \"crash\"]"),
+    # Benchmark("evadeV-5-3", "examples/evade-monitoring.nm", "N=5,RADIUS=3", "Pmax=? [F<=12 \"crash\"]"),
+    # Benchmark("evadeV-6-3", "examples/evade-monitoring.nm", "N=6,RADIUS=3", "Pmax=? [F<=12 \"crash\"]"),
     Benchmark("refuelA-12-50", "examples/refuel.nm", "N=12,ENERGY=50", "Pmax=? [F<=12 \"empty\"]"),
-    Benchmark("refuelB-12-50","examples/refuelB.nm", "N=12,ENERGY=50", "Pmax=? [F<=12 \"empty\"]")
+    # Benchmark("refuelB-12-50","examples/refuelB.nm", "N=12,ENERGY=50", "Pmax=? [F<=12 \"empty\"]")
 ]
 
 challenges = [

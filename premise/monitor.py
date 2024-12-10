@@ -8,30 +8,31 @@ from logging import getLogger
 
 logger = getLogger(__name__)
 
+
 @dataclass
 class PremiseOptions:
-    stormpy_environment : sp.Environment = sp.Environment()
+    stormpy_environment: sp.Environment = sp.Environment()
     exact_arithmetic: bool = True
     promptness_deadline: int = 1000000000
     verbose: bool = False
     use_unfolding: bool = True
 
 
-
 class MonitorTimeOutException(Exception):
     """"""
+
     pass
+
 
 class Monitor:
     def __init__(self, riskassessor, deadline):
         self._risk_assessor = riskassessor
         self._deadline = deadline
 
-    def initialize(self, observation, compute_risk = True):
+    def initialize(self, observation, compute_risk=True):
         self._risk_assessor.initialize(observation)
 
-
-    def step(self, observation, compute_risk = True):
+    def step(self, observation, compute_risk=True):
         start_time = time.monotonic()
         self._risk_assessor.step(observation)
         if compute_risk:
@@ -48,35 +49,48 @@ class Monitor:
 
 
 class UnfoldingRiskAssessment:
-    def __init__(self, stormpy_environment, unfolder):
+    def __init__(self, stormpy_environment, unfolder, dump_model_to=None):
         self._stormpy_env = stormpy_environment
         self._unfolder = unfolder
         self._mdp = None
         self._current_step = 0
-        self._prop = sp.parse_properties("Pmax=? [F \"_goal\"]")[0]
+        self._dump_model_to = dump_model_to
+        self._prop = sp.parse_properties('Pmax=? [F "_goal"]')[0]
 
     def initialize(self, observation):
         self._mdp = self._unfolder.reset(observation)
+        self._current_step = 0
 
     """
     Makes a new step with the given observation.
     """
-    def step(self, observation, dump_model_to = None):
+
+    def step(self, observation, dump_model_to=None):
         self._mdp = self._unfolder.extend(observation)
+        self._current_step += 1
+
+        if dump_model_to is None and self._dump_model_to is not None:
+            dump_model_to = self._dump_model_to
         if dump_model_to is not None:
-            path = dump_model_to + f"-{self._current_step + 1}.drn"
+            path = dump_model_to + f"-{self._current_step}.drn"
             logger.info(f"Export MDP to {path}")
             sp.export_to_drn(self._mdp, path)
 
     """
     Computes the risk
     """
-    def get_risk(self, deadline = None):
+
+    def get_risk(self, deadline=None):
         sp.reset_timeout()
         if deadline:
             sp.set_timeout(int(deadline / 1000))
         try:
-            result = sp.model_checking(self._mdp, self._prop, environment= self._stormpy_env, only_initial_states=True)
+            result = sp.model_checking(
+                self._mdp,
+                self._prop,
+                environment=self._stormpy_env,
+                only_initial_states=True,
+            )
             risk = result.at(self._mdp.initial_states[0])
         except RuntimeError:
             print("What")
@@ -84,6 +98,7 @@ class UnfoldingRiskAssessment:
             return False, 0
         sp.reset_timeout()
         return True, risk
+
 
 class FilterBasedRiskAssessment:
     def __init__(self, tracker):
@@ -102,18 +117,21 @@ class FilterBasedRiskAssessment:
         return self._tracker.obtain_current_risk()
 
 
-
 def initialize_monitor(model, risk_structure, premise_options) -> Monitor:
     stormpy_environment = premise_options.stormpy_environment
     expr_manager = sp.ExpressionManager()
     if premise_options.use_unfolding:
-        unfolder = sp.pomdp.create_observation_trace_unfolder(model, risk_structure, expr_manager)
+        unfolder = sp.pomdp.create_observation_trace_unfolder(
+            model, risk_structure, expr_manager
+        )
         ura = UnfoldingRiskAssessment(stormpy_environment, unfolder)
     mon = Monitor(ura, premise_options.promptness_deadline)
     return mon
 
 
-def execute_monitor(trace_generator, monitor : Monitor, terminate_on_deadline = True, tqdm_bar = True):
+def execute_monitor(
+    trace_generator, monitor: Monitor, terminate_on_deadline=True, tqdm_bar=True
+):
     annotated_trace = []
     obs = trace_generator.initialize()
     monitor.initialize(obs)

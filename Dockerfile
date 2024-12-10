@@ -1,4 +1,4 @@
-FROM sjunges/stormpy:1.8.0
+FROM lukovdm/stormpy:premise
 
 RUN apt-get update && apt-get install texlive-latex-recommended texlive-latex-extra -y 
 

@@ -18,7 +18,7 @@ This project is hosted on [GitHub](https://github.com/monitoring-MDPs/premise).
 We provide a docker container
 
 ```
-docker pull sjunges/premise:0.2
+docker pull lukovdm/premise:interval
 ```
 
 The container is based on an container for the probabilistic model checker as provided by the Storm developers, for details, 
@@ -26,13 +26,20 @@ see [this documentation](https://www.stormchecker.org/documentation/obtain-storm
 
 The following command will run the docker container (for Windows platforms, please see the documentation from the storm website).
 ```
-docker run --mount type=bind,source="$(pwd)",target=/data -w /opt/premise -it --name premise sjunges/premise:cav21
+docker run --mount type=bind,source="$(pwd)",target=/data -w /opt/premise -it --name premise lukovdm/premise:interval
 ```
 Files that one copies into `/data` are available on the host system in the current working directory. 
 
 You will see a prompt inside the docker container. 
 
 ## How to run a single model?
+
+For intervals, run:
+```
+python premise/interval.py <path_to_matrix> <path_to_initial_distribution>
+```
+Now you can fill in either maximizing or minimizing and then step through the model.
+Stepping can either be done by writing `far` or `close` to observe either far or close.
 
 For filtering, run: 
 ```
