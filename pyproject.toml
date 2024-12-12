@@ -7,8 +7,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-stormpy = { path = "../stormpy-premise", develop = true }
 tqdm = "^4.67.0"
+stormpy = { path = "../stormpy-premise"}
 numpy = "^2.1.3"
 black = "^24.10.0"
 py-spy = "^0.4.0"

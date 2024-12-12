@@ -1,9 +1,11 @@
 from cProfile import label
+from ipaddress import ip_address
+from mimetypes import init
 import sys
 from time import time
+from typing import Any
 import numpy as np
 from stormpy import (
-    build_interval_model_from_drn,
     Environment,
     MinMaxMethod,
     check_interval_mdp,
@@ -19,13 +21,11 @@ from stormpy.pomdp import (
     ObservationTraceUnfolderOptions,
     ObservationTraceUnfolderInterval,
 )
+from stormpy.pycarl import Interval
 import stormpy as sp
-from pycarl import Interval
 
 import monitor
-import os
-
-print(os.getpid())
+import argparse
 
 
 def hamming_lookup(d: dict[str, int], key: str) -> int:
@@ -48,19 +48,31 @@ def stormpy_pomdp_to_mdp(pomdp):
 
 def dict_to_interval_ipomdp(trans_dict, init_dict):
     transitions: dict[int, dict[int, Interval]] = {}
-    state_index_map: dict[str, int] = {}
-    observation_map = {"far": 1, "close": 2}
+    state_index_map: dict[Any, int] = {}
     observations = {}
+    observation_map = {}
+
+    real_states = set()
+    for (s, d), (l, u) in trans_dict.items():
+        real_states.add(s)
+        real_states.add(d)
 
     init_state = 0
     state_index = 1
     transitions[init_state] = {}
 
     for d, (l, u) in init_dict.items():
+        if d not in real_states:
+            continue
+
         if d not in state_index_map:
+            # Add not seen observations to the observation map
+            if d[-2] not in observation_map:
+                observation_map[d[-2]] = len(observation_map)
+
             state_index_map[d] = state_index
             transitions[state_index] = {}
-            observations[state_index] = observation_map[d.split("_")[2]]
+            observations[state_index] = observation_map[d[-2]]
             state_index += 1
 
         interval = Interval(l, u)
@@ -70,12 +82,12 @@ def dict_to_interval_ipomdp(trans_dict, init_dict):
         if s not in state_index_map:
             state_index_map[s] = state_index
             transitions[state_index] = {}
-            observations[state_index] = observation_map[s.split("_")[2]]
+            observations[state_index] = observation_map[s[-2]]
             state_index += 1
         if d not in state_index_map:
             state_index_map[d] = state_index
             transitions[state_index] = {}
-            observations[state_index] = observation_map[d.split("_")[2]]
+            observations[state_index] = observation_map[d[-2]]
             state_index += 1
 
         s_index = state_index_map[s]
@@ -97,13 +109,14 @@ def dict_to_interval_ipomdp(trans_dict, init_dict):
 
     labeling.add_label("init")
     labeling.add_label("target")
-    for s, i in state_index_map.items():
-        labeling.add_label(s)
+    # for s, i in state_index_map.items():
+    #     labeling.add_label(str(s))
 
-    labeling.add_label_to_state("init", 0)
-    labeling.add_label_to_state("target", state_index_map["00_00_close"])
+    labeling.add_label_to_state("init", init_state)
     for s, i in state_index_map.items():
-        labeling.add_label_to_state(s, i)
+        # labeling.add_label_to_state(str(s), i)
+        if s[-1] == "collision":
+            labeling.add_label_to_state("target", i)
 
     components = SparseIntervalModelComponents(matrix, labeling)
     components.observability_classes = [0] + [
@@ -136,57 +149,107 @@ class UnfoldingIntervalRiskAssessment(monitor.UnfoldingRiskAssessment):
         return True, risk
 
 
-print(os.getpid())
+def create_monitor(trans_path, init_path, maxmin, dump_path=None, verbose=0):
+    stormpy_environment = Environment()
+    stormpy_environment.solver_environment.minmax_solver_environment.method = (
+        MinMaxMethod.value_iteration
+    )
+
+    # ipomdp = build_interval_model_from_drn("premise/examples/tiny-05.drn")
+    trans_dict = np.load(trans_path, allow_pickle=True)[()]
+    init_dict = np.load(init_path, allow_pickle=True)[()]
+    ipomdp, observation_map = dict_to_interval_ipomdp(trans_dict, init_dict)
+    if args.verbose > 1:
+        print(ipomdp)
+        with open("models/imc.dot", "w") as f:
+            f.write(ipomdp.to_dot())
+
+    options = ObservationTraceUnfolderOptions()
+    options.rejection_sampling = True
+
+    expr_manager = ExpressionManager()
+
+    prop = parse_properties(f'P{maxmin}=? ["target"]')
+
+    task = CheckTask(prop[0].raw_formula, False)
+    imdp = stormpy_pomdp_to_mdp(ipomdp)
+    risk_assessment = check_interval_mdp(imdp, task, stormpy_environment)
+    risk_assessment = [
+        Interval(risk_assessment.at(i)) for i in range(len(ipomdp.states))
+    ]
+    # print("risk=", risk_assessment, type(risk_assessment[0]))
+    unfolder = ObservationTraceUnfolderInterval(
+        ipomdp,
+        risk_assessment,
+        expr_manager,
+        options,
+    )
+
+    ura = UnfoldingIntervalRiskAssessment(
+        stormpy_environment, unfolder, dump_path, maxmin
+    )
+
+    mon = monitor.Monitor(ura, None)
+
+    return mon, observation_map, unfolder, ipomdp
 
 
-stormpy_environment = Environment()
-stormpy_environment.solver_environment.minmax_solver_environment.method = (
-    MinMaxMethod.value_iteration
-)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Interval POMDP Monitor")
+    parser.add_argument(
+        "trans_path", type=str, help="Path to the transition dictionary"
+    )
+    parser.add_argument(
+        "init_path", type=str, help="Path to the initial state dictionary"
+    )
 
-# ipomdp = build_interval_model_from_drn("premise/examples/tiny-05.drn")
-trans_dict = np.load(sys.argv[1], allow_pickle=True)[()]
-init_dict = np.load(sys.argv[2], allow_pickle=True)[()]
-ipomdp, observation_map = dict_to_interval_ipomdp(trans_dict, init_dict)
-print(ipomdp)
-with open("models/imc.dot", "w") as f:
-    f.write(ipomdp.to_dot())
+    parser.add_argument(
+        "--maxmin",
+        type=str,
+        default="max",
+        choices=["max", "min"],
+        help="Max or Min method for risk assessment",
+    )
+    parser.add_argument(
+        "--trace", type=str, help="Path to the trace file for static mode"
+    )
+    parser.add_argument(
+        "--dump", type=str, help="Path to the file to dump the model to"
+    )
+    parser.add_argument("--verbose", "-v", action="count", default=0)
 
-options = ObservationTraceUnfolderOptions()
-options.rejection_sampling = True
+    args = parser.parse_args()
 
-expr_manager = ExpressionManager()
+    mon, observation_map, unfolder, ipomdp = create_monitor(
+        args.trans_path, args.init_path, args.maxmin, args.dump, args.verbose
+    )
+    import os
 
-mm = input("max or min (max means choose best action but worst interval)? ")
-prop = parse_properties(f'P{mm}=? ["target"]')
+    print(os.getpid())
 
-task = CheckTask(prop[0].raw_formula, False)
-imdp = stormpy_pomdp_to_mdp(ipomdp)
-risk_assessment = check_interval_mdp(imdp, task, stormpy_environment)
-risk_assessment = [Interval(risk_assessment.at(i)) for i in range(len(ipomdp.states))]
-print("risk=", risk_assessment, type(risk_assessment[0]))
-
-unfolder = ObservationTraceUnfolderInterval(
-    ipomdp,
-    risk_assessment,
-    expr_manager,
-    options,
-)
-
-ura = UnfoldingIntervalRiskAssessment(stormpy_environment, unfolder, "stats/imdp", mm)
-mon = monitor.Monitor(ura, None)
-
-action = "r"
-while True:
-    if action == "r":
-        mon.initialize(0)
-    elif action.isdigit():
-        print(mon.step(int(action)))
-    elif action == "speed":
-        t = time()
-        for i in range(100):
-            print(mon.step(2), " -> ", end="")
-        print(f"done in {time() - t}s")
+    if args.trace:
+        traces = np.load(args.trace, allow_pickle=True)[()]
+        for trace in traces.values():
+            mon.initialize(0)
+            observations = [t[-2] for t in trace]
+            print()
+            if args.verbose > 0:
+                print(observations)
+            for obs in observations:
+                print(mon.step(observation_map[obs]), end=" -> ")
     else:
-        print(mon.step(int(hamming_lookup(observation_map, action))))
-    action = input("Next Step (\\d*/r/speed) ")
+        action = "r"
+        while True:
+            if action == "r":
+                mon.initialize(0)
+            elif action.isdigit():
+                print(mon.step(int(action)))
+            elif action == "speed":
+                t = time()
+                for i in range(100):
+                    print(mon.step(2), " -> ", end="")
+                print(f"done in {time() - t}s")
+            else:
+                print(mon.step(int(hamming_lookup(observation_map, action))))
+            print(observation_map, ipomdp)
+            action = input("Next Step (\\d*/r/speed) ")

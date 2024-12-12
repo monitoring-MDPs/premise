@@ -21,26 +21,31 @@ We provide a docker container
 docker pull lukovdm/premise:interval
 ```
 
-The container is based on an container for the probabilistic model checker as provided by the Storm developers, for details, 
+The container is based on a container for the probabilistic model checker as provided by the Storm developers, for details, 
 see [this documentation](https://www.stormchecker.org/documentation/obtain-storm/docker.html).
 
 The following command will run the docker container (for Windows platforms, please see the documentation from the storm website).
 ```
 docker run --mount type=bind,source="$(pwd)",target=/data -w /opt/premise -it --name premise lukovdm/premise:interval
 ```
-Files that one copies into `/data` are available on the host system in the current working directory. 
+The current directory is mounted in `/data` in the container. Files in the current directory can be found in `/data` and files that need to be exported can be placed here.
 
 You will see a prompt inside the docker container. 
+
+If you want to run the docker again after exiting it, you can start it again using `docker start premise -ai`.
 
 ## How to run a single model?
 
 For intervals, run:
 ```
-python premise/interval.py <path_to_matrix> <path_to_initial_distribution>
+python premise/interval.py <path_to_matrix> <path_to_initial_distribution> --trace <path_to_trace_file> -v
 ```
-Now you can fill in either maximizing or minimizing and then step through the model.
-Stepping can either be done by writing `far` or `close` to observe either far or close.
+For example to run the 11-12 model execute the following command:
+```
+python premise/interval.py premise/examples/11-12-intervals-20rounds.npy premise/examples/11-12-initial_intervals-20rounds.npy --trace premise/examples/testTraces.npy -v
+```
 
+## After here is not relevant for the interval code
 For filtering, run: 
 ```
 python premise/demo.py --filtering --exact --name "testname" --model examples/airportA-3.nm --constants "DMAX=5,PMAX=5" --risk "Pmax=? [F \"crash\"]"

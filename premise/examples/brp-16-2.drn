@@ -1,0 +1,2041 @@
+// Exported by storm
+// Original model type: DTMC
+@type: POMDP
+@parameters
+
+@reward_models
+
+@nr_states
+613
+@nr_choices
+613
+@model
+state 0 {0} init
+	action 0
+		1 : [1, 1]
+state 1 {0}
+	action 0
+		2 : [0.97, 0.99]
+		3 : [0.01, 0.03]
+state 2 {0}
+	action 0
+		4 : [1, 1]
+state 3 {0}
+	action 0
+		5 : [1, 1]
+state 4 {0}
+	action 0
+		6 : [1, 1]
+state 5 {0}
+	action 0
+		7 : [0.97, 0.99]
+		8 : [0.01, 0.03]
+state 6 {0}
+	action 0
+		9 : [1, 1]
+state 7 {0}
+	action 0
+		10 : [1, 1]
+state 8 {0}
+	action 0
+		11 : [1, 1]
+state 9 {0}
+	action 0
+		12 : [0.98, 1]
+		13 : [0.0001, 0.02]
+state 10 {0}
+	action 0
+		14 : [1, 1]
+state 11 {0}
+	action 0
+		15 : [0.97, 0.99]
+		16 : [0.01, 0.03]
+state 12 {0}
+	action 0
+		17 : [1, 1]
+state 13 {0}
+	action 0
+		18 : [1, 1]
+state 14 {0}
+	action 0
+		19 : [1, 1]
+state 15 {0}
+	action 0
+		20 : [1, 1]
+state 16 {0}
+	action 0
+		21 : [1, 1]
+state 17 {0}
+	action 0
+		22 : [1, 1]
+state 18 {0}
+	action 0
+		23 : [0.97, 0.99]
+		24 : [0.01, 0.03]
+state 19 {0}
+	action 0
+		25 : [0.98, 1]
+		26 : [0.0001, 0.02]
+state 20 {0}
+	action 0
+		27 : [1, 1]
+state 21 {0}
+	action 0
+		28 : [1, 1]
+state 22 {0}
+	action 0
+		29 : [0.97, 0.99]
+		30 : [0.01, 0.03]
+state 23 {0}
+	action 0
+		31 : [1, 1]
+state 24 {0}
+	action 0
+		32 : [1, 1]
+state 25 {0}
+	action 0
+		33 : [1, 1]
+state 26 {0}
+	action 0
+		32 : [1, 1]
+state 27 {0}
+	action 0
+		34 : [1, 1]
+state 28 {0} target
+	action 0
+		28 : [1, 1]
+state 29 {0}
+	action 0
+		35 : [1, 1]
+state 30 {0}
+	action 0
+		36 : [1, 1]
+state 31 {0}
+	action 0
+		25 : [0.98, 1]
+		26 : [0.0001, 0.02]
+state 32 {0}
+	action 0
+		37 : [0.97, 0.99]
+		38 : [0.01, 0.03]
+state 33 {0}
+	action 0
+		39 : [1, 1]
+state 34 {0}
+	action 0
+		40 : [0.98, 1]
+		41 : [0.0001, 0.02]
+state 35 {0}
+	action 0
+		42 : [1, 1]
+state 36 {0}
+	action 0
+		43 : [0.97, 0.99]
+		44 : [0.01, 0.03]
+state 37 {0}
+	action 0
+		45 : [1, 1]
+state 38 {0}
+	action 0
+		46 : [1, 1]
+state 39 {0}
+	action 0
+		29 : [0.97, 0.99]
+		30 : [0.01, 0.03]
+state 40 {0}
+	action 0
+		47 : [1, 1]
+state 41 {0}
+	action 0
+		46 : [1, 1]
+state 42 {0}
+	action 0
+		48 : [0.98, 1]
+		49 : [0.0001, 0.02]
+state 43 {0}
+	action 0
+		50 : [1, 1]
+state 44 {0}
+	action 0
+		51 : [1, 1]
+state 45 {0}
+	action 0
+		40 : [0.98, 1]
+		41 : [0.0001, 0.02]
+state 46 {0}
+	action 0
+		52 : [1, 1]
+state 47 {0}
+	action 0
+		53 : [1, 1]
+state 48 {0}
+	action 0
+		54 : [1, 1]
+state 49 {0}
+	action 0
+		55 : [1, 1]
+state 50 {0}
+	action 0
+		56 : [1, 1]
+state 51 {0}
+	action 0
+		57 : [0.97, 0.99]
+		58 : [0.01, 0.03]
+state 52 {0} target
+	action 0
+		52 : [1, 1]
+state 53 {0}
+	action 0
+		29 : [0.97, 0.99]
+		30 : [0.01, 0.03]
+state 54 {0}
+	action 0
+		59 : [1, 1]
+state 55 {0}
+	action 0
+		60 : [0.97, 0.99]
+		61 : [0.01, 0.03]
+state 56 {0}
+	action 0
+		62 : [0.98, 1]
+		63 : [0.0001, 0.02]
+state 57 {0}
+	action 0
+		64 : [1, 1]
+state 58 {0}
+	action 0
+		65 : [1, 1]
+state 59 {0}
+	action 0
+		66 : [0.97, 0.99]
+		67 : [0.01, 0.03]
+state 60 {0}
+	action 0
+		68 : [1, 1]
+state 61 {0}
+	action 0
+		69 : [1, 1]
+state 62 {0}
+	action 0
+		70 : [1, 1]
+state 63 {0}
+	action 0
+		69 : [1, 1]
+state 64 {0}
+	action 0
+		71 : [1, 1]
+state 65 {0}
+	action 0
+		72 : [1, 1]
+state 66 {0}
+	action 0
+		73 : [1, 1]
+state 67 {0}
+	action 0
+		74 : [1, 1]
+state 68 {0}
+	action 0
+		62 : [0.98, 1]
+		63 : [0.0001, 0.02]
+state 69 {0}
+	action 0
+		75 : [0.97, 0.99]
+		76 : [0.01, 0.03]
+state 70 {0}
+	action 0
+		77 : [1, 1]
+state 71 {0}
+	action 0
+		78 : [0.98, 1]
+		79 : [0.0001, 0.02]
+state 72 {0} target
+	action 0
+		72 : [1, 1]
+state 73 {0}
+	action 0
+		80 : [1, 1]
+state 74 {0}
+	action 0
+		81 : [0.97, 0.99]
+		82 : [0.01, 0.03]
+state 75 {0}
+	action 0
+		83 : [1, 1]
+state 76 {0}
+	action 0
+		84 : [1, 1]
+state 77 {0}
+	action 0
+		66 : [0.97, 0.99]
+		67 : [0.01, 0.03]
+state 78 {0}
+	action 0
+		85 : [1, 1]
+state 79 {0}
+	action 0
+		84 : [1, 1]
+state 80 {0}
+	action 0
+		86 : [0.98, 1]
+		87 : [0.0001, 0.02]
+state 81 {0}
+	action 0
+		88 : [1, 1]
+state 82 {0}
+	action 0
+		89 : [1, 1]
+state 83 {0}
+	action 0
+		78 : [0.98, 1]
+		79 : [0.0001, 0.02]
+state 84 {0}
+	action 0
+		90 : [1, 1]
+state 85 {0}
+	action 0
+		91 : [1, 1]
+state 86 {0}
+	action 0
+		92 : [1, 1]
+state 87 {0}
+	action 0
+		93 : [1, 1]
+state 88 {0}
+	action 0
+		94 : [1, 1]
+state 89 {0}
+	action 0
+		95 : [0.97, 0.99]
+		96 : [0.01, 0.03]
+state 90 {0} target
+	action 0
+		90 : [1, 1]
+state 91 {0}
+	action 0
+		66 : [0.97, 0.99]
+		67 : [0.01, 0.03]
+state 92 {0}
+	action 0
+		97 : [1, 1]
+state 93 {0}
+	action 0
+		98 : [0.97, 0.99]
+		99 : [0.01, 0.03]
+state 94 {0}
+	action 0
+		100 : [0.98, 1]
+		101 : [0.0001, 0.02]
+state 95 {0}
+	action 0
+		102 : [1, 1]
+state 96 {0}
+	action 0
+		103 : [1, 1]
+state 97 {0}
+	action 0
+		104 : [0.97, 0.99]
+		105 : [0.01, 0.03]
+state 98 {0}
+	action 0
+		106 : [1, 1]
+state 99 {0}
+	action 0
+		107 : [1, 1]
+state 100 {0}
+	action 0
+		108 : [1, 1]
+state 101 {0}
+	action 0
+		107 : [1, 1]
+state 102 {0}
+	action 0
+		109 : [1, 1]
+state 103 {0}
+	action 0
+		110 : [1, 1]
+state 104 {0}
+	action 0
+		111 : [1, 1]
+state 105 {0}
+	action 0
+		112 : [1, 1]
+state 106 {0}
+	action 0
+		100 : [0.98, 1]
+		101 : [0.0001, 0.02]
+state 107 {0}
+	action 0
+		113 : [0.97, 0.99]
+		114 : [0.01, 0.03]
+state 108 {0}
+	action 0
+		115 : [1, 1]
+state 109 {0}
+	action 0
+		116 : [0.98, 1]
+		117 : [0.0001, 0.02]
+state 110 {0} target
+	action 0
+		110 : [1, 1]
+state 111 {0}
+	action 0
+		118 : [1, 1]
+state 112 {0}
+	action 0
+		119 : [0.97, 0.99]
+		120 : [0.01, 0.03]
+state 113 {0}
+	action 0
+		121 : [1, 1]
+state 114 {0}
+	action 0
+		122 : [1, 1]
+state 115 {0}
+	action 0
+		104 : [0.97, 0.99]
+		105 : [0.01, 0.03]
+state 116 {0}
+	action 0
+		123 : [1, 1]
+state 117 {0}
+	action 0
+		122 : [1, 1]
+state 118 {0}
+	action 0
+		124 : [0.98, 1]
+		125 : [0.0001, 0.02]
+state 119 {0}
+	action 0
+		126 : [1, 1]
+state 120 {0}
+	action 0
+		127 : [1, 1]
+state 121 {0}
+	action 0
+		116 : [0.98, 1]
+		117 : [0.0001, 0.02]
+state 122 {0}
+	action 0
+		128 : [1, 1]
+state 123 {0}
+	action 0
+		129 : [1, 1]
+state 124 {0}
+	action 0
+		130 : [1, 1]
+state 125 {0}
+	action 0
+		131 : [1, 1]
+state 126 {0}
+	action 0
+		132 : [1, 1]
+state 127 {0}
+	action 0
+		133 : [0.97, 0.99]
+		134 : [0.01, 0.03]
+state 128 {0} target
+	action 0
+		128 : [1, 1]
+state 129 {0}
+	action 0
+		104 : [0.97, 0.99]
+		105 : [0.01, 0.03]
+state 130 {0}
+	action 0
+		135 : [1, 1]
+state 131 {0}
+	action 0
+		136 : [0.97, 0.99]
+		137 : [0.01, 0.03]
+state 132 {0}
+	action 0
+		138 : [0.98, 1]
+		139 : [0.0001, 0.02]
+state 133 {0}
+	action 0
+		140 : [1, 1]
+state 134 {0}
+	action 0
+		141 : [1, 1]
+state 135 {0}
+	action 0
+		142 : [0.97, 0.99]
+		143 : [0.01, 0.03]
+state 136 {0}
+	action 0
+		144 : [1, 1]
+state 137 {0}
+	action 0
+		145 : [1, 1]
+state 138 {0}
+	action 0
+		146 : [1, 1]
+state 139 {0}
+	action 0
+		145 : [1, 1]
+state 140 {0}
+	action 0
+		147 : [1, 1]
+state 141 {0}
+	action 0
+		148 : [1, 1]
+state 142 {0}
+	action 0
+		149 : [1, 1]
+state 143 {0}
+	action 0
+		150 : [1, 1]
+state 144 {0}
+	action 0
+		138 : [0.98, 1]
+		139 : [0.0001, 0.02]
+state 145 {0}
+	action 0
+		151 : [0.97, 0.99]
+		152 : [0.01, 0.03]
+state 146 {0}
+	action 0
+		153 : [1, 1]
+state 147 {0}
+	action 0
+		154 : [0.98, 1]
+		155 : [0.0001, 0.02]
+state 148 {0} target
+	action 0
+		148 : [1, 1]
+state 149 {0}
+	action 0
+		156 : [1, 1]
+state 150 {0}
+	action 0
+		157 : [0.97, 0.99]
+		158 : [0.01, 0.03]
+state 151 {0}
+	action 0
+		159 : [1, 1]
+state 152 {0}
+	action 0
+		160 : [1, 1]
+state 153 {0}
+	action 0
+		142 : [0.97, 0.99]
+		143 : [0.01, 0.03]
+state 154 {0}
+	action 0
+		161 : [1, 1]
+state 155 {0}
+	action 0
+		160 : [1, 1]
+state 156 {0}
+	action 0
+		162 : [0.98, 1]
+		163 : [0.0001, 0.02]
+state 157 {0}
+	action 0
+		164 : [1, 1]
+state 158 {0}
+	action 0
+		165 : [1, 1]
+state 159 {0}
+	action 0
+		154 : [0.98, 1]
+		155 : [0.0001, 0.02]
+state 160 {0}
+	action 0
+		166 : [1, 1]
+state 161 {0}
+	action 0
+		167 : [1, 1]
+state 162 {0}
+	action 0
+		168 : [1, 1]
+state 163 {0}
+	action 0
+		169 : [1, 1]
+state 164 {0}
+	action 0
+		170 : [1, 1]
+state 165 {0}
+	action 0
+		171 : [0.97, 0.99]
+		172 : [0.01, 0.03]
+state 166 {0} target
+	action 0
+		166 : [1, 1]
+state 167 {0}
+	action 0
+		142 : [0.97, 0.99]
+		143 : [0.01, 0.03]
+state 168 {0}
+	action 0
+		173 : [1, 1]
+state 169 {0}
+	action 0
+		174 : [0.97, 0.99]
+		175 : [0.01, 0.03]
+state 170 {0}
+	action 0
+		176 : [0.98, 1]
+		177 : [0.0001, 0.02]
+state 171 {0}
+	action 0
+		178 : [1, 1]
+state 172 {0}
+	action 0
+		179 : [1, 1]
+state 173 {0}
+	action 0
+		180 : [0.97, 0.99]
+		181 : [0.01, 0.03]
+state 174 {0}
+	action 0
+		182 : [1, 1]
+state 175 {0}
+	action 0
+		183 : [1, 1]
+state 176 {0}
+	action 0
+		184 : [1, 1]
+state 177 {0}
+	action 0
+		183 : [1, 1]
+state 178 {0}
+	action 0
+		185 : [1, 1]
+state 179 {0}
+	action 0
+		186 : [1, 1]
+state 180 {0}
+	action 0
+		187 : [1, 1]
+state 181 {0}
+	action 0
+		188 : [1, 1]
+state 182 {0}
+	action 0
+		176 : [0.98, 1]
+		177 : [0.0001, 0.02]
+state 183 {0}
+	action 0
+		189 : [0.97, 0.99]
+		190 : [0.01, 0.03]
+state 184 {0}
+	action 0
+		191 : [1, 1]
+state 185 {0}
+	action 0
+		192 : [0.98, 1]
+		193 : [0.0001, 0.02]
+state 186 {0} target
+	action 0
+		186 : [1, 1]
+state 187 {0}
+	action 0
+		194 : [1, 1]
+state 188 {0}
+	action 0
+		195 : [0.97, 0.99]
+		196 : [0.01, 0.03]
+state 189 {0}
+	action 0
+		197 : [1, 1]
+state 190 {0}
+	action 0
+		198 : [1, 1]
+state 191 {0}
+	action 0
+		180 : [0.97, 0.99]
+		181 : [0.01, 0.03]
+state 192 {0}
+	action 0
+		199 : [1, 1]
+state 193 {0}
+	action 0
+		198 : [1, 1]
+state 194 {0}
+	action 0
+		200 : [0.98, 1]
+		201 : [0.0001, 0.02]
+state 195 {0}
+	action 0
+		202 : [1, 1]
+state 196 {0}
+	action 0
+		203 : [1, 1]
+state 197 {0}
+	action 0
+		192 : [0.98, 1]
+		193 : [0.0001, 0.02]
+state 198 {0}
+	action 0
+		204 : [1, 1]
+state 199 {0}
+	action 0
+		205 : [1, 1]
+state 200 {0}
+	action 0
+		206 : [1, 1]
+state 201 {0}
+	action 0
+		207 : [1, 1]
+state 202 {0}
+	action 0
+		208 : [1, 1]
+state 203 {0}
+	action 0
+		209 : [0.97, 0.99]
+		210 : [0.01, 0.03]
+state 204 {0} target
+	action 0
+		204 : [1, 1]
+state 205 {0}
+	action 0
+		180 : [0.97, 0.99]
+		181 : [0.01, 0.03]
+state 206 {0}
+	action 0
+		211 : [1, 1]
+state 207 {0}
+	action 0
+		212 : [0.97, 0.99]
+		213 : [0.01, 0.03]
+state 208 {0}
+	action 0
+		214 : [0.98, 1]
+		215 : [0.0001, 0.02]
+state 209 {0}
+	action 0
+		216 : [1, 1]
+state 210 {0}
+	action 0
+		217 : [1, 1]
+state 211 {0}
+	action 0
+		218 : [0.97, 0.99]
+		219 : [0.01, 0.03]
+state 212 {0}
+	action 0
+		220 : [1, 1]
+state 213 {0}
+	action 0
+		221 : [1, 1]
+state 214 {0}
+	action 0
+		222 : [1, 1]
+state 215 {0}
+	action 0
+		221 : [1, 1]
+state 216 {0}
+	action 0
+		223 : [1, 1]
+state 217 {0}
+	action 0
+		224 : [1, 1]
+state 218 {0}
+	action 0
+		225 : [1, 1]
+state 219 {0}
+	action 0
+		226 : [1, 1]
+state 220 {0}
+	action 0
+		214 : [0.98, 1]
+		215 : [0.0001, 0.02]
+state 221 {0}
+	action 0
+		227 : [0.97, 0.99]
+		228 : [0.01, 0.03]
+state 222 {0}
+	action 0
+		229 : [1, 1]
+state 223 {0}
+	action 0
+		230 : [0.98, 1]
+		231 : [0.0001, 0.02]
+state 224 {0} target
+	action 0
+		224 : [1, 1]
+state 225 {0}
+	action 0
+		232 : [1, 1]
+state 226 {0}
+	action 0
+		233 : [0.97, 0.99]
+		234 : [0.01, 0.03]
+state 227 {0}
+	action 0
+		235 : [1, 1]
+state 228 {0}
+	action 0
+		236 : [1, 1]
+state 229 {0}
+	action 0
+		218 : [0.97, 0.99]
+		219 : [0.01, 0.03]
+state 230 {0}
+	action 0
+		237 : [1, 1]
+state 231 {0}
+	action 0
+		236 : [1, 1]
+state 232 {0}
+	action 0
+		238 : [0.98, 1]
+		239 : [0.0001, 0.02]
+state 233 {0}
+	action 0
+		240 : [1, 1]
+state 234 {0}
+	action 0
+		241 : [1, 1]
+state 235 {0}
+	action 0
+		230 : [0.98, 1]
+		231 : [0.0001, 0.02]
+state 236 {0}
+	action 0
+		242 : [1, 1]
+state 237 {0}
+	action 0
+		243 : [1, 1]
+state 238 {0}
+	action 0
+		244 : [1, 1]
+state 239 {0}
+	action 0
+		245 : [1, 1]
+state 240 {0}
+	action 0
+		246 : [1, 1]
+state 241 {0}
+	action 0
+		247 : [0.97, 0.99]
+		248 : [0.01, 0.03]
+state 242 {0} target
+	action 0
+		242 : [1, 1]
+state 243 {0}
+	action 0
+		218 : [0.97, 0.99]
+		219 : [0.01, 0.03]
+state 244 {0}
+	action 0
+		249 : [1, 1]
+state 245 {0}
+	action 0
+		250 : [0.97, 0.99]
+		251 : [0.01, 0.03]
+state 246 {0}
+	action 0
+		252 : [0.98, 1]
+		253 : [0.0001, 0.02]
+state 247 {0}
+	action 0
+		254 : [1, 1]
+state 248 {0}
+	action 0
+		255 : [1, 1]
+state 249 {0}
+	action 0
+		256 : [0.97, 0.99]
+		257 : [0.01, 0.03]
+state 250 {0}
+	action 0
+		258 : [1, 1]
+state 251 {0}
+	action 0
+		259 : [1, 1]
+state 252 {0}
+	action 0
+		260 : [1, 1]
+state 253 {0}
+	action 0
+		259 : [1, 1]
+state 254 {0}
+	action 0
+		261 : [1, 1]
+state 255 {0}
+	action 0
+		262 : [1, 1]
+state 256 {0}
+	action 0
+		263 : [1, 1]
+state 257 {0}
+	action 0
+		264 : [1, 1]
+state 258 {0}
+	action 0
+		252 : [0.98, 1]
+		253 : [0.0001, 0.02]
+state 259 {0}
+	action 0
+		265 : [0.97, 0.99]
+		266 : [0.01, 0.03]
+state 260 {0}
+	action 0
+		267 : [1, 1]
+state 261 {0}
+	action 0
+		268 : [0.98, 1]
+		269 : [0.0001, 0.02]
+state 262 {0} target
+	action 0
+		262 : [1, 1]
+state 263 {0}
+	action 0
+		270 : [1, 1]
+state 264 {0}
+	action 0
+		271 : [0.97, 0.99]
+		272 : [0.01, 0.03]
+state 265 {0}
+	action 0
+		273 : [1, 1]
+state 266 {0}
+	action 0
+		274 : [1, 1]
+state 267 {0}
+	action 0
+		256 : [0.97, 0.99]
+		257 : [0.01, 0.03]
+state 268 {0}
+	action 0
+		275 : [1, 1]
+state 269 {0}
+	action 0
+		274 : [1, 1]
+state 270 {0}
+	action 0
+		276 : [0.98, 1]
+		277 : [0.0001, 0.02]
+state 271 {0}
+	action 0
+		278 : [1, 1]
+state 272 {0}
+	action 0
+		279 : [1, 1]
+state 273 {0}
+	action 0
+		268 : [0.98, 1]
+		269 : [0.0001, 0.02]
+state 274 {0}
+	action 0
+		280 : [1, 1]
+state 275 {0}
+	action 0
+		281 : [1, 1]
+state 276 {0}
+	action 0
+		282 : [1, 1]
+state 277 {0}
+	action 0
+		283 : [1, 1]
+state 278 {0}
+	action 0
+		284 : [1, 1]
+state 279 {0}
+	action 0
+		285 : [0.97, 0.99]
+		286 : [0.01, 0.03]
+state 280 {0} target
+	action 0
+		280 : [1, 1]
+state 281 {0}
+	action 0
+		256 : [0.97, 0.99]
+		257 : [0.01, 0.03]
+state 282 {0}
+	action 0
+		287 : [1, 1]
+state 283 {0}
+	action 0
+		288 : [0.97, 0.99]
+		289 : [0.01, 0.03]
+state 284 {0}
+	action 0
+		290 : [0.98, 1]
+		291 : [0.0001, 0.02]
+state 285 {0}
+	action 0
+		292 : [1, 1]
+state 286 {0}
+	action 0
+		293 : [1, 1]
+state 287 {0}
+	action 0
+		294 : [0.97, 0.99]
+		295 : [0.01, 0.03]
+state 288 {0}
+	action 0
+		296 : [1, 1]
+state 289 {0}
+	action 0
+		297 : [1, 1]
+state 290 {0}
+	action 0
+		298 : [1, 1]
+state 291 {0}
+	action 0
+		297 : [1, 1]
+state 292 {0}
+	action 0
+		299 : [1, 1]
+state 293 {0}
+	action 0
+		300 : [1, 1]
+state 294 {0}
+	action 0
+		301 : [1, 1]
+state 295 {0}
+	action 0
+		302 : [1, 1]
+state 296 {0}
+	action 0
+		290 : [0.98, 1]
+		291 : [0.0001, 0.02]
+state 297 {0}
+	action 0
+		303 : [0.97, 0.99]
+		304 : [0.01, 0.03]
+state 298 {0}
+	action 0
+		305 : [1, 1]
+state 299 {0}
+	action 0
+		306 : [0.98, 1]
+		307 : [0.0001, 0.02]
+state 300 {0} target
+	action 0
+		300 : [1, 1]
+state 301 {0}
+	action 0
+		308 : [1, 1]
+state 302 {0}
+	action 0
+		309 : [0.97, 0.99]
+		310 : [0.01, 0.03]
+state 303 {0}
+	action 0
+		311 : [1, 1]
+state 304 {0}
+	action 0
+		312 : [1, 1]
+state 305 {0}
+	action 0
+		294 : [0.97, 0.99]
+		295 : [0.01, 0.03]
+state 306 {0}
+	action 0
+		313 : [1, 1]
+state 307 {0}
+	action 0
+		312 : [1, 1]
+state 308 {0}
+	action 0
+		314 : [0.98, 1]
+		315 : [0.0001, 0.02]
+state 309 {0}
+	action 0
+		316 : [1, 1]
+state 310 {0}
+	action 0
+		317 : [1, 1]
+state 311 {0}
+	action 0
+		306 : [0.98, 1]
+		307 : [0.0001, 0.02]
+state 312 {0}
+	action 0
+		318 : [1, 1]
+state 313 {0}
+	action 0
+		319 : [1, 1]
+state 314 {0}
+	action 0
+		320 : [1, 1]
+state 315 {0}
+	action 0
+		321 : [1, 1]
+state 316 {0}
+	action 0
+		322 : [1, 1]
+state 317 {0}
+	action 0
+		323 : [0.97, 0.99]
+		324 : [0.01, 0.03]
+state 318 {0} target
+	action 0
+		318 : [1, 1]
+state 319 {0}
+	action 0
+		294 : [0.97, 0.99]
+		295 : [0.01, 0.03]
+state 320 {0}
+	action 0
+		325 : [1, 1]
+state 321 {0}
+	action 0
+		326 : [0.97, 0.99]
+		327 : [0.01, 0.03]
+state 322 {0}
+	action 0
+		328 : [0.98, 1]
+		329 : [0.0001, 0.02]
+state 323 {0}
+	action 0
+		330 : [1, 1]
+state 324 {0}
+	action 0
+		331 : [1, 1]
+state 325 {0}
+	action 0
+		332 : [0.97, 0.99]
+		333 : [0.01, 0.03]
+state 326 {0}
+	action 0
+		334 : [1, 1]
+state 327 {0}
+	action 0
+		335 : [1, 1]
+state 328 {0}
+	action 0
+		336 : [1, 1]
+state 329 {0}
+	action 0
+		335 : [1, 1]
+state 330 {0}
+	action 0
+		337 : [1, 1]
+state 331 {0}
+	action 0
+		338 : [1, 1]
+state 332 {0}
+	action 0
+		339 : [1, 1]
+state 333 {0}
+	action 0
+		340 : [1, 1]
+state 334 {0}
+	action 0
+		328 : [0.98, 1]
+		329 : [0.0001, 0.02]
+state 335 {0}
+	action 0
+		341 : [0.97, 0.99]
+		342 : [0.01, 0.03]
+state 336 {0}
+	action 0
+		343 : [1, 1]
+state 337 {0}
+	action 0
+		344 : [0.98, 1]
+		345 : [0.0001, 0.02]
+state 338 {0} target
+	action 0
+		338 : [1, 1]
+state 339 {0}
+	action 0
+		346 : [1, 1]
+state 340 {0}
+	action 0
+		347 : [0.97, 0.99]
+		348 : [0.01, 0.03]
+state 341 {0}
+	action 0
+		349 : [1, 1]
+state 342 {0}
+	action 0
+		350 : [1, 1]
+state 343 {0}
+	action 0
+		332 : [0.97, 0.99]
+		333 : [0.01, 0.03]
+state 344 {0}
+	action 0
+		351 : [1, 1]
+state 345 {0}
+	action 0
+		350 : [1, 1]
+state 346 {0}
+	action 0
+		352 : [0.98, 1]
+		353 : [0.0001, 0.02]
+state 347 {0}
+	action 0
+		354 : [1, 1]
+state 348 {0}
+	action 0
+		355 : [1, 1]
+state 349 {0}
+	action 0
+		344 : [0.98, 1]
+		345 : [0.0001, 0.02]
+state 350 {0}
+	action 0
+		356 : [1, 1]
+state 351 {0}
+	action 0
+		357 : [1, 1]
+state 352 {0}
+	action 0
+		358 : [1, 1]
+state 353 {0}
+	action 0
+		359 : [1, 1]
+state 354 {0}
+	action 0
+		360 : [1, 1]
+state 355 {0}
+	action 0
+		361 : [0.97, 0.99]
+		362 : [0.01, 0.03]
+state 356 {0} target
+	action 0
+		356 : [1, 1]
+state 357 {0}
+	action 0
+		332 : [0.97, 0.99]
+		333 : [0.01, 0.03]
+state 358 {0}
+	action 0
+		363 : [1, 1]
+state 359 {0}
+	action 0
+		364 : [0.97, 0.99]
+		365 : [0.01, 0.03]
+state 360 {0}
+	action 0
+		366 : [0.98, 1]
+		367 : [0.0001, 0.02]
+state 361 {0}
+	action 0
+		368 : [1, 1]
+state 362 {0}
+	action 0
+		369 : [1, 1]
+state 363 {0}
+	action 0
+		370 : [0.97, 0.99]
+		371 : [0.01, 0.03]
+state 364 {0}
+	action 0
+		372 : [1, 1]
+state 365 {0}
+	action 0
+		373 : [1, 1]
+state 366 {0}
+	action 0
+		374 : [1, 1]
+state 367 {0}
+	action 0
+		373 : [1, 1]
+state 368 {0}
+	action 0
+		375 : [1, 1]
+state 369 {0}
+	action 0
+		376 : [1, 1]
+state 370 {0}
+	action 0
+		377 : [1, 1]
+state 371 {0}
+	action 0
+		378 : [1, 1]
+state 372 {0}
+	action 0
+		366 : [0.98, 1]
+		367 : [0.0001, 0.02]
+state 373 {0}
+	action 0
+		379 : [0.97, 0.99]
+		380 : [0.01, 0.03]
+state 374 {0}
+	action 0
+		381 : [1, 1]
+state 375 {0}
+	action 0
+		382 : [0.98, 1]
+		383 : [0.0001, 0.02]
+state 376 {0} target
+	action 0
+		376 : [1, 1]
+state 377 {0}
+	action 0
+		384 : [1, 1]
+state 378 {0}
+	action 0
+		385 : [0.97, 0.99]
+		386 : [0.01, 0.03]
+state 379 {0}
+	action 0
+		387 : [1, 1]
+state 380 {0}
+	action 0
+		388 : [1, 1]
+state 381 {0}
+	action 0
+		370 : [0.97, 0.99]
+		371 : [0.01, 0.03]
+state 382 {0}
+	action 0
+		389 : [1, 1]
+state 383 {0}
+	action 0
+		388 : [1, 1]
+state 384 {0}
+	action 0
+		390 : [0.98, 1]
+		391 : [0.0001, 0.02]
+state 385 {0}
+	action 0
+		392 : [1, 1]
+state 386 {0}
+	action 0
+		393 : [1, 1]
+state 387 {0}
+	action 0
+		382 : [0.98, 1]
+		383 : [0.0001, 0.02]
+state 388 {0}
+	action 0
+		394 : [1, 1]
+state 389 {0}
+	action 0
+		395 : [1, 1]
+state 390 {0}
+	action 0
+		396 : [1, 1]
+state 391 {0}
+	action 0
+		397 : [1, 1]
+state 392 {0}
+	action 0
+		398 : [1, 1]
+state 393 {0}
+	action 0
+		399 : [0.97, 0.99]
+		400 : [0.01, 0.03]
+state 394 {0} target
+	action 0
+		394 : [1, 1]
+state 395 {0}
+	action 0
+		370 : [0.97, 0.99]
+		371 : [0.01, 0.03]
+state 396 {0}
+	action 0
+		401 : [1, 1]
+state 397 {0}
+	action 0
+		402 : [0.97, 0.99]
+		403 : [0.01, 0.03]
+state 398 {0}
+	action 0
+		404 : [0.98, 1]
+		405 : [0.0001, 0.02]
+state 399 {0}
+	action 0
+		406 : [1, 1]
+state 400 {0}
+	action 0
+		407 : [1, 1]
+state 401 {0}
+	action 0
+		408 : [0.97, 0.99]
+		409 : [0.01, 0.03]
+state 402 {0}
+	action 0
+		410 : [1, 1]
+state 403 {0}
+	action 0
+		411 : [1, 1]
+state 404 {0}
+	action 0
+		412 : [1, 1]
+state 405 {0}
+	action 0
+		411 : [1, 1]
+state 406 {0}
+	action 0
+		413 : [1, 1]
+state 407 {0}
+	action 0
+		414 : [1, 1]
+state 408 {0}
+	action 0
+		415 : [1, 1]
+state 409 {0}
+	action 0
+		416 : [1, 1]
+state 410 {0}
+	action 0
+		404 : [0.98, 1]
+		405 : [0.0001, 0.02]
+state 411 {0}
+	action 0
+		417 : [0.97, 0.99]
+		418 : [0.01, 0.03]
+state 412 {0}
+	action 0
+		419 : [1, 1]
+state 413 {0}
+	action 0
+		420 : [0.98, 1]
+		421 : [0.0001, 0.02]
+state 414 {0} target
+	action 0
+		414 : [1, 1]
+state 415 {0}
+	action 0
+		422 : [1, 1]
+state 416 {0}
+	action 0
+		423 : [0.97, 0.99]
+		424 : [0.01, 0.03]
+state 417 {0}
+	action 0
+		425 : [1, 1]
+state 418 {0}
+	action 0
+		426 : [1, 1]
+state 419 {0}
+	action 0
+		408 : [0.97, 0.99]
+		409 : [0.01, 0.03]
+state 420 {0}
+	action 0
+		427 : [1, 1]
+state 421 {0}
+	action 0
+		426 : [1, 1]
+state 422 {0}
+	action 0
+		428 : [0.98, 1]
+		429 : [0.0001, 0.02]
+state 423 {0}
+	action 0
+		430 : [1, 1]
+state 424 {0}
+	action 0
+		431 : [1, 1]
+state 425 {0}
+	action 0
+		420 : [0.98, 1]
+		421 : [0.0001, 0.02]
+state 426 {0}
+	action 0
+		432 : [1, 1]
+state 427 {0}
+	action 0
+		433 : [1, 1]
+state 428 {0}
+	action 0
+		434 : [1, 1]
+state 429 {0}
+	action 0
+		435 : [1, 1]
+state 430 {0}
+	action 0
+		436 : [1, 1]
+state 431 {0}
+	action 0
+		437 : [0.97, 0.99]
+		438 : [0.01, 0.03]
+state 432 {0} target
+	action 0
+		432 : [1, 1]
+state 433 {0}
+	action 0
+		408 : [0.97, 0.99]
+		409 : [0.01, 0.03]
+state 434 {0}
+	action 0
+		439 : [1, 1]
+state 435 {0}
+	action 0
+		440 : [0.97, 0.99]
+		441 : [0.01, 0.03]
+state 436 {0}
+	action 0
+		442 : [0.98, 1]
+		443 : [0.0001, 0.02]
+state 437 {0}
+	action 0
+		444 : [1, 1]
+state 438 {0}
+	action 0
+		445 : [1, 1]
+state 439 {0}
+	action 0
+		446 : [0.97, 0.99]
+		447 : [0.01, 0.03]
+state 440 {0}
+	action 0
+		448 : [1, 1]
+state 441 {0}
+	action 0
+		449 : [1, 1]
+state 442 {0}
+	action 0
+		450 : [1, 1]
+state 443 {0}
+	action 0
+		449 : [1, 1]
+state 444 {0}
+	action 0
+		451 : [1, 1]
+state 445 {0}
+	action 0
+		452 : [1, 1]
+state 446 {0}
+	action 0
+		453 : [1, 1]
+state 447 {0}
+	action 0
+		454 : [1, 1]
+state 448 {0}
+	action 0
+		442 : [0.98, 1]
+		443 : [0.0001, 0.02]
+state 449 {0}
+	action 0
+		455 : [0.97, 0.99]
+		456 : [0.01, 0.03]
+state 450 {0}
+	action 0
+		457 : [1, 1]
+state 451 {0}
+	action 0
+		458 : [0.98, 1]
+		459 : [0.0001, 0.02]
+state 452 {0} target
+	action 0
+		452 : [1, 1]
+state 453 {0}
+	action 0
+		460 : [1, 1]
+state 454 {0}
+	action 0
+		461 : [0.97, 0.99]
+		462 : [0.01, 0.03]
+state 455 {0}
+	action 0
+		463 : [1, 1]
+state 456 {0}
+	action 0
+		464 : [1, 1]
+state 457 {0}
+	action 0
+		446 : [0.97, 0.99]
+		447 : [0.01, 0.03]
+state 458 {0}
+	action 0
+		465 : [1, 1]
+state 459 {0}
+	action 0
+		464 : [1, 1]
+state 460 {0}
+	action 0
+		466 : [0.98, 1]
+		467 : [0.0001, 0.02]
+state 461 {0}
+	action 0
+		468 : [1, 1]
+state 462 {0}
+	action 0
+		469 : [1, 1]
+state 463 {0}
+	action 0
+		458 : [0.98, 1]
+		459 : [0.0001, 0.02]
+state 464 {0}
+	action 0
+		470 : [1, 1]
+state 465 {0}
+	action 0
+		471 : [1, 1]
+state 466 {0}
+	action 0
+		472 : [1, 1]
+state 467 {0}
+	action 0
+		473 : [1, 1]
+state 468 {0}
+	action 0
+		474 : [1, 1]
+state 469 {0}
+	action 0
+		475 : [0.97, 0.99]
+		476 : [0.01, 0.03]
+state 470 {0} target
+	action 0
+		470 : [1, 1]
+state 471 {0}
+	action 0
+		446 : [0.97, 0.99]
+		447 : [0.01, 0.03]
+state 472 {0}
+	action 0
+		477 : [1, 1]
+state 473 {0}
+	action 0
+		478 : [0.97, 0.99]
+		479 : [0.01, 0.03]
+state 474 {0}
+	action 0
+		480 : [0.98, 1]
+		481 : [0.0001, 0.02]
+state 475 {0}
+	action 0
+		482 : [1, 1]
+state 476 {0}
+	action 0
+		483 : [1, 1]
+state 477 {0}
+	action 0
+		484 : [0.97, 0.99]
+		485 : [0.01, 0.03]
+state 478 {0}
+	action 0
+		486 : [1, 1]
+state 479 {0}
+	action 0
+		487 : [1, 1]
+state 480 {0}
+	action 0
+		488 : [1, 1]
+state 481 {0}
+	action 0
+		487 : [1, 1]
+state 482 {0}
+	action 0
+		489 : [1, 1]
+state 483 {0}
+	action 0
+		490 : [1, 1]
+state 484 {0}
+	action 0
+		491 : [1, 1]
+state 485 {0}
+	action 0
+		492 : [1, 1]
+state 486 {0}
+	action 0
+		480 : [0.98, 1]
+		481 : [0.0001, 0.02]
+state 487 {0}
+	action 0
+		493 : [0.97, 0.99]
+		494 : [0.01, 0.03]
+state 488 {0}
+	action 0
+		495 : [1, 1]
+state 489 {0}
+	action 0
+		496 : [0.98, 1]
+		497 : [0.0001, 0.02]
+state 490 {0} target
+	action 0
+		490 : [1, 1]
+state 491 {0}
+	action 0
+		498 : [1, 1]
+state 492 {0}
+	action 0
+		499 : [0.97, 0.99]
+		500 : [0.01, 0.03]
+state 493 {0}
+	action 0
+		501 : [1, 1]
+state 494 {0}
+	action 0
+		502 : [1, 1]
+state 495 {0}
+	action 0
+		484 : [0.97, 0.99]
+		485 : [0.01, 0.03]
+state 496 {0}
+	action 0
+		503 : [1, 1]
+state 497 {0}
+	action 0
+		502 : [1, 1]
+state 498 {0}
+	action 0
+		504 : [0.98, 1]
+		505 : [0.0001, 0.02]
+state 499 {0}
+	action 0
+		506 : [1, 1]
+state 500 {0}
+	action 0
+		507 : [1, 1]
+state 501 {0}
+	action 0
+		496 : [0.98, 1]
+		497 : [0.0001, 0.02]
+state 502 {0}
+	action 0
+		508 : [1, 1]
+state 503 {0}
+	action 0
+		509 : [1, 1]
+state 504 {0}
+	action 0
+		510 : [1, 1]
+state 505 {0}
+	action 0
+		511 : [1, 1]
+state 506 {0}
+	action 0
+		512 : [1, 1]
+state 507 {0}
+	action 0
+		513 : [0.97, 0.99]
+		514 : [0.01, 0.03]
+state 508 {0} target
+	action 0
+		508 : [1, 1]
+state 509 {0}
+	action 0
+		484 : [0.97, 0.99]
+		485 : [0.01, 0.03]
+state 510 {0}
+	action 0
+		515 : [1, 1]
+state 511 {0}
+	action 0
+		516 : [0.97, 0.99]
+		517 : [0.01, 0.03]
+state 512 {0}
+	action 0
+		518 : [0.98, 1]
+		519 : [0.0001, 0.02]
+state 513 {0}
+	action 0
+		520 : [1, 1]
+state 514 {0}
+	action 0
+		521 : [1, 1]
+state 515 {0}
+	action 0
+		522 : [0.97, 0.99]
+		523 : [0.01, 0.03]
+state 516 {0}
+	action 0
+		524 : [1, 1]
+state 517 {0}
+	action 0
+		525 : [1, 1]
+state 518 {0}
+	action 0
+		526 : [1, 1]
+state 519 {0}
+	action 0
+		525 : [1, 1]
+state 520 {0}
+	action 0
+		527 : [1, 1]
+state 521 {0}
+	action 0
+		528 : [1, 1]
+state 522 {0}
+	action 0
+		529 : [1, 1]
+state 523 {0}
+	action 0
+		530 : [1, 1]
+state 524 {0}
+	action 0
+		518 : [0.98, 1]
+		519 : [0.0001, 0.02]
+state 525 {0}
+	action 0
+		531 : [0.97, 0.99]
+		532 : [0.01, 0.03]
+state 526 {0}
+	action 0
+		533 : [1, 1]
+state 527 {0}
+	action 0
+		534 : [0.98, 1]
+		535 : [0.0001, 0.02]
+state 528 {0} target
+	action 0
+		528 : [1, 1]
+state 529 {0}
+	action 0
+		536 : [1, 1]
+state 530 {0}
+	action 0
+		537 : [0.97, 0.99]
+		538 : [0.01, 0.03]
+state 531 {0}
+	action 0
+		539 : [1, 1]
+state 532 {0}
+	action 0
+		540 : [1, 1]
+state 533 {0}
+	action 0
+		522 : [0.97, 0.99]
+		523 : [0.01, 0.03]
+state 534 {0}
+	action 0
+		541 : [1, 1]
+state 535 {0}
+	action 0
+		540 : [1, 1]
+state 536 {0}
+	action 0
+		542 : [0.98, 1]
+		543 : [0.0001, 0.02]
+state 537 {0}
+	action 0
+		544 : [1, 1]
+state 538 {0}
+	action 0
+		545 : [1, 1]
+state 539 {0}
+	action 0
+		534 : [0.98, 1]
+		535 : [0.0001, 0.02]
+state 540 {0}
+	action 0
+		546 : [1, 1]
+state 541 {0}
+	action 0
+		547 : [1, 1]
+state 542 {0}
+	action 0
+		548 : [1, 1]
+state 543 {0}
+	action 0
+		549 : [1, 1]
+state 544 {0}
+	action 0
+		550 : [1, 1]
+state 545 {0}
+	action 0
+		551 : [0.97, 0.99]
+		552 : [0.01, 0.03]
+state 546 {0} target
+	action 0
+		546 : [1, 1]
+state 547 {0}
+	action 0
+		522 : [0.97, 0.99]
+		523 : [0.01, 0.03]
+state 548 {0}
+	action 0
+		553 : [1, 1]
+state 549 {0}
+	action 0
+		554 : [0.97, 0.99]
+		555 : [0.01, 0.03]
+state 550 {0}
+	action 0
+		556 : [0.98, 1]
+		557 : [0.0001, 0.02]
+state 551 {0}
+	action 0
+		558 : [1, 1]
+state 552 {0}
+	action 0
+		559 : [1, 1]
+state 553 {0}
+	action 0
+		560 : [0.97, 0.99]
+		561 : [0.01, 0.03]
+state 554 {0}
+	action 0
+		562 : [1, 1]
+state 555 {0}
+	action 0
+		563 : [1, 1]
+state 556 {0}
+	action 0
+		564 : [1, 1]
+state 557 {0}
+	action 0
+		563 : [1, 1]
+state 558 {0}
+	action 0
+		565 : [1, 1]
+state 559 {0}
+	action 0
+		566 : [1, 1]
+state 560 {0}
+	action 0
+		567 : [1, 1]
+state 561 {0}
+	action 0
+		568 : [1, 1]
+state 562 {0}
+	action 0
+		556 : [0.98, 1]
+		557 : [0.0001, 0.02]
+state 563 {0}
+	action 0
+		569 : [0.97, 0.99]
+		570 : [0.01, 0.03]
+state 564 {0}
+	action 0
+		571 : [1, 1]
+state 565 {0}
+	action 0
+		572 : [0.98, 1]
+		573 : [0.0001, 0.02]
+state 566 {0} target
+	action 0
+		566 : [1, 1]
+state 567 {0}
+	action 0
+		574 : [1, 1]
+state 568 {0}
+	action 0
+		575 : [0.97, 0.99]
+		576 : [0.01, 0.03]
+state 569 {0}
+	action 0
+		577 : [1, 1]
+state 570 {0}
+	action 0
+		578 : [1, 1]
+state 571 {0}
+	action 0
+		560 : [0.97, 0.99]
+		561 : [0.01, 0.03]
+state 572 {0}
+	action 0
+		579 : [1, 1]
+state 573 {0}
+	action 0
+		578 : [1, 1]
+state 574 {0}
+	action 0
+		580 : [0.98, 1]
+		581 : [0.0001, 0.02]
+state 575 {0}
+	action 0
+		582 : [1, 1]
+state 576 {0}
+	action 0
+		583 : [1, 1]
+state 577 {0}
+	action 0
+		572 : [0.98, 1]
+		573 : [0.0001, 0.02]
+state 578 {0}
+	action 0
+		584 : [1, 1]
+state 579 {0}
+	action 0
+		585 : [1, 1]
+state 580 {0}
+	action 0
+		586 : [1, 1]
+state 581 {0}
+	action 0
+		587 : [1, 1]
+state 582 {0}
+	action 0
+		588 : [1, 1]
+state 583 {0}
+	action 0
+		589 : [0.97, 0.99]
+		590 : [0.01, 0.03]
+state 584 {0} target
+	action 0
+		584 : [1, 1]
+state 585 {0}
+	action 0
+		560 : [0.97, 0.99]
+		561 : [0.01, 0.03]
+state 586 {0}
+	action 0
+		591 : [1, 1]
+state 587 {0}
+	action 0
+		592 : [0.97, 0.99]
+		593 : [0.01, 0.03]
+state 588 {0}
+	action 0
+		594 : [0.98, 1]
+		595 : [0.0001, 0.02]
+state 589 {0}
+	action 0
+		596 : [1, 1]
+state 590 {0}
+	action 0
+		597 : [1, 1]
+state 591 {0} deadlock
+	action 0
+		591 : [1, 1]
+state 592 {0}
+	action 0
+		598 : [1, 1]
+state 593 {0}
+	action 0
+		599 : [1, 1]
+state 594 {0}
+	action 0
+		600 : [1, 1]
+state 595 {0}
+	action 0
+		599 : [1, 1]
+state 596 {0}
+	action 0
+		601 : [1, 1]
+state 597 {0}
+	action 0
+		602 : [1, 1]
+state 598 {0}
+	action 0
+		594 : [0.98, 1]
+		595 : [0.0001, 0.02]
+state 599 {0}
+	action 0
+		603 : [0.97, 0.99]
+		604 : [0.01, 0.03]
+state 600 {0}
+	action 0
+		605 : [1, 1]
+state 601 {0}
+	action 0
+		606 : [0.98, 1]
+		607 : [0.0001, 0.02]
+state 602 {0} target
+	action 0
+		602 : [1, 1]
+state 603 {0}
+	action 0
+		608 : [1, 1]
+state 604 {0}
+	action 0
+		609 : [1, 1]
+state 605 {0} deadlock
+	action 0
+		605 : [1, 1]
+state 606 {0}
+	action 0
+		610 : [1, 1]
+state 607 {0}
+	action 0
+		609 : [1, 1]
+state 608 {0}
+	action 0
+		606 : [0.98, 1]
+		607 : [0.0001, 0.02]
+state 609 {0}
+	action 0
+		611 : [1, 1]
+state 610 {0}
+	action 0
+		612 : [1, 1]
+state 611 {0} target
+	action 0
+		611 : [1, 1]
+state 612 {0} deadlock
+	action 0
+		612 : [1, 1]
