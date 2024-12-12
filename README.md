@@ -13,7 +13,14 @@ This project is hosted on [GitHub](https://github.com/monitoring-MDPs/premise).
 - Install Storm with Python APIs in [the usual way](https://moves-rwth.github.io/stormpy/installation.html).
 - Run `pip install -e .`
 
-## Using a Docker container
+## Developing in a Visual Studio code development container
+
+You can open this repository with all dependencies installed using a VS Code development container. Install [Visual Studio Code](https://code.visualstudio.com/), and install the [dev container extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers). 
+
+Next clone the repository and open it using a dev container. The directory is now mounted in the container and any changes are saved on your machine.
+
+
+## Using a Docker container to run experiments
 
 We provide a docker container
 
