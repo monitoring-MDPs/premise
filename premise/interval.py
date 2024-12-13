@@ -149,17 +149,16 @@ class UnfoldingIntervalRiskAssessment(monitor.UnfoldingRiskAssessment):
         return True, risk
 
 
-def create_monitor(trans_path, init_path, maxmin, dump_path=None, verbose=0):
+def create_monitor(trans_dict, init_dict, maxmin, dump_path=None, verbose=1):
     stormpy_environment = Environment()
     stormpy_environment.solver_environment.minmax_solver_environment.method = (
         MinMaxMethod.value_iteration
     )
 
     # ipomdp = build_interval_model_from_drn("premise/examples/tiny-05.drn")
-    trans_dict = np.load(trans_path, allow_pickle=True)[()]
-    init_dict = np.load(init_path, allow_pickle=True)[()]
+
     ipomdp, observation_map = dict_to_interval_ipomdp(trans_dict, init_dict)
-    if args.verbose > 1:
+    if verbose > 1:
         print(ipomdp)
         with open("models/imc.dot", "w") as f:
             f.write(ipomdp.to_dot())
@@ -220,8 +219,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    trans_dict = np.load(args.trans_path, allow_pickle=True)[()]
+    init_dict = np.load(args.init_path, allow_pickle=True)[()]
     mon, observation_map, unfolder, ipomdp = create_monitor(
-        args.trans_path, args.init_path, args.maxmin, args.dump, args.verbose
+        trans_dict, init_dict, args.maxmin, args.dump, args.verbose
     )
     import os
 

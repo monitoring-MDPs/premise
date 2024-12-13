@@ -1,8 +1,11 @@
+from curses import nl
 import scenic
 import tempfile
 import pathlib
 
 from scenic.simulators.newtonian import NewtonianSimulator
+
+from interval import create_monitor
 
 
 def create_states(step):
@@ -71,7 +74,17 @@ def obtain_traces(scenario, trace_num, trace_len):
     return traces
 
 
-def create_initial_distribution(states, traces, epsilon, i_i_nl, i_i_nu, trace_num):
+def create_initial_distribution(
+    states,
+    traces,
+    epsilon,
+    i_i_nl,
+    i_i_nu,
+    trace_num,
+    initial_interval,
+    initial_nl,
+    initial_nu,
+):
     initial_count = {}
 
     for s in states:
@@ -82,14 +95,9 @@ def create_initial_distribution(states, traces, epsilon, i_i_nl, i_i_nu, trace_n
             if tuple(s) == t[0]:
                 initial_count[tuple(s)] += 1
 
-    initial_nl = {}
-    initial_nu = {}
-
     for s in states:
         initial_nl[tuple(s)] = i_i_nl
         initial_nu[tuple(s)] = i_i_nu
-
-    initial_interval = {}
 
     for s in states:
         initial_interval[tuple(s)] = [epsilon, 1 - epsilon]
@@ -128,10 +136,10 @@ def create_initial_distribution(states, traces, epsilon, i_i_nl, i_i_nu, trace_n
         initial_nl[tuple(s)] += trace_num
         initial_nu[tuple(s)] += trace_num
 
-    return initial_interval
+    return initial_interval, initial_nl, initial_nu
 
 
-def create_transitions(traces, trace_len, epsilon, i_nl, i_nu):
+def create_transitions(traces, trace_len, epsilon, i_nl, i_nu, interval, nl, nu):
     transition_count = {}
 
     for t in traces:
@@ -157,13 +165,8 @@ def create_transitions(traces, trace_len, epsilon, i_nl, i_nu):
                     if t[n] == list(a) and t[n + 1] == list(b):
                         tau_count[a, b] += 1
 
-    interval = {}
-
     for k in tau_count.keys():
         interval[k] = [epsilon, 1 - epsilon]
-
-    nl = {}
-    nu = {}
 
     for k in tau_count.keys():
         nl[k] = i_nl
@@ -213,10 +216,12 @@ def create_transitions(traces, trace_len, epsilon, i_nl, i_nu):
                 nl[t] += transition_count[k]
                 nu[t] += transition_count[k]
 
+    return interval, nl, nu
+
 
 if __name__ == "__main__":
     scenario = scenic.scenarioFromFile(
-        "../premise/examples/badlyParkedCarPullingIn.scenic",
+        "premise/examples/badlyParkedCarPullingIn.scenic",
         model="scenic.simulators.newtonian.driving_model",
         mode2D=True,
     )
@@ -245,3 +250,46 @@ if __name__ == "__main__":
 
     i_i_nl = 5  # initial lower bound of strength interval for initial distribution
     i_i_nu = 10
+
+    all_states = create_states(step)
+
+    initial_distribution = {}
+    initial_nl = {}
+    initial_nu = {}
+    interval = {}
+    nl = {}
+    nu = {}
+    for r in range(rounds):
+        print("Round: ", r)
+        traces = obtain_traces(scenario, trace_num, trace_len)
+
+        initial_distribution, initial_nl, initial_nu = create_initial_distribution(
+            all_states,
+            traces,
+            epsilon,
+            i_i_nl,
+            i_i_nu,
+            trace_num,
+            initial_distribution,
+            initial_nl,
+            initial_nu,
+        )
+        transitions, nl, nu = create_transitions(
+            traces, trace_len, epsilon, i_nl, i_nu, interval, nl, nu
+        )
+
+    print("learning done")
+    # Max is min and min is max
+    mon, observation_map, unfolder, ipomdp = create_monitor(
+        transitions, initial_distribution, "min", verbose=2
+    )
+    traces = obtain_traces(scenario, 20, 40)
+    for trace in traces:
+        print("------------------------------------------")
+        print([(t[-2], t[-1]) for t in trace])
+        mon.initialize(0)
+        observations = [t[-2] for t in trace]
+        probs = []
+        for obs in observations:
+            probs.append(mon.step(observation_map[obs]))
+            print(probs[-1], end=" ")
