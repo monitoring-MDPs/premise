@@ -281,7 +281,7 @@ if __name__ == "__main__":
     print("learning done")
     # Max is min and min is max
     mon, observation_map, unfolder, ipomdp = create_monitor(
-        transitions, initial_distribution, "min", verbose=2
+        transitions, initial_distribution, "min", "collision", verbose=2
     )
     traces = obtain_traces(scenario, 20, 40)
     for trace in traces:

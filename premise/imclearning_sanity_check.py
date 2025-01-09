@@ -1,4 +1,6 @@
 from curses import nl
+
+from interval import create_monitor
 import scenic
 import tempfile
 import pathlib
@@ -198,4 +200,6 @@ for k in transition_count.keys():
         if t[0] == k:
             nl[t] += transition_count[k]
             nu[t] += transition_count[k]
+
+
 

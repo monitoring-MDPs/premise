@@ -46,7 +46,7 @@ def stormpy_pomdp_to_mdp(pomdp):
     return SparseIntervalMdp(components)
 
 
-def dict_to_interval_ipomdp(trans_dict, init_dict):
+def dict_to_interval_ipomdp(trans_dict, init_dict, target_label):
     transitions: dict[int, dict[int, Interval]] = {}
     state_index_map: dict[Any, int] = {}
     observations = {}
@@ -115,7 +115,7 @@ def dict_to_interval_ipomdp(trans_dict, init_dict):
     labeling.add_label_to_state("init", init_state)
     for s, i in state_index_map.items():
         # labeling.add_label_to_state(str(s), i)
-        if s[-1] == "collision":
+        if s[-1] == target_label: #target label (Change between models)
             labeling.add_label_to_state("target", i)
 
     components = SparseIntervalModelComponents(matrix, labeling)
@@ -149,7 +149,7 @@ class UnfoldingIntervalRiskAssessment(monitor.UnfoldingRiskAssessment):
         return True, risk
 
 
-def create_monitor(trans_dict, init_dict, maxmin, dump_path=None, verbose=1):
+def create_monitor(trans_dict, init_dict, maxmin, target_label, dump_path=None, verbose=1):
     stormpy_environment = Environment()
     stormpy_environment.solver_environment.minmax_solver_environment.method = (
         MinMaxMethod.value_iteration
@@ -157,7 +157,7 @@ def create_monitor(trans_dict, init_dict, maxmin, dump_path=None, verbose=1):
 
     # ipomdp = build_interval_model_from_drn("premise/examples/tiny-05.drn")
 
-    ipomdp, observation_map = dict_to_interval_ipomdp(trans_dict, init_dict)
+    ipomdp, observation_map = dict_to_interval_ipomdp(trans_dict, init_dict, target_label)
     if verbose > 1:
         print(ipomdp)
         with open("models/imc.dot", "w") as f:
@@ -205,7 +205,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--maxmin",
         type=str,
-        default="max",
+        default="min",
         choices=["max", "min"],
         help="Max or Min method for risk assessment",
     )
@@ -215,6 +215,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dump", type=str, help="Path to the file to dump the model to"
     )
+    parser.add_argument("--target", type=str, help="The target label to check for")
     parser.add_argument("--verbose", "-v", action="count", default=0)
 
     args = parser.parse_args()
@@ -222,7 +223,7 @@ if __name__ == "__main__":
     trans_dict = np.load(args.trans_path, allow_pickle=True)[()]
     init_dict = np.load(args.init_path, allow_pickle=True)[()]
     mon, observation_map, unfolder, ipomdp = create_monitor(
-        trans_dict, init_dict, args.maxmin, args.dump, args.verbose
+        trans_dict, init_dict, args.maxmin, args.target, args.dump, args.verbose
     )
     import os
 
