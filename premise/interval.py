@@ -346,7 +346,7 @@ def create_monitor(
 
     expr_manager = ExpressionManager()
 
-    prop = parse_properties(f'P{maxmin}=? ["target"]')
+    prop = parse_properties(f'P{maxmin}=? [F "target"]')
 
     task = CheckTask(prop[0].raw_formula, False)
     imdp = stormpy_pomdp_to_mdp(ipomdp)
@@ -355,6 +355,7 @@ def create_monitor(
 
     risks = [0 if maxmin == "min" else 1 for i in range(len(ipomdp.states))]
     for (i, s), unrolled_s in states_map.items():
+        print(i, s, unrolled_s, result.at(unrolled_s))
         if maxmin == "min":  # Since max is min and min is max
             risks[s] = max(result.at(unrolled_s), risks[s])
         else:
@@ -448,5 +449,8 @@ if __name__ == "__main__":
                 print(f"done in {time() - t}s")
             else:
                 print(mon.step(int(hamming_lookup(observation_map, action))))
-            print(observation_map, ipomdp)
+            print(
+                "Observations with id:\n"
+                + "\t".join([f"{k}: {v}" for k, v in observation_map.items()])
+            )
             action = input("Next Step (\\d*/r/speed) ")
