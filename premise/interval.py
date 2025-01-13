@@ -149,7 +149,7 @@ class UnfoldingIntervalRiskAssessment(monitor.UnfoldingRiskAssessment):
         return True, risk
 
 
-def create_monitor(trans_dict, init_dict, maxmin, target_label, dump_path=None, verbose=1):
+def create_monitor(trans_dict, init_dict, maxmin, target_label, horizon, dump_path=None, verbose=1):
     stormpy_environment = Environment()
     stormpy_environment.solver_environment.minmax_solver_environment.method = (
         MinMaxMethod.value_iteration
@@ -168,7 +168,7 @@ def create_monitor(trans_dict, init_dict, maxmin, target_label, dump_path=None, 
 
     expr_manager = ExpressionManager()
 
-    prop = parse_properties(f'P{maxmin}=? ["target"]')
+    prop = parse_properties(f'P{maxmin}=? [ F<={horizon} "target"]')
 
     task = CheckTask(prop[0].raw_formula, False)
     imdp = stormpy_pomdp_to_mdp(ipomdp)
@@ -217,13 +217,14 @@ if __name__ == "__main__":
     )
     parser.add_argument("--target", type=str, help="The target label to check for")
     parser.add_argument("--verbose", "-v", action="count", default=0)
+    parser.add_argument("--horizon", type=int, help="The horizon for estimating the risk")
 
     args = parser.parse_args()
 
     trans_dict = np.load(args.trans_path, allow_pickle=True)[()]
     init_dict = np.load(args.init_path, allow_pickle=True)[()]
     mon, observation_map, unfolder, ipomdp = create_monitor(
-        trans_dict, init_dict, args.maxmin, args.target, args.dump, args.verbose
+        trans_dict, init_dict, args.maxmin, args.target, args.horizon, args.dump, args.verbose
     )
     import os
 
