@@ -357,7 +357,6 @@ def create_monitor(
 
     risks = [0 if maxmin == "min" else 1 for i in range(len(ipomdp.states))]
     for (i, s), unrolled_s in states_map.items():
-        print(i, s, unrolled_s, result.at(unrolled_s))
         if maxmin == "min":  # Since max is min and min is max
             risks[s] = max(result.at(unrolled_s), risks[s])
         else:
