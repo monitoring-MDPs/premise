@@ -1,7 +1,9 @@
 from math import e
+from tabnanny import verbose
 from time import time
 from typing import Any
 import numpy as np
+from pygame import ver
 from stormpy import (
     Environment,
     MinMaxMethod,
@@ -355,7 +357,6 @@ def create_monitor(
 
     risks = [0 if maxmin == "min" else 1 for i in range(len(ipomdp.states))]
     for (i, s), unrolled_s in states_map.items():
-        print(i, s, unrolled_s, result.at(unrolled_s))
         if maxmin == "min":  # Since max is min and min is max
             risks[s] = max(result.at(unrolled_s), risks[s])
         else:
@@ -423,18 +424,26 @@ if __name__ == "__main__":
     )
     import os
 
-    print(os.getpid())
+    if args.verbose > 0:
+        print(os.getpid())
 
     if args.trace:
         traces = np.load(args.trace, allow_pickle=True)[()]
         for trace in traces.values():
             mon.initialize(0)
             observations = [t[-2] for t in trace]
-            print()
+            if args.verbose > 0:
+                print()
             if args.verbose > 0:
                 print(observations)
+            last_risk = None
             for obs in observations:
-                print(mon.step(observation_map[obs]), end=" -> ")
+                last_risk = mon.step(observation_map[obs])
+                if args.verbose > 0:
+                    print(last_risk, end=" -> ")
+            
+            if args.verbose == 0:
+                print(last_risk)
     else:
         action = "r"
         while True:
