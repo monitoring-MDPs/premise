@@ -1,9 +1,6 @@
-from math import e
-from tabnanny import verbose
 from time import time
 from typing import Any
 import numpy as np
-from pygame import ver
 from stormpy import (
     Environment,
     MinMaxMethod,
@@ -46,92 +43,50 @@ def stormpy_pomdp_to_mdp(pomdp):
     return SparseIntervalMdp(components)
 
 
-def stormpy_simulator_unroll(hmm: SparseIntervalMdp, horizon):
-    states: dict[tuple[int, int], int] = {
-        (0, s.id): new_s for new_s, s in enumerate(hmm.states)
-    }
-    state_labels: dict[int, set[str]] = {
-        new_s: set(["step=0"]) for new_s in states.values()
-    }
-    for s in hmm.initial_states:
-        state_labels[states[(0, s)]].add("init")
-    labels = set(["step=0", "init", "horizon"]).union(hmm.labeling.get_labels())
-    for h in range(horizon + 1):
-        labels.add(f"step={h}")
+def stormpy_product_unroll(i_mdp: SparseIntervalMdp, horizon):
+    nr_of_horizon_levels = horizon + 1
 
-    # action_labels_map: dict[int, set[str]] = {}
-    # action_labels = set(hmm.choice_labeling.get_labels())
-
-    queue = [(i, new_s, s) for (i, new_s), s in states.items()]
-    horizon_queue = []
-
+    # Create the matrix
     builder = sp.storage.IntervalSparseMatrixBuilder(0, 0, 0, False, True)
-
     current_row = 0
-    while queue:
-        i, new_s, s = queue.pop(0)
+    for i in range(len(i_mdp.states)):
+        old_state = i_mdp.states[i]
+        for h in range(horizon):  # TODO: Check if horizon + 1 is correct
+            builder.new_row_group(current_row)
+            for action in old_state.actions:
+                for transition in action.transitions:
+                    dest_state = transition.column * nr_of_horizon_levels + h + 1
+                    builder.add_next_value(current_row, dest_state, transition.value())
+
+                current_row += 1
+
+        # Horizon states just containt self loops
         builder.new_row_group(current_row)
-        old_state = hmm.states[s]
-        state_labels[new_s].update(old_state.labels.difference(["init"]))
+        builder.add_next_value(current_row, i * nr_of_horizon_levels + horizon, Interval(1.0))
+        current_row += 1
 
-        for action in old_state.actions:
-            # action_labels_map[current_row] = action.labels
+    matrix = builder.build(overridden_column_count=len(i_mdp.states) * nr_of_horizon_levels)
 
-            new_row_dict: dict[int, Any] = {}
-            for transition in action.transitions:
-                dest_s = transition.column
-                if (i + 1, dest_s) in states:
-                    new_dest_s = states[(i + 1, dest_s)]
-                else:
-                    new_dest_s = len(states)
-                    states[(i + 1, dest_s)] = new_dest_s
-                    state_labels[new_dest_s] = set(["step=" + str(i + 1)])
-                    if i + 1 == horizon - 1:
-                        state_labels[new_dest_s].add("horizon")
-                        horizon_queue.append((new_dest_s, dest_s))
-                    else:
-                        queue.append((i + 1, new_dest_s, dest_s))
-
-                new_row_dict[new_dest_s] = transition.value()
-
-            for new_dest_s, value in sorted(new_row_dict.items()):
-                builder.add_next_value(current_row, new_dest_s, value)
-
-            current_row += 1
-
-    for new_s, s in horizon_queue:
-        builder.new_row_group(current_row)
-        old_state = hmm.states[s]
-        state_labels[new_s].update(old_state.labels.difference(["init"]))
-
-        for action in old_state.actions:
-            # action_labels_map[current_row] = action.labels
-            builder.add_next_value(current_row, new_s, Interval(1.0))
-            current_row += 1
-
-    matrix = builder.build(overridden_column_count=len(states))
-
-    # Create state labeling
-    labeling = StateLabeling(len(states))
-    for label in labels:
+    # Build the labeling
+    labeling = StateLabeling(len(i_mdp.states) * nr_of_horizon_levels)
+    for i in range(nr_of_horizon_levels):
+        labeling.add_label(f"step={i}")
+    for label in i_mdp.labeling.get_labels():
         labeling.add_label(label)
+    labeling.add_label("horizon")
 
-    for state, labels in state_labels.items():
-        for label in labels:
-            labeling.add_label_to_state(label, state)
+    for i in range(len(i_mdp.states)):
+        for h in range(horizon + 1):
+            for label in i_mdp.states[i].labels:
+                if label == "init" and h == 0 or label != "init":
+                    labeling.add_label_to_state(label, i * nr_of_horizon_levels + h)
 
-    # Create choice labeling
-    # choice_labeling = ChoiceLabeling(len(action_labels_map))
-    # for label in action_labels:
-    #     choice_labeling.add_label(label)
-
-    # for action, labels in action_labels_map.items():
-    #     for label in labels:
-    #         choice_labeling.add_label_to_choice(label, action)
+            labeling.add_label_to_state("step=" + str(h), i * nr_of_horizon_levels + h)
+        
+        labeling.add_label_to_state("horizon", i * nr_of_horizon_levels + horizon)
 
     components = SparseIntervalModelComponents(matrix, labeling)
-    # components.choice_labeling = choice_labeling
-    return SparseIntervalMdp(components), states
+    return SparseIntervalMdp(components)
 
 
 def stormpy_simulator_unroll(hmm: SparseIntervalMdp, horizon):
@@ -143,7 +98,7 @@ def stormpy_simulator_unroll(hmm: SparseIntervalMdp, horizon):
     }
     for s in hmm.initial_states:
         state_labels[states[(0, s)]].add("init")
-    labels = set(["step=0", "init", "horizon"]).union(hmm.labeling.get_labels())
+    labels = set(["step=0", "init", "horizon", "target"]).union(hmm.labeling.get_labels())
     for h in range(horizon + 1):
         labels.add(f"step={h}")
 
@@ -174,7 +129,7 @@ def stormpy_simulator_unroll(hmm: SparseIntervalMdp, horizon):
                     new_dest_s = len(states)
                     states[(i + 1, dest_s)] = new_dest_s
                     state_labels[new_dest_s] = set(["step=" + str(i + 1)])
-                    if i + 1 == horizon - 1:
+                    if i + 1 >= horizon:
                         state_labels[new_dest_s].add("horizon")
                         horizon_queue.append((new_dest_s, dest_s))
                     else:
@@ -352,16 +307,16 @@ def create_monitor(
 
     task = CheckTask(prop[0].raw_formula, False)
     imdp = stormpy_pomdp_to_mdp(ipomdp)
-    imdp, states_map = stormpy_simulator_unroll(imdp, horizon)
+    imdp = stormpy_product_unroll(imdp, horizon)
+    print(imdp)
     result = check_interval_mdp(imdp, task, stormpy_environment)
 
-    risks = [0 if maxmin == "min" else 1 for i in range(len(ipomdp.states))]
-    for (i, s), unrolled_s in states_map.items():
-        if maxmin == "min":  # Since max is min and min is max
-            risks[s] = max(result.at(unrolled_s), risks[s])
+    risks = []
+    for i in range(len(ipomdp.states)):
+        if maxmin == "min":
+            risks.append(Interval(max([result.at(i * (horizon + 1) + h) for h in range(horizon + 1)])))
         else:
-            risks[s] = min(result.at(unrolled_s), risks[s])
-    risks = [Interval(r) for r in risks]
+            risks.append(Interval(min([result.at(i * (horizon + 1) + h) for h in range(horizon + 1)])))
 
     if verbose > 0:
         for s, i in state_index_map.items():
@@ -397,7 +352,7 @@ if __name__ == "__main__":
         type=str,
         default="min",
         choices=["max", "min"],
-        help="Max or Min method for risk assessment",
+        help="Max or Min method for risk assessment (Min is maximizing the interval (while choosing the min action), Max is minimizing (while choosing the max action))",
     )
     parser.add_argument(
         "--trace", type=str, help="Path to the trace file for static mode"
