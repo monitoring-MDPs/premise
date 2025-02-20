@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ModelDescription:
-    prism_program_path: str
+    prism_program_path: Path
     constants: str
     risk_property: str
 
