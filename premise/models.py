@@ -145,12 +145,10 @@ def build_state_and_transition_list(model, target_label: str):
             model.labeling.has_state_label(target_label, state.id),
         )
 
-    transitions = []
+    transitions = set()
     for state in model.states:
         for action in state.actions:
             for transition in action.transitions:
-                transitions.append(
-                    (states_map[state.id], states_map[transition.column])
-                )
+                transitions.add((states_map[state.id], states_map[transition.column]))
 
-    return list(states_map.values()), transitions
+    return list(states_map.values()), list(transitions)
