@@ -18,7 +18,7 @@ def make_simulation_wrapper(model, length=None):
 
 
 class ConditionalTraceGenerator:
-    def __init__(self, model, target_label=None) -> None:
+    def __init__(self, model, target_label: str) -> None:
         self.model = model
         self.current_state = model.initial_states[0]
         self.target_label = target_label
@@ -81,38 +81,36 @@ class ConditionalTraceGenerator:
 
     def generate_random_trace(
         self, observation_prefix: list[int], length: int
-    ) -> tuple[list[int], list[int], bool]:
+    ) -> list[tuple[int, int, bool]]:
         init_obs = self.initialize()
         init_state = self.current_state
+        has_label = self.model.labeling.has_state_label(self.target_label, init_state)
         if len(observation_prefix) > 0 and init_obs != observation_prefix[0]:
             raise ValueError("Initial observation does not match prefix")
         res = self._generate_random_trace_rec(observation_prefix[1:], length - 1)
         if res is None:
             raise ValueError("Could not generate trace with given prefix")
 
-        return [init_state] + res[0], [init_obs] + res[1], res[2]
+        return [(init_state, init_obs, has_label)] + res
 
     def _generate_random_trace_rec(
         self, observation_prefix: list[int], length: int
-    ) -> tuple[list[int], list[int], bool] | None:
+    ) -> list[tuple[int, int, bool]] | None:
         if length == 0:
-            if self.target_label:
-                return (
-                    [],
-                    [],
-                    self.model.labeling.has_state_label(
-                        self.target_label, self.current_state
-                    ),
-                )
-            else:
-                return [], [], False
+            return []
         elif len(observation_prefix) == 0:
-            old_state = self.current_state
             step_obs = self.step()
+            new_state = self.current_state
             res = self._generate_random_trace_rec([], length - 1)
             if res is None:
                 return None
-            return [old_state] + res[0], [step_obs] + res[1], res[2]
+            return [
+                (
+                    new_state,
+                    step_obs,
+                    self.model.labeling.has_state_label(self.target_label, new_state),
+                )
+            ] + res
         else:
             old_state = self.current_state
             bad_states = []
@@ -121,11 +119,20 @@ class ConditionalTraceGenerator:
                     cond_step_obs = self.conditional_step(
                         observation_prefix[0], ignore_states=bad_states
                     )
+                    new_state = self.current_state
                     res = self._generate_random_trace_rec(
                         observation_prefix[1:], length - 1
                     )
                     if res is not None:
-                        return [old_state] + res[0], [cond_step_obs] + res[1], res[2]
+                        return [
+                            (
+                                new_state,
+                                cond_step_obs,
+                                self.model.labeling.has_state_label(
+                                    self.target_label, old_state
+                                ),
+                            )
+                        ] + res
                     else:
                         bad_states.append(self.current_state)
                         self.current_state = old_state

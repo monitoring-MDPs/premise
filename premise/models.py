@@ -126,7 +126,7 @@ def _analyse_model(model, prop):
     return sp.model_checking(model, prop.raw_formula, force_fully_observable=True)
 
 
-def build_state_and_transition_list(model, target_label: str):
+def build_state_and_transition_list(model, target_label: str, add_label_to_state=False):
     """
     Build a list of states and a list of transitions from the model
     :param model: The model to extract the states and transitions from
@@ -134,16 +134,23 @@ def build_state_and_transition_list(model, target_label: str):
     """
     states_map = {}
     for state in model.states:
-        states_map[state.id] = (
-            (state.id, model.state_valuations.get_string(state.id)),
-            (
-                model.get_observation(state.id),
-                model.observation_valuations.get_string(
-                    model.get_observation(state.id)
+        if add_label_to_state:
+            states_map[state.id] = (
+                (state.id, model.state_valuations.get_string(state.id)),
+                (
+                    model.get_observation(state.id),
+                    model.observation_valuations.get_string(
+                        model.get_observation(state.id)
+                    ),
                 ),
-            ),
-            model.labeling.has_state_label(target_label, state.id),
-        )
+                model.labeling.has_state_label(target_label, state.id),
+            )
+        else:
+            states_map[state.id] = (
+                state.id,
+                model.get_observation(state.id),
+                model.labeling.has_state_label(target_label, state.id),
+            )
 
     transitions = set()
     for state in model.states:
