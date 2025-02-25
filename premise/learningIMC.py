@@ -77,6 +77,7 @@ def initial_interval_learning(all_states, samples, strenght_interval_initial, in
 def interval_learning(all_states, samples, interval, strenght_interval): 
 
     trace_num = len(samples) #number of traces in a sample
+    trace_len = len(samples[0])
 
     transition_count = {} 
 
@@ -98,10 +99,11 @@ def interval_learning(all_states, samples, interval, strenght_interval):
     for a in transition_count.keys():
         for b in transition_count.keys():
             for x in range(trace_num): 
-                for y in range(399):
+                for y in range(trace_len-1):
                     if samples[x][y] == list(a) and samples[x][y+1] == list(b):
                         tau_count[a,b] += 1
 
+    
     for n in transition_count.keys(): #learns the lower bound of the interval 
         for m in tau_count.keys():
             for i in interval.keys():
@@ -130,7 +132,10 @@ def interval_learning(all_states, samples, interval, strenght_interval):
 
     return interval, strenght_interval
 
+
+premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states)
 initial_interval, strenght_interval_initial, interval, strenght_interval = premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states)
 
-
+initial_interval_learning(all_states, samples, strenght_interval_initial, initial_interval)
+interval_learning(all_states, samples, interval, strenght_interval)
 
