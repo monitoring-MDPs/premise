@@ -23,21 +23,21 @@ ctr = trace_generator.ConditionalTraceGenerator(
 )
 
 # Generate a random trace not conditioned on anything
-path, trace, bad = ctr.generate_random_trace([], 30)
+sample = ctr.generate_random_trace([], 30)
 
 # Print the path
 if model.has_state_valuations:
-    for state in path:
-        print(model.state_valuations.get_string(state))
+    for s in sample:
+        print(model.state_valuations.get_string(s[0]))
 
 # Print if the path ended in a target state
-print(bad)
+print(sample)
 
 # Generate 1000 random traces of length 50 conditioned on the previous trace
 res = []
 for _ in range(500):
     print(".", end="", flush=True)
-    res.append(ctr.generate_random_trace(trace, 50)[2] * 1)
+    res.append(ctr.generate_random_trace([s[0] for s in sample], 50)[2] * 1)
 
 # Show the probability of reaching a bad state after the previous trace within 20 steps
 print("\n", sum(res) / len(res))
