@@ -37,7 +37,8 @@ print(sample)
 res = []
 for _ in range(500):
     print(".", end="", flush=True)
-    res.append(ctr.generate_random_trace([s[0] for s in sample], 50)[2] * 1)
+    res.append(ctr.generate_random_trace([s[1] for s in sample], 50)[-1][2])
+
 
 # Show the probability of reaching a bad state after the previous trace within 20 steps
 print("\n", sum(res) / len(res))
