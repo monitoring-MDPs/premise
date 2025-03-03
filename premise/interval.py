@@ -62,10 +62,14 @@ def stormpy_product_unroll(i_mdp: SparseIntervalMdp, horizon):
 
         # Horizon states just containt self loops
         builder.new_row_group(current_row)
-        builder.add_next_value(current_row, i * nr_of_horizon_levels + horizon, Interval(1.0))
+        builder.add_next_value(
+            current_row, i * nr_of_horizon_levels + horizon, Interval(1.0)
+        )
         current_row += 1
 
-    matrix = builder.build(overridden_column_count=len(i_mdp.states) * nr_of_horizon_levels)
+    matrix = builder.build(
+        overridden_column_count=len(i_mdp.states) * nr_of_horizon_levels
+    )
 
     # Build the labeling
     labeling = StateLabeling(len(i_mdp.states) * nr_of_horizon_levels)
@@ -82,11 +86,12 @@ def stormpy_product_unroll(i_mdp: SparseIntervalMdp, horizon):
                     labeling.add_label_to_state(label, i * nr_of_horizon_levels + h)
 
             labeling.add_label_to_state("step=" + str(h), i * nr_of_horizon_levels + h)
-        
+
         labeling.add_label_to_state("horizon", i * nr_of_horizon_levels + horizon)
 
     components = SparseIntervalModelComponents(matrix, labeling)
     return SparseIntervalMdp(components)
+
 
 def dict_to_interval_ipomdp(trans_dict, init_dict, target_label):
     transitions: dict[int, dict[int, Interval]] = {}
@@ -219,15 +224,22 @@ def create_monitor(
     task = CheckTask(prop[0].raw_formula, False)
     imdp = stormpy_pomdp_to_mdp(ipomdp)
     imdp = stormpy_product_unroll(imdp, horizon)
-    print(imdp)
     result = check_interval_mdp(imdp, task, stormpy_environment)
 
     risks = []
     for i in range(len(ipomdp.states)):
         if maxmin == "min":
-            risks.append(Interval(max([result.at(i * (horizon + 1) + h) for h in range(horizon + 1)])))
+            risks.append(
+                Interval(
+                    max([result.at(i * (horizon + 1) + h) for h in range(horizon + 1)])
+                )
+            )
         else:
-            risks.append(Interval(min([result.at(i * (horizon + 1) + h) for h in range(horizon + 1)])))
+            risks.append(
+                Interval(
+                    min([result.at(i * (horizon + 1) + h) for h in range(horizon + 1)])
+                )
+            )
 
     if verbose > 0:
         for s, i in state_index_map.items():
@@ -307,7 +319,7 @@ if __name__ == "__main__":
                 last_risk = mon.step(observation_map[obs])
                 if args.verbose > 0:
                     print(last_risk, end=" -> ")
-            
+
             if args.verbose == 0:
                 print(last_risk)
     else:

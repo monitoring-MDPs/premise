@@ -203,7 +203,7 @@ ctr = trace_generator.ConditionalTraceGenerator(
 )
 
 # Sample 1000 paths of length 20
-samples = [ctr.generate_random_trace([], 20) for _ in range(1000)]
+samples = [ctr.generate_random_trace([], 20) for _ in range(10000)]
 
 print(f"Sampled {len(samples)} times")
 
