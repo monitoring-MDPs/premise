@@ -162,7 +162,7 @@ def interval_learning(all_states, samples, interval, strenght_interval):
                     (strenght_interval[m][1] * interval[i][1]) + tau_count[m]
                 ) / (strenght_interval[m][1] + transition_count[n])
 
-    for t in tau_count.keys():  #updates strength intervals
+    for t in tau_count.keys():  # updates strength intervals
         k = t[0]
         strenght_interval[t][0] += transition_count[k]
         strenght_interval[t][1] += transition_count[k]
@@ -219,14 +219,13 @@ interval_learning(all_states, samples, interval, strenght_interval)
 
 print("Interval learned")
 
-for k in initial_interval.keys(): 
-    if initial_interval[k][1] < 0.005: 
-        initial_interval.pop(k)
 
-for k in interval.keys(): 
-    if interval[k][1] < 0.005: 
-        interval.pop(k)
-
+to_delete = []
+for k in interval.keys():
+    if interval[k][1] < 0.005:
+        to_delete.append(k)
+for k in to_delete:
+    interval.pop(k)
 
 
 numpy.save(f"premise/examples/{model_name}-initial_interval.npy", initial_interval)  # type: ignore
