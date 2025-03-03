@@ -96,9 +96,9 @@ def initial_interval_learning(
                     ) / (strenght_interval_initial[n][1] + trace_num)
 
     for s in all_states:  # updates strength intervals
-        if strenght_interval_initial[s][0] < 100 and strenght_interval_initial[s][1] < 120:
-            strenght_interval_initial[s][0] += trace_num
-            strenght_interval_initial[s][1] += trace_num
+        # if strenght_interval_initial[s][0] < 100 and strenght_interval_initial[s][1] < 120:
+        strenght_interval_initial[s][0] += trace_num
+        strenght_interval_initial[s][1] += trace_num
 
     return initial_interval, strenght_interval_initial
 
@@ -163,11 +163,11 @@ def interval_learning(all_states, samples, interval, strenght_interval):
                     (strenght_interval[m][1] * interval[i][1]) + tau_count[m]
                 ) / (strenght_interval[m][1] + transition_count[n])
 
-    for t in tau_count.keys():  #updates strength intervals
-        if strenght_interval[t][0] < 100 and strenght_interval[t][1] < 120: 
-            k = t[0]
-            strenght_interval[t][0] += transition_count[k]
-            strenght_interval[t][1] += transition_count[k]
+    for t in tau_count.keys():  # updates strength intervals
+        # if strenght_interval[t][0] < 100 and strenght_interval[t][1] < 120:
+        k = t[0]
+        strenght_interval[t][0] += transition_count[k]
+        strenght_interval[t][1] += transition_count[k]
 
     return interval, strenght_interval
 
@@ -205,7 +205,7 @@ ctr = trace_generator.ConditionalTraceGenerator(
 )
 
 # Sample 1000 paths of length 20
-samples = [ctr.generate_random_trace([], 20) for _ in range(1000)]
+samples = [ctr.generate_random_trace([], 20) for _ in range(10000)]
 
 print(f"Sampled {len(samples)} times")
 
