@@ -33,7 +33,7 @@ if model.has_state_valuations:
 # Print if the path ended in a target state
 print(sample)
 
-# Generate 1000 random traces of length 50 conditioned on the previous trace
+# Generate 500 random traces of length 50 conditioned on the previous trace
 res = []
 for _ in range(500):
     print(".", end="", flush=True)
@@ -41,4 +41,5 @@ for _ in range(500):
 
 
 # Show the probability of reaching a bad state after the previous trace within 20 steps
+print(sample)
 print("\n", sum(res) / len(res))
