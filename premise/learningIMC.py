@@ -18,7 +18,7 @@ i_nu = 20  # initial upper bound of strength interval
 # samples = []
 
 
-def premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states):
+def premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states, all_intervals):
 
     initial_interval = {}
 
@@ -32,15 +32,13 @@ def premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states):
 
     interval = {}
 
-    for a in all_states:
-        for b in all_states:
-            interval[a, b] = [epsilon, 1 - epsilon]
+    for a, b in all_intervals:
+        interval[a, b] = [epsilon, 1 - epsilon]
 
     strenght_interval = {}
 
-    for a in all_states:
-        for b in all_states:
-            strenght_interval[a, b] = [i_nl, i_nu]
+    for a, b in all_intervals:
+        strenght_interval[a, b] = [i_nl, i_nu]
 
     return initial_interval, strenght_interval_initial, interval, strenght_interval
 
@@ -104,7 +102,6 @@ def initial_interval_learning(
 
 def interval_learning(all_states, samples, interval, strenght_interval):
 
-    trace_num = len(samples)  # number of traces in a sample
     trace_len = len(samples[0])
 
     transition_count = {}
@@ -118,49 +115,48 @@ def interval_learning(all_states, samples, interval, strenght_interval):
 
     tau_count = {}
 
-    for a in transition_count.keys():
-        for b in transition_count.keys():
-            tau_count[a, b] = 0
+    for a, b in interval.keys():
+        tau_count[a, b] = 0
 
-    for x in range(trace_num):
+    for s in samples:
         for y in range(trace_len - 1):
-            tau_count[samples[x][y], samples[x][y + 1]] += 1
+            tau_count[s[y], s[y + 1]] += 1
 
     for i in interval.keys():  # learns the lower bound of the interval
-        m = i
         n = i[0]
         if transition_count[n] != 0:
             if any(
                 (tau_count[n, s] / transition_count[n] < interval[n, s][0])
                 for s in all_states
+                if (n, s) in interval
             ):
                 interval[i][0] = (
-                    (strenght_interval[m][0] * interval[i][0]) + tau_count[m]
+                    (strenght_interval[i][0] * interval[i][0]) + tau_count[i]
                 ) / (
-                    strenght_interval[m][0] + transition_count[n]
+                    strenght_interval[i][0] + transition_count[n]
                 )  # FIX THE USE OF nl and nu
             else:
                 interval[i][0] = (
-                    (strenght_interval[m][1] * interval[i][0]) + tau_count[m]
+                    (strenght_interval[i][1] * interval[i][0]) + tau_count[i]
                 ) / (
-                    strenght_interval[m][1] + transition_count[n]
+                    strenght_interval[i][1] + transition_count[n]
                 )  # FIX THE USE OF nl and nu
 
     for i in interval.keys():  # learns the upper bound of the interval
         n = i[0]
-        m = i
         if transition_count[n] != 0:
             if any(
                 (tau_count[n, s] / transition_count[n] > interval[n, s][1])
                 for s in all_states
+                if (n, s) in interval
             ):
                 interval[i][1] = (
-                    (strenght_interval[m][0] * interval[i][1]) + tau_count[m]
-                ) / (strenght_interval[m][0] + transition_count[n])
+                    (strenght_interval[i][0] * interval[i][1]) + tau_count[i]
+                ) / (strenght_interval[i][0] + transition_count[n])
             else:
                 interval[i][1] = (
-                    (strenght_interval[m][1] * interval[i][1]) + tau_count[m]
-                ) / (strenght_interval[m][1] + transition_count[n])
+                    (strenght_interval[i][1] * interval[i][1]) + tau_count[i]
+                ) / (strenght_interval[i][1] + transition_count[n])
 
     for t in tau_count.keys():  # updates strength intervals
         k = t[0]
@@ -170,63 +166,62 @@ def interval_learning(all_states, samples, interval, strenght_interval):
     return interval, strenght_interval
 
 
-# Define which model to choose from the default models
-# It chooses SnL-10x10 if no model is given as an argument
-model_name = sys.argv[1] if len(sys.argv) > 1 else "SnL-10x10"
-model_def = models.default_models[model_name]
+if __name__ == "__main__":
+    # Define which model to choose from the default models
+    # It chooses SnL-10x10 if no model is given as an argument
+    model_name = sys.argv[1] if len(sys.argv) > 1 else "SnL-10x10"
+    model_def = models.default_models[model_name]
 
-print(f"Learning {model_name}")
+    print(f"Learning {model_name}")
 
-# Load the model into storm
-model, risk = models.build_model_and_risk(
-    model_def,
-    monitor.PremiseOptions(),
-)
+    # Load the model into storm
+    model, risk = models.build_model_and_risk(
+        model_def,
+        monitor.PremiseOptions(),
+    )
 
-print(model)
+    print(model)
 
-# Get the list of states and transitions
-all_states, transtitions = models.build_state_and_transition_list(
-    model, model_def.target_label
-)
+    # Get the list of states and transitions
+    all_states, all_transitions = models.build_state_and_transition_list(
+        model, model_def.target_label
+    )
 
-# Build the initial interval and interval dicts with widest ranges
-initial_interval, strenght_interval_initial, interval, strenght_interval = (
-    premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states)
-)
+    # Build the initial interval and interval dicts with widest ranges
+    initial_interval, strenght_interval_initial, interval, strenght_interval = (
+        premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states, all_transitions)
+    )
 
-print("Ready for learning")
+    print("Ready for learning")
 
-# Create the sampler
-ctr = trace_generator.ConditionalTraceGenerator(
-    model, target_label=model_def.target_label
-)
+    # Create the sampler
+    ctr = trace_generator.ConditionalTraceGenerator(
+        model, target_label=model_def.target_label
+    )
 
-# Sample 1000 paths of length 20
-samples = [ctr.generate_random_trace([], 20) for _ in range(10000)]
+    # Sample 1000 paths of length 20
+    samples = [ctr.generate_random_trace([], 20) for _ in range(10000)]
 
-print(f"Sampled {len(samples)} times")
+    print(f"Sampled {len(samples)} times")
 
-# Learn the initial interval for all states
-initial_interval_learning(
-    all_states, samples, strenght_interval_initial, initial_interval
-)
+    # Learn the initial interval for all states
+    initial_interval_learning(
+        all_states, samples, strenght_interval_initial, initial_interval
+    )
 
-print("Initial interval learned")
+    print("Initial interval learned")
 
-# Learn the transition interval
-interval_learning(all_states, samples, interval, strenght_interval)
+    # Learn the transition interval
+    interval_learning(all_states, samples, interval, strenght_interval)
 
-print("Interval learned")
+    print("Interval learned")
 
+    # to_delete = []
+    # for k in interval.keys():
+    #     if interval[k][1] < 0.005:
+    #         to_delete.append(k)
+    # for k in to_delete:
+    #     interval.pop(k)
 
-to_delete = []
-for k in interval.keys():
-    if interval[k][1] < 0.005:
-        to_delete.append(k)
-for k in to_delete:
-    interval.pop(k)
-
-
-numpy.save(f"premise/examples/{model_name}-initial_interval.npy", initial_interval)  # type: ignore
-numpy.save(f"premise/examples/{model_name}-interval.npy", interval)  # type: ignore
+    numpy.save(f"premise/examples/{model_name}-initial_interval.npy", initial_interval)  # type: ignore
+    numpy.save(f"premise/examples/{model_name}-interval.npy", interval)  # type: ignore

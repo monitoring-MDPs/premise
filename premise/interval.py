@@ -1,3 +1,4 @@
+import sys
 from time import time
 from typing import Any
 import numpy as np
@@ -108,7 +109,7 @@ def dict_to_interval_ipomdp(trans_dict, init_dict, target_label):
     state_index = 1
     transitions[init_state] = {}
 
-    for d, (l, u) in init_dict.items():
+    for d, (l, u) in sorted(init_dict.items()):
         if d not in real_states:
             continue
 
@@ -125,7 +126,7 @@ def dict_to_interval_ipomdp(trans_dict, init_dict, target_label):
         interval = Interval(l, u)
         transitions[init_state][state_index_map[d]] = interval
 
-    for (s, d), (l, u) in trans_dict.items():
+    for (s, d), (l, u) in sorted(trans_dict.items()):
         if s not in state_index_map:
             state_index_map[s] = state_index
             transitions[state_index] = {}
@@ -146,6 +147,11 @@ def dict_to_interval_ipomdp(trans_dict, init_dict, target_label):
     current_row = 0
     for s, d_dict in sorted(transitions.items()):
         builder.new_row_group(current_row)
+        if sum([x.upper() for x in d_dict.values()]) < 1:
+            print(
+                f"Row does not add to 1 ({sum([x.upper() for x in d_dict.values()])}): {next(key for key, value in state_index_map.items() if value == s)} with {d_dict}",
+                file=sys.stderr,
+            )
         for dest, interval in sorted(d_dict.items()):
             builder.add_next_value(current_row, dest, interval)
         current_row += 1
