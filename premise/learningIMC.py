@@ -14,8 +14,6 @@ i_i_nu = 10  # initial upper bound of strength interval for initial distribution
 i_nl = 10  # initial lower bound of strength interval
 i_nu = 20  # initial upper bound of strength interval
 
-# all_states = []
-# samples = []
 
 
 def premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states, all_intervals):
@@ -52,7 +50,7 @@ def initial_interval_learning(
     initial_count = {}
 
     for s in all_states:
-        initial_count[s] = 0  # DOES IT NEED TO BE A TUPLE?
+        initial_count[s] = 0  
 
     for t in samples:
         for s in all_states:
@@ -157,6 +155,18 @@ def interval_learning(all_states, samples, interval, strenght_interval):
                 interval[i][1] = (
                     (strenght_interval[i][1] * interval[i][1]) + tau_count[i]
                 ) / (strenght_interval[i][1] + transition_count[n])
+    
+    for k in interval.keys():  #Adjusting interval width 
+        if interval[k][1] - interval[k][0] < 0.02: 
+           middle = (interval[k][1] + interval[k][0]) / 2
+           interval[k][1] = middle + (0.01)
+           interval[k][0] = middle - (0.01)
+
+    for k in initial_interval.keys():
+        if initial_interval[k][0] < 0: 
+            initial_interval[k][1] = 0.0
+        if initial_interval[k][1] > 1: 
+            initial_interval[k][1] = 1.0 
 
     for t in tau_count.keys():  # updates strength intervals
         k = t[0]
@@ -200,7 +210,7 @@ if __name__ == "__main__":
     )
 
     # Sample 1000 paths of length 20
-    samples = [ctr.generate_random_trace([], 20) for _ in range(10000)]
+    samples = [ctr.generate_random_trace([], 20) for _ in range(100000)]
 
     print(f"Sampled {len(samples)} times")
 
@@ -216,12 +226,15 @@ if __name__ == "__main__":
 
     print("Interval learned")
 
-    # to_delete = []
-    # for k in interval.keys():
-    #     if interval[k][1] < 0.005:
-    #         to_delete.append(k)
-    # for k in to_delete:
-    #     interval.pop(k)
+   
 
     numpy.save(f"premise/examples/{model_name}-initial_interval.npy", initial_interval)  # type: ignore
     numpy.save(f"premise/examples/{model_name}-interval.npy", interval)  # type: ignore
+
+
+    
+
+       
+ 
+
+    
