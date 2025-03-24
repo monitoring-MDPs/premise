@@ -152,3 +152,5 @@ if __name__ == "__main__":
     print(f"Avg diff to premise: {np.mean([abs(r[0] - float(r[2])) for r in res])}")
     print(f"Best trace: {min(res, key=lambda x: abs(x[0] - x[1]))}")
     print(f"Worst trace: {max(res, key=lambda x: abs(x[0] - x[1]))}")
+
+

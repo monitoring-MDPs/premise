@@ -81,12 +81,15 @@ if __name__ == "__main__":
     alarms = []
     risks = []
 
+    testing_samples = []
+
     for x in range(10000): 
         print(x)
 
     # Run premise on the learned model
 
         sample = [ctr.generate_random_trace([], args.sample_length)]
+        testing_samples.append(sample)
         risk: list[tuple[list, Any]] = []
         for trace in tqdm.tqdm(sample):
             mon.initialize(0)
@@ -122,13 +125,9 @@ if __name__ == "__main__":
                             #print("\033[0m", end="")
                     #print()
                
-    
-        
-
             if args.verbose > 0:
                 input() 
 
-            
 
     # Print statistics
     print("Results:")
@@ -142,21 +141,21 @@ if __name__ == "__main__":
     for x in range(10000):
         if alarms[x] == 0:
             not_reached += 1 
-            if (risks[x] > (0.03)):
+            if (risks[x] > (0.2)): #0.14
                 false_positve += 1
         if alarms[x] == 1:
             reached += 1 
-            if (risks[x] < (0.03)): 
+            if (risks[x] < (0.2)): #0.14
                 false_negative +=1 
     
 
-              
-    
     print(f"Not reached : {not_reached/10000}")
     print(f"Reached : {reached/10000}")
     print(f"False Positives: {false_positve/not_reached}")
     print(f"False Negatives: {false_negative/reached}")
     print(f"Error rate: {(false_negative + false_positve)/ 10000}")
  
-     
-
+    np.save('/workspaces/premise/premise/examples/testing_samples.npy', testing_samples)
+    np.save('/workspaces/premise/premise/examples/risk_model_based.npy', risks)
+    np.save('/workspaces/premise/premise/examples/alarms.npy', alarms)
+ 

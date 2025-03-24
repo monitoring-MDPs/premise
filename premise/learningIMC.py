@@ -180,6 +180,7 @@ if __name__ == "__main__":
     # Define which model to choose from the default models
     # It chooses SnL-10x10 if no model is given as an argument
     model_name = sys.argv[1] if len(sys.argv) > 1 else "SnL-10x10"
+
     model_def = models.default_models[model_name]
 
     print(f"Learning {model_name}")
@@ -209,8 +210,12 @@ if __name__ == "__main__":
         model, target_label=model_def.target_label
     )
 
-    # Sample 1000 paths of length 20
-    samples = [ctr.generate_random_trace([], 20) for _ in range(100000)]
+    learning_samples = []  
+    
+    # Sample 10000 paths of length 20
+    samples = [ctr.generate_random_trace([], 20) for _ in range(250)]
+
+    learning_samples.append(samples)
 
     print(f"Sampled {len(samples)} times")
 
@@ -226,10 +231,44 @@ if __name__ == "__main__":
 
     print("Interval learned")
 
-   
-
     numpy.save(f"premise/examples/{model_name}-initial_interval.npy", initial_interval)  # type: ignore
     numpy.save(f"premise/examples/{model_name}-interval.npy", interval)  # type: ignore
+
+
+    for i in range(2, 26):  
+
+        samples = [ctr.generate_random_trace([], 20) for _ in range(250)]
+        learning_samples.append(samples)
+        print(f"Sampled {len(samples)} times")
+
+        initial_interval_learning(all_states, samples, strenght_interval_initial, initial_interval)
+        print("Initial interval learned")
+
+        interval_learning(all_states, samples, interval, strenght_interval)
+        print("Interval learned")
+
+        numpy.save(f"premise/examples/SnL-10x10_{i}-initial_interval.npy", initial_interval)
+        numpy.save(f"premise/examples/SnL-10x10_{i}-interval.npy", interval)
+
+numpy.save(f"premise/examples/learning_samples.npy", learning_samples)    
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
 
 
     
