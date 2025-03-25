@@ -31,12 +31,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "-s", "--samples", type=int, default=1000, help="Amount of samples to test on"
     )
-    parser.add_argument(
-        "--conformence-amount",
-        type=int,
-        default=1,
-        help="Amount of extensions to generate for a sample",
-    )
     parser.add_argument("--horizon", type=int, help="The horizon to monitor on")
     parser.add_argument(
         "--dump", type=str, help="Path to the file to dump the model to"
@@ -82,7 +76,6 @@ if __name__ == "__main__":
     )
 
     alarms: list[bool] = []
-    alarm_percent: list[float] = []
     risks = []
     traces = []
 
@@ -100,14 +93,10 @@ if __name__ == "__main__":
         risks.append(last_risk)
 
         # Check correctness of the monitor
-        alarm = 0
-        for _ in range(args.conformence_amount):
-            new_trace = ctr.generate_random_trace(
-                [s[1] for s in trace], length=len(trace) + args.horizon
-            )
-            alarm += any([s[2] for s in new_trace])
-        alarms.append(alarm > 0)
-        alarm_percent.append(alarm / args.conformence_amount)
+        new_trace = ctr.generate_random_trace(
+            [s[1] for s in trace], length=len(trace) + args.horizon
+        )
+        alarms.append(any([s[2] for s in new_trace]))
 
         if args.verbose > 0:
             input()
@@ -122,7 +111,6 @@ if __name__ == "__main__":
 
     np.save("/workspaces/premise/premise/examples/testing_samples.npy", trace)
     np.save("/workspaces/premise/premise/examples/risk_model_based.npy", risks)
-    np.save("/workspaces/premise/premise/examples/alarm_percent.npy", alarm_percent)
     np.save("/workspaces/premise/premise/examples/alarms.npy", alarms)
 
     for x in range(args.samples):
@@ -144,24 +132,16 @@ if __name__ == "__main__":
     fpr, tpr, threshold = metrics.roc_curve(alarms, risks)
     roc_auc = metrics.auc(fpr, tpr)
 
-    fig, axis = plt.subplots(1, 2, figsize=(8, 6))
+    fig, axis = plt.subplots(1, 1, figsize=(8, 6))
 
-    axis[0].set_title("Receiver Operating Characteristic")
-    axis[0].plot(fpr, tpr, "b", label="AUC = %0.2f" % roc_auc)
-    axis[0].legend(loc="lower right")
-    axis[0].plot([0, 1], [0, 1], "r--")
-    axis[0].set_xlim([0, 1])
-    axis[0].set_ylim([0, 1])
-    axis[0].set_ylabel("True Positive Rate")
-    axis[0].set_xlabel("False Positive Rate")
-
-    axis[1].set_title("True alarm rate against learned premise alarm rate")
-    axis[1].scatter(risks, alarm_percent)
-    axis[1].plot([0, 1], [0, 1], "r--")
-    axis[1].set_xlabel("learned risk")
-    axis[1].set_ylabel("True alarm rate")
-    axis[1].set_xlim([0, 1])
-    axis[1].set_ylim([0, 1])
+    axis.set_title("Receiver Operating Characteristic")
+    axis.plot(fpr, tpr, "b", label="AUC = %0.2f" % roc_auc)
+    axis.legend(loc="lower right")
+    axis.plot([0, 1], [0, 1], "r--")
+    axis.set_xlim((0, 1))
+    axis.set_ylim((0, 1))
+    axis.set_ylabel("True Positive Rate")
+    axis.set_xlabel("False Positive Rate")
 
     fig.set_size_inches(18.5, 10.5)
     plt.savefig("res.png")
