@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from itertools import product
 import stormpy as sp
 import logging
 from pathlib import Path
@@ -132,7 +133,9 @@ def _analyse_model(model, prop):
     return sp.model_checking(model, prop.raw_formula, force_fully_observable=True)
 
 
-def build_state_and_transition_list(model, target_label: str, add_label_to_state=False):
+def build_state_and_transition_list(
+    model, target_label: str, all_transitions=False, add_label_to_state=False
+):
     """
     Build a list of states and a list of transitions from the model
     :param model: The model to extract the states and transitions from
@@ -158,10 +161,17 @@ def build_state_and_transition_list(model, target_label: str, add_label_to_state
                 model.labeling.has_state_label(target_label, state.id),
             )
 
-    transitions = set()
-    for state in model.states:
-        for action in state.actions:
-            for transition in action.transitions:
-                transitions.add((states_map[state.id], states_map[transition.column]))
+    if all_transitions:
+        return list(states_map.values()), list(
+            product(states_map.values(), states_map.values())
+        )
+    else:
+        transitions = set()
+        for state in model.states:
+            for action in state.actions:
+                for transition in action.transitions:
+                    transitions.add(
+                        (states_map[state.id], states_map[transition.column])
+                    )
 
-    return list(states_map.values()), list(transitions)
+        return list(states_map.values()), list(transitions)

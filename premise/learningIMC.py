@@ -15,7 +15,6 @@ i_nl = 10  # initial lower bound of strength interval
 i_nu = 20  # initial upper bound of strength interval
 
 
-
 def premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states, all_intervals):
 
     initial_interval = {}
@@ -50,7 +49,7 @@ def initial_interval_learning(
     initial_count = {}
 
     for s in all_states:
-        initial_count[s] = 0  
+        initial_count[s] = 0
 
     for t in samples:
         for s in all_states:
@@ -155,18 +154,18 @@ def interval_learning(all_states, samples, interval, strenght_interval):
                 interval[i][1] = (
                     (strenght_interval[i][1] * interval[i][1]) + tau_count[i]
                 ) / (strenght_interval[i][1] + transition_count[n])
-    
-    for k in interval.keys():  #Adjusting interval width 
-        if interval[k][1] - interval[k][0] < 0.02: 
-           middle = (interval[k][1] + interval[k][0]) / 2
-           interval[k][1] = middle + (0.01)
-           interval[k][0] = middle - (0.01)
+
+    for k in interval.keys():  # Adjusting interval width
+        if interval[k][1] - interval[k][0] < 0.02:
+            middle = (interval[k][1] + interval[k][0]) / 2
+            interval[k][1] = middle + (0.01)
+            interval[k][0] = middle - (0.01)
 
     for k in initial_interval.keys():
-        if initial_interval[k][0] < 0: 
+        if initial_interval[k][0] < 0:
             initial_interval[k][1] = 0.0
-        if initial_interval[k][1] > 1: 
-            initial_interval[k][1] = 1.0 
+        if initial_interval[k][1] > 1:
+            initial_interval[k][1] = 1.0
 
     for t in tau_count.keys():  # updates strength intervals
         k = t[0]
@@ -195,7 +194,7 @@ if __name__ == "__main__":
 
     # Get the list of states and transitions
     all_states, all_transitions = models.build_state_and_transition_list(
-        model, model_def.target_label
+        model, model_def.target_label, all_transitions=True
     )
 
     # Build the initial interval and interval dicts with widest ranges
@@ -210,8 +209,8 @@ if __name__ == "__main__":
         model, target_label=model_def.target_label
     )
 
-    learning_samples = []  
-    
+    learning_samples = []
+
     # Sample 10000 paths of length 20
     samples = [ctr.generate_random_trace([], 20) for _ in range(250)]
 
@@ -234,46 +233,23 @@ if __name__ == "__main__":
     numpy.save(f"premise/examples/{model_name}-initial_interval.npy", initial_interval)  # type: ignore
     numpy.save(f"premise/examples/{model_name}-interval.npy", interval)  # type: ignore
 
-
-    for i in range(2, 51):  
+    for i in range(2, 51):
 
         samples = [ctr.generate_random_trace([], 20) for _ in range(250)]
         learning_samples.append(samples)
         print(f"Sampled {len(samples)} times")
 
-        initial_interval_learning(all_states, samples, strenght_interval_initial, initial_interval)
+        initial_interval_learning(
+            all_states, samples, strenght_interval_initial, initial_interval
+        )
         print("Initial interval learned")
 
         interval_learning(all_states, samples, interval, strenght_interval)
         print("Interval learned")
 
-        numpy.save(f"premise/examples/SnL-10x10_{i}-initial_interval.npy", initial_interval)
+        numpy.save(
+            f"premise/examples/SnL-10x10_{i}-initial_interval.npy", initial_interval
+        )
         numpy.save(f"premise/examples/SnL-10x10_{i}-interval.npy", interval)
 
-numpy.save(f"premise/examples/learning_samples.npy", learning_samples)    
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-    
-
-       
- 
-
-    
+numpy.save(f"premise/examples/learning_samples.npy", learning_samples)
