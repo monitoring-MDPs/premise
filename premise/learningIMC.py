@@ -235,7 +235,7 @@ if __name__ == "__main__":
     numpy.save(f"premise/examples/{model_name}-interval.npy", interval)  # type: ignore
 
 
-    for i in range(2, 26):  
+    for i in range(2, 51):  
 
         samples = [ctr.generate_random_trace([], 20) for _ in range(250)]
         learning_samples.append(samples)

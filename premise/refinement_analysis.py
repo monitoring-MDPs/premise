@@ -1,8 +1,5 @@
-import numpy as np 
 import matplotlib.pyplot as plt
 import pickle
-
-#refinement_results = np.load('/workspaces/premise/premise/examples/refinement_results.npy', allow_pickle=True)
 
 with open('/workspaces/premise/premise/examples/refinement_results.pkl', 'rb') as f:
     refinement_results = pickle.load(f)
