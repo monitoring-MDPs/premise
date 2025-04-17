@@ -83,7 +83,7 @@ def initial_interval_learning(
     for s in all_states:  # updates strength intervals
         strenght_interval_initial[s][0] += trace_num
         strenght_interval_initial[s][1] += trace_num
-
+    
     return initial_interval, strenght_interval_initial
 
 
@@ -108,6 +108,10 @@ def interval_learning(all_states, samples, interval, strenght_interval):
     for s in samples:
         for y in range(trace_len - 1):
             tau_count[s[y], s[y + 1]] += 1
+
+    for x in tau_count.keys(): 
+        if x[0] == (0,3,False): 
+            print(x, transition_count[x[0]], tau_count[x])
 
     for i in interval.keys():  # learns the lower bound of the interval
         n = i[0]
@@ -145,17 +149,18 @@ def interval_learning(all_states, samples, interval, strenght_interval):
                     (strenght_interval[i][1] * interval[i][1]) + tau_count[i]
                 ) / (strenght_interval[i][1] + transition_count[n])
 
+
     for k in interval.keys():  # Adjusting interval width
         if interval[k][1] - interval[k][0] < 0.02:
             middle = (interval[k][1] + interval[k][0]) / 2
             interval[k][1] = middle + (0.01)
             interval[k][0] = middle - (0.01)
 
-    for k in initial_interval.keys():
-        if initial_interval[k][0] < 0:
-            initial_interval[k][1] = 0.0
-        if initial_interval[k][1] > 1:
-            initial_interval[k][1] = 1.0
+    for k in interval.keys():
+       if interval[k][0] < 0:
+            interval[k][0] = 0.0
+       if interval[k][1] > 1:
+            interval[k][1] = 1.0
 
     for t in tau_count.keys():  # updates strength intervals
         k = t[0]
@@ -250,13 +255,17 @@ if __name__ == "__main__":
     initial_interval_learning(
         all_states, samples, strenght_interval_initial, initial_interval
     )
-
+    
     print("Initial interval learned")
-
+    
     # Learn the transition interval
     interval_learning(all_states, samples, interval, strenght_interval)
 
     print("Interval learned")
+    #print(interval)
 
-    numpy.save(f"premise/examples/{suo.model_name}-initial_interval.npy", initial_interval)  # type: ignore
-    numpy.save(f"premise/examples/{suo.model_name}-interval.npy", interval)  # type: ignore
+    #numpy.save(f"premise/examples/{suo.model_name}-initial_interval.npy", initial_interval)  # type: ignore
+    #numpy.save(f"premise/examples/{suo.model_name}-interval.npy", interval)  # type: ignore
+
+
+#python -m premise.interval.learningIMC -mc SnL-10x10 -a 10000
