@@ -109,10 +109,6 @@ def interval_learning(all_states, samples, interval, strenght_interval):
         for y in range(trace_len - 1):
             tau_count[s[y], s[y + 1]] += 1
 
-    for x in tau_count.keys(): 
-        if x[0] == (0,3,False): 
-            print(x, transition_count[x[0]], tau_count[x])
-
     for i in interval.keys():  # learns the lower bound of the interval
         n = i[0]
         if transition_count[n] != 0:
@@ -262,10 +258,8 @@ if __name__ == "__main__":
     interval_learning(all_states, samples, interval, strenght_interval)
 
     print("Interval learned")
-    #print(interval)
-
-    #numpy.save(f"premise/examples/{suo.model_name}-initial_interval.npy", initial_interval)  # type: ignore
-    #numpy.save(f"premise/examples/{suo.model_name}-interval.npy", interval)  # type: ignore
 
 
-#python -m premise.interval.learningIMC -mc SnL-10x10 -a 10000
+    numpy.save(f"premise/examples/{suo.model_name}-initial_interval.npy", initial_interval)  # type: ignore
+    numpy.save(f"premise/examples/{suo.model_name}-interval.npy", interval)  # type: ignore
+
