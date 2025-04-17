@@ -3,28 +3,32 @@ from time import time
 from typing import Any
 import numpy as np
 from stormpy import (
-    Environment,
-    MinMaxMethod,
-    check_interval_mdp,
-    CheckTask,
-    ExpressionManager,
+    Environment,  # type: ignore
+    MinMaxMethod,  # type: ignore
+    check_interval_mdp,  # type: ignore
+    CheckTask,  # type: ignore
+    ExpressionManager,  # type: ignore
     parse_properties,
-    SparseIntervalModelComponents,
-    SparseIntervalMdp,
-    SparseIntervalPomdp,
-    StateLabeling,
-    ChoiceLabeling,
+    SparseIntervalModelComponents,  # type: ignore
+    SparseIntervalMdp,  # type: ignore
+    SparseIntervalPomdp,  # type: ignore
+    StateLabeling,  # type: ignore
 )
 from stormpy.pomdp import (
-    ObservationTraceUnfolderOptions,
-    ObservationTraceUnfolderInterval,
+    ObservationTraceUnfolderOptions,  # type: ignore
+    ObservationTraceUnfolderInterval,  # type: ignore
 )
-from stormpy.pycarl import Interval
+from stormpy.pycarl import Interval  # type: ignore
 import stormpy as sp
 
 import argparse
 
 from premise.monitor import UnfoldingRiskAssessment, Monitor
+
+
+State = tuple[Any, Any, bool]
+Trace = tuple[State, ...]
+Samples = list[Trace]
 
 
 def hamming_lookup(d: dict[str, int], key: str) -> int:
@@ -95,7 +99,9 @@ def stormpy_product_unroll(i_mdp: SparseIntervalMdp, horizon):
     return SparseIntervalMdp(components)
 
 
-def dict_to_interval_ipomdp(trans_dict, init_dict, target_label):
+def dict_to_interval_ipomdp(
+    trans_dict, init_dict, target_label
+) -> tuple[Any, dict[Any, int], dict[Any, int]]:
     transitions: dict[int, dict[int, Interval]] = {}
     state_index_map: dict[Any, int] = {}
     observations = {}
@@ -189,23 +195,25 @@ class UnfoldingIntervalRiskAssessment(UnfoldingRiskAssessment):
         self._prop = sp.parse_properties(f'P{maxmin}=? [F "_goal"]')[0]
 
     def get_risk(self, deadline=None):
-        sp.reset_timeout()
+        sp.reset_timeout()  # type: ignore
         if deadline:
-            sp.set_timeout(int(deadline / 1000))
+            sp.set_timeout(int(deadline / 1000))  # type: ignore
         try:
             task = CheckTask(self._prop.raw_formula, False)
             result = check_interval_mdp(self._mdp, task, self._stormpy_env)
-            risk = result.at(self._mdp.initial_states[0])
+            risk = result.at(self._mdp.initial_states[0])  # type: ignore
         except RuntimeError:
             print("What")
             return False, 0
-        sp.reset_timeout()
+        sp.reset_timeout()  # type: ignore
         return True, risk
 
 
 def create_monitor(
-    trans_dict, init_dict, maxmin, target_label, horizon, dump_path=None, verbose=1
-):
+    trans_dict, init_dict, maxmin, target_label, horizon, dump_path=None, verbose=0
+) -> tuple[
+    Monitor, dict[Any, int], ObservationTraceUnfolderInterval, SparseIntervalPomdp
+]:
     stormpy_environment = Environment()
     stormpy_environment.solver_environment.minmax_solver_environment.method = (
         MinMaxMethod.value_iteration

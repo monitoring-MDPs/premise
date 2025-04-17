@@ -1,8 +1,10 @@
 from abc import ABC
+from typing import Any
 
 import stormpy
 import stormpy.pomdp
 
+from premise.interval.interval import Samples, State, Trace
 from premise.monitor import PremiseOptions, UnfoldingRiskAssessment, Monitor
 from premise.trace_generator import ConditionalTraceGenerator
 from premise.models import (
@@ -15,12 +17,25 @@ from premise.models import (
 class SystemUnderObservation(ABC):
     model_name: str
 
-    def get_states_and_transitions(self) -> tuple[list, list[tuple]]:
+    def get_states_and_transitions(
+        self,
+    ) -> tuple[list[State], list[tuple[State, State]]]:
         raise NotImplementedError("This method should be overridden by subclasses")
 
     def generate_random_traces(
-        self, observation_prefix: list, length: int, amount: int = 1
-    ) -> list[list[tuple[int, int, bool]]]:
+        self,
+        observation_prefix: list[Any],
+        length: int,
+        amount: int = 1,
+    ) -> Samples:
+        raise NotImplementedError("This method should be overridden by subclasses")
+
+    def generate_random_traces_with_prob(
+        self,
+        observation_prefix: list[Any],
+        length: int,
+        amount=1,
+    ) -> list[tuple[Trace, Any]]:
         raise NotImplementedError("This method should be overridden by subclasses")
 
     def get_risk(self):
@@ -50,7 +65,18 @@ class MCSystemUnderObservation(SystemUnderObservation):
             add_label_to_state=add_label_to_state,
         )
 
-    def generate_random_traces(self, observation_prefix: list, length: int, amount=1):
+    def generate_random_traces(
+        self, observation_prefix: list[Any], length: int, amount=1
+    ) -> Samples:
+        samples = [
+            self._ctr.generate_random_trace(observation_prefix, length)
+            for _ in range(amount)
+        ]
+        return [s[0] for s in samples]
+
+    def generate_random_traces_with_prob(
+        self, observation_prefix: list[Any], length: int, amount=1
+    ) -> list[tuple[Trace, Any]]:
         return [
             self._ctr.generate_random_trace(observation_prefix, length)
             for _ in range(amount)

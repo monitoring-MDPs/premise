@@ -1,9 +1,11 @@
 import logging
 import random
-import trace
+from typing import Any
 
 import stormpy.simulator
 from stormpy import Rational
+
+from premise.interval.interval import Trace
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +32,7 @@ class ConditionalTraceGenerator:
         self.current_state = self.model.initial_states[0]
         return self.model.get_observation(self.current_state)
 
-    def step(self, action=None) -> int:
+    def step(self, action=None) -> tuple[int, Any]:
         state = self.model.states[self.current_state]
         if action is None:
             action = random.choice(list(state.actions)).id
@@ -42,10 +44,16 @@ class ConditionalTraceGenerator:
             if total_prob > probability:
                 self.current_state = transition.column
                 break
+        else:
+            raise ValueError(
+                f"No transition found for action {action} in state {self.current_state}"
+            )
 
-        return self.model.get_observation(self.current_state)
+        return (self.model.get_observation(self.current_state), transition.value())
 
-    def conditional_step(self, observation, ignore_states=None, action=None):
+    def conditional_step(
+        self, observation, ignore_states=None, action=None
+    ) -> tuple[int, Any]:
         if ignore_states is None:
             ignore_states = []
 
@@ -77,11 +85,14 @@ class ConditionalTraceGenerator:
                 self.current_state = state_id
                 break
 
-        return self.model.get_observation(self.current_state)
+        return (
+            self.model.get_observation(self.current_state),
+            prob,
+        )  # TODO: this is a underestimate of the probability
 
     def generate_random_trace(
         self, observation_prefix: list[int], length: int
-    ) -> list[tuple[int, int, bool]]:
+    ) -> tuple[Trace, Any]:
         init_obs = self.initialize()
         init_state = self.current_state
         has_label = self.model.labeling.has_state_label(self.target_label, init_state)
@@ -91,32 +102,35 @@ class ConditionalTraceGenerator:
         if res is None:
             raise ValueError("Could not generate trace with given prefix")
 
-        return [(init_state, init_obs, has_label)] + res
+        path, prob = res
+
+        return tuple([(init_state, init_obs, has_label)] + path), prob
 
     def _generate_random_trace_rec(
         self, observation_prefix: list[int], length: int
-    ) -> list[tuple[int, int, bool]] | None:
+    ) -> tuple[list[tuple[int, int, bool]], Any] | None:
         if length == 0:
-            return []
+            return ([], Rational(1.0))
         elif len(observation_prefix) == 0:
-            step_obs = self.step()
+            step_obs, step_prob = self.step()
             new_state = self.current_state
             res = self._generate_random_trace_rec([], length - 1)
             if res is None:
                 return None
+            path, prob = res
             return [
                 (
                     new_state,
                     step_obs,
                     self.model.labeling.has_state_label(self.target_label, new_state),
                 )
-            ] + res
+            ] + path, step_prob * prob
         else:
             old_state = self.current_state
             bad_states = []
             while True:
                 try:
-                    cond_step_obs = self.conditional_step(
+                    cond_step_obs, cond_step_prob = self.conditional_step(
                         observation_prefix[0], ignore_states=bad_states
                     )
                     new_state = self.current_state
@@ -124,15 +138,19 @@ class ConditionalTraceGenerator:
                         observation_prefix[1:], length - 1
                     )
                     if res is not None:
-                        return [
-                            (
-                                new_state,
-                                cond_step_obs,
-                                self.model.labeling.has_state_label(
-                                    self.target_label, old_state
-                                ),
-                            )
-                        ] + res
+                        path, prob = res
+                        return (
+                            [
+                                (
+                                    new_state,
+                                    cond_step_obs,
+                                    self.model.labeling.has_state_label(
+                                        self.target_label, old_state
+                                    ),
+                                )
+                            ]
+                            + path
+                        ), cond_step_prob * prob
                     else:
                         bad_states.append(self.current_state)
                         self.current_state = old_state
