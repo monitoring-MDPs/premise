@@ -31,7 +31,7 @@ def premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states, all_intervals
 
 
 def initial_interval_learning(
-    all_states, samples, strenght_interval_initial, initial_interval
+    all_states, samples, strenght_interval_initial, initial_interval, min_width
 ):
 
     trace_num = len(samples)  # number of traces in a sample
@@ -80,14 +80,27 @@ def initial_interval_learning(
                         + initial_count[n]
                     ) / (strenght_interval_initial[n][1] + trace_num)
 
+    for k in initial_interval.keys():  # Adjusting interval width
+        if initial_interval[k][1] - initial_interval[k][0] < min_width:
+            middle = (initial_interval[k][1] + initial_interval[k][0]) / 2
+            initial_interval[k][1] = middle + (min_width/2)
+            initial_interval[k][0] = middle - (min_width/2)
+
+    for k in initial_interval.keys():
+       if initial_interval[k][0] < 0:
+            initial_interval[k][0] = 0.0
+       if initial_interval[k][1] > 1:
+            initial_interval[k][1] = 1.0
+
     for s in all_states:  # updates strength intervals
         strenght_interval_initial[s][0] += trace_num
         strenght_interval_initial[s][1] += trace_num
     
+
     return initial_interval, strenght_interval_initial
 
 
-def interval_learning(all_states, samples, interval, strenght_interval):
+def interval_learning(all_states, samples, interval, strenght_interval, min_width):
 
     trace_len = len(samples[0])
 
@@ -147,10 +160,10 @@ def interval_learning(all_states, samples, interval, strenght_interval):
 
 
     for k in interval.keys():  # Adjusting interval width
-        if interval[k][1] - interval[k][0] < 0.02:
+        if interval[k][1] - interval[k][0] < min_width:
             middle = (interval[k][1] + interval[k][0]) / 2
-            interval[k][1] = middle + (0.01)
-            interval[k][0] = middle - (0.01)
+            interval[k][1] = middle + (min_width/2)
+            interval[k][0] = middle - (min_width/2)
 
     for k in interval.keys():
        if interval[k][0] < 0:
@@ -175,7 +188,6 @@ if __name__ == "__main__":
     model_group.add_argument(
         "-sim", "--sim", type=str, help="Use the simulation model with the given name"
     )
-
     parser.add_argument(
         "-a", "--amount", type=int, default=250, help="Amount of samples to generate"
     )
@@ -214,7 +226,13 @@ if __name__ == "__main__":
         default=20,
         help="Initial upper bound of strength interval",
     )
-
+    param_group.add_argument(
+        "--interval-min-width",
+        type=float,
+        default=0.0,
+        help="Fix minimum interval width",
+    )
+    
     args = parser.parse_args()
 
     epsilon = args.epsilon
@@ -224,6 +242,8 @@ if __name__ == "__main__":
 
     i_nl = args.trans_lower_strength
     i_nu = args.trans_upper_strength
+
+    min_width = args.interval_min_width
 
     if args.mc:
         model_def = default_models[args.mc]
@@ -249,16 +269,15 @@ if __name__ == "__main__":
 
     # Learn the initial interval for all states
     initial_interval_learning(
-        all_states, samples, strenght_interval_initial, initial_interval
+        all_states, samples, strenght_interval_initial, initial_interval, min_width
     )
     
     print("Initial interval learned")
     
     # Learn the transition interval
-    interval_learning(all_states, samples, interval, strenght_interval)
+    interval_learning(all_states, samples, interval, strenght_interval, min_width)
 
     print("Interval learned")
-
 
     numpy.save(f"premise/examples/{suo.model_name}-initial_interval.npy", initial_interval)  # type: ignore
     numpy.save(f"premise/examples/{suo.model_name}-interval.npy", interval)  # type: ignore
