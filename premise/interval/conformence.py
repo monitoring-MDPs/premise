@@ -11,10 +11,15 @@ from premise.interval.loss import distance_measures
 
 
 def test_monitor(
-    mon: Monitor, samples: Samples, obs_func=lambda x: x, skip_initial=False
+    mon: Monitor,
+    samples: Samples,
+    obs_func=lambda x: x,
+    skip_initial=False,
+    with_tqdm=True,
 ):
     risks: dict[Trace, Any] = {}
-    for trace in tqdm.tqdm(samples):
+    it = tqdm.tqdm(samples) if with_tqdm else samples
+    for trace in it:
         observations = [t[1] for t in trace]
 
         if skip_initial:
@@ -23,7 +28,7 @@ def test_monitor(
             mon.initialize(obs_func(observations[0]))
 
         for obs in observations[0 if skip_initial else 1 : -1]:
-            mon.step(obs_func(obs), compute_risk=False)
+            risk = mon.step(obs_func(obs), compute_risk=True)
 
         last_risk = mon.step(obs_func(observations[-1]), compute_risk=True)
         risks[trace] = last_risk
@@ -79,7 +84,7 @@ def main(args: argparse.Namespace):
     )
 
     # Generate samples
-    samples_with_prob = suo.generate_random_traces_with_prob([], args.sample_length, args.conformence_amount)  # type: ignore
+    samples_with_prob = suo.generate_random_traces_with_prob([], args.sample_length, args.sample_count)  # type: ignore
     total_prob = sum(p for _, p in samples_with_prob)
     weights = {s: float(p / total_prob) for s, p in samples_with_prob}
     samples = [s[0] for s in samples_with_prob]
@@ -200,6 +205,13 @@ if __name__ == "__main__":
         required=True,
         type=int,
         help="Length of the samples to generate",
+    )
+    parser.add_argument(
+        "-s",
+        "--sample-count",
+        type=int,
+        default=100,
+        help="Amount of extensions to generate for a sample",
     )
     parser.add_argument(
         "-a",

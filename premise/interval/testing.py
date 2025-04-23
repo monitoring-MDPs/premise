@@ -4,9 +4,10 @@ from tqdm import trange
 import matplotlib.pyplot as plt
 from sklearn import metrics
 
+from premise.interval.conformence import test_monitor
 from premise.interval.interval import create_monitor
 from premise.models import default_models
-from system import MCSystemUnderObservation, SystemUnderObservation
+from premise.system import MCSystemUnderObservation, SystemUnderObservation
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Conformance checking")
@@ -44,10 +45,14 @@ if __name__ == "__main__":
         "-s", "--samples", type=int, default=1000, help="Amount of samples to test on"
     )
     parser.add_argument(
-        "--horizon", required=True, type=int, help="The horizon to monitor on"
+        "-ho", "--horizon", required=True, type=int, help="The horizon to monitor on"
     )
     parser.add_argument(
         "--dump", type=str, help="Path to the file to dump the model to"
+    )
+
+    parser.add_argument(
+        "--dump-stats", type=str, help="Path to the file to dump stats to"
     )
     parser.add_argument("--verbose", "-v", action="count", default=0)
 
@@ -96,34 +101,55 @@ if __name__ == "__main__":
         alarms.append(any([s[2] for s in trace]))
 
         # Run premise on the learned model
-        sub_trace = trace[: args.horizon]
-        mon.initialize(0)
-        observations = [s[1] for s in sub_trace]
-        for obs in observations[:-1]:
-            mon.step(observation_map[obs], compute_risk=False)
-        last_risk = mon.step(observation_map[observations[-1]], compute_risk=True)
-        risks.append(last_risk)
+        sub_trace = trace[: args.sample_length]
+        risk = test_monitor(
+            mon,
+            [sub_trace],
+            obs_func=lambda x: observation_map[x],
+            skip_initial=True,
+            with_tqdm=False,
+        )[sub_trace]
 
-    # Print statistics
+        risks.append(risk)
+
+    if args.dump_stats:
+        np.save(
+            args.dump_stats,
+            {
+                "samples": traces,
+                "alarms": alarms,
+                "risks": risks,
+            },  # type: ignore
+        )
+
     print("Results:")
+    print(f"Loaded {len(risks)} samples.")
+    print(f"Alarms: {np.sum(alarms)} / {len(alarms)} ({100*np.mean(alarms):.2f}%)")
+    print(
+        f"Risks: min={np.min(risks):.4f}, max={np.max(risks):.4f}, mean={np.mean(risks):.4f}"
+    )
+    print(
+        f"Risks: std={np.std(risks):.4f}, var={np.var(risks):.4f}, median={np.median(risks):.4f}"
+    )
 
-    np.save("/workspaces/premise/premise/examples/testing_samples.npy", trace)
-    np.save("/workspaces/premise/premise/examples/risk_model_based.npy", risks)
-    np.save("/workspaces/premise/premise/examples/alarms.npy", alarms)
-
-    fpr, tpr, threshold = metrics.roc_curve(alarms, risks)
-    roc_auc = metrics.auc(fpr, tpr)
-
-    fig, axis = plt.subplots(1, 1, figsize=(8, 6))
-
-    axis.set_title("Receiver Operating Characteristic")
-    axis.plot(fpr, tpr, "b", label="AUC = %0.2f" % roc_auc)
-    axis.legend(loc="lower right")
-    axis.plot([0, 1], [0, 1], "r--")
-    axis.set_xlim((0, 1))
-    axis.set_ylim((0, 1))
-    axis.set_ylabel("True Positive Rate")
-    axis.set_xlabel("False Positive Rate")
-
-    fig.set_size_inches(18.5, 10.5)
-    plt.savefig("res.png")
+    # Print a trace with an alarm and without an alarm use the suo trace printer suo.trace_to_str(trace)
+    print("Alarmed traces:")
+    for i, trace in enumerate(traces):
+        if alarms[i]:
+            print(f"Trace {i}: {suo.trace_to_str(trace)}")
+            print(f"Risk: {risks[i]}")
+            print(
+                f"True risk before horizon: {float(suo.get_risk()[trace[args.sample_length][0]])}"
+            )
+            print(f"True risk at end: {float(suo.get_risk()[trace[-1][0]])}")
+            break
+    print("Not alarmed traces:")
+    for i, trace in enumerate(traces):
+        if not alarms[i]:
+            print(f"Trace {i}: {suo.trace_to_str(trace)}")
+            print(f"Risk: {risks[i]}")
+            print(
+                f"True risk before horizon: {float(suo.get_risk()[trace[args.sample_length][0]])}"
+            )
+            print(f"True risk at end: {float(suo.get_risk()[trace[-1][0]])}")
+            break

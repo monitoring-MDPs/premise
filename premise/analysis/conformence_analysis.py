@@ -1,5 +1,4 @@
 # %%
-import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -45,10 +44,13 @@ def main(stats_path="../../out/conformence.npy"):
     m = [monitored_risks[tr] for tr in traces]
     s = [sampled_risks[tr] for tr in traces]
     r = [true_risks[tr] for tr in traces]
+    w = [weights[tr] for tr in traces]
 
     # Scatter plots
     plot_scatter(m, t, "Monitor Risk", "Target Risk", "Learned vs Target Monitor Risk")
     plot_scatter(m, s, "Monitor Risk", "Sampling Risk", "Learned vs Sampling Risk")
+    plot_scatter(t, s, "Target Risk", "Sampling Risk", "Target vs Sampling Risk")
+
     plot_scatter(
         m,
         r,
@@ -80,18 +82,20 @@ def main(stats_path="../../out/conformence.npy"):
         plt.figure()
         _, bins, _ = plt.hist(
             [d[1][1] for d in stats["sample_all_dist"]],
+            weights=w,
             bins=30,
             alpha=0.5,
             label="Sampling",
         )
         plt.hist(
             [d[1][1] for d in stats["target_all_dist"]],
-            bins,  # type: ignore
+            bins=bins,  # type: ignore
+            weights=w,
             alpha=0.5,
             label="Target",
         )
         plt.xlabel("Distance")
-        plt.ylabel("Count")
+        plt.ylabel("Probability")
         plt.title("Distribution of Trace Distances")
         plt.legend()
         plt.show()
