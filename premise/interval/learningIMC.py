@@ -47,39 +47,35 @@ def initial_interval_learning(
             if s == t[0]:
                 initial_count[s] += 1
 
-    for n in initial_count.keys():  # learns the lower bound of the initial interval
-        for i in initial_interval.keys():
-            if n == i:
-                if any(
-                    (initial_count[x] / trace_num) < initial_interval[n][0]
-                    for x in initial_count.keys()
-                ):
-                    initial_interval[n][0] = (
-                        (initial_interval[n][0] * strength_interval_initial[n][0])
-                        + initial_count[n]
-                    ) / (strength_interval_initial[n][0] + trace_num)
-                else:
-                    initial_interval[n][0] = (
-                        (initial_interval[n][0] * strength_interval_initial[n][1])
-                        + initial_count[n]
-                    ) / (strength_interval_initial[n][1] + trace_num)
+    for n in initial_interval.keys():  # learns the lower bound of the initial interval
+        if any(
+            (initial_count[x] / trace_num) < initial_interval[n][0]
+            for x in initial_count.keys()
+        ):
+            initial_interval[n][0] = (
+                (initial_interval[n][0] * strength_interval_initial[n][0])
+                + initial_count[n]
+            ) / (strength_interval_initial[n][0] + trace_num)
+        else:
+            initial_interval[n][0] = (
+                (initial_interval[n][0] * strength_interval_initial[n][1])
+                + initial_count[n]
+            ) / (strength_interval_initial[n][1] + trace_num)
 
-    for n in initial_count.keys():  # learns the upper bound of the initial interval
-        for i in initial_interval.keys():
-            if n == i:
-                if any(
-                    (initial_count[x] / trace_num) > initial_interval[n][1]
-                    for x in initial_count.keys()
-                ):
-                    initial_interval[n][1] = (
-                        (initial_interval[n][1] * strength_interval_initial[n][0])
-                        + initial_count[n]
-                    ) / (strength_interval_initial[n][0] + trace_num)
-                else:
-                    initial_interval[n][1] = (
-                        (initial_interval[n][1] * strength_interval_initial[n][1])
-                        + initial_count[n]
-                    ) / (strength_interval_initial[n][1] + trace_num)
+    for n in initial_interval.keys():  # learns the upper bound of the initial interval
+        if any(
+            (initial_count[x] / trace_num) > initial_interval[n][1]
+            for x in initial_count.keys()
+        ):
+            initial_interval[n][1] = (
+                (initial_interval[n][1] * strength_interval_initial[n][0])
+                + initial_count[n]
+            ) / (strength_interval_initial[n][0] + trace_num)
+        else:
+            initial_interval[n][1] = (
+                (initial_interval[n][1] * strength_interval_initial[n][1])
+                + initial_count[n]
+            ) / (strength_interval_initial[n][1] + trace_num)
 
     for k in initial_interval.keys():  # Adjusting interval width
         if initial_interval[k][1] - initial_interval[k][0] < min_width:
@@ -106,6 +102,7 @@ def interval_learning(
     interval: dict[tuple[State, State], list[float]],
     strength_interval,
     min_width: float,
+    remove_unseen_transitions: bool = True,
 ):
 
     trace_len = len(samples[0])
@@ -119,10 +116,18 @@ def interval_learning(
         for s in t[:-1]:
             transition_count[s] += 1
 
+    one_transition: dict[State, bool | State] = {s: False for s in all_states}
     tau_count = {}
-
     for a, b in interval.keys():
         tau_count[a, b] = 0
+        if one_transition[a] == False:
+            one_transition[a] = b
+        elif one_transition[a] != True and one_transition[a] != False:
+            one_transition[a] = True
+
+    for s in all_states:
+        if not isinstance(one_transition[s], bool):
+            interval[s, one_transition[s]] = [1.0, 1.0]  # type: ignore
 
     for s in samples:
         for y in range(trace_len - 1):
@@ -181,23 +186,40 @@ def interval_learning(
         strength_interval[t][0] += transition_count[k]
         strength_interval[t][1] += transition_count[k]
 
-    for src, dest in tau_count.keys():
-        if tau_count[src, dest] == 0:
-            l, u = interval.pop((src, dest))
+    if remove_unseen_transitions:
+        to_remove = {}
+        for src, dest in tau_count.keys():
+            if tau_count[src, dest] == 0:
+                if src not in to_remove:
+                    to_remove[src] = []
 
-            # Calculate sum of interval upperbounds and lowerbounds of src
-            sum_upper = sum(
-                interval[(src, s)][1] for s in all_states if (src, s) in interval
-            )
-            sum_lower = sum(
-                interval[(src, s)][0] for s in all_states if (src, s) in interval
-            )
+                to_remove[src].append(dest)
 
-            # Normalize upper- and lowerbounds of src
-            for s in all_states:
-                if (src, s) in interval:
-                    interval[(src, s)][0] += l * (interval[(src, s)][0] / sum_lower)
-                    interval[(src, s)][1] += u * (interval[(src, s)][1] / sum_upper)
+        for src, dests in to_remove.items():
+            remove_prob = [0.0, 0.0]
+            for dest in dests:
+                l, u = interval.pop((src, dest))
+                remove_prob[0] += l
+                remove_prob[1] += u
+
+            if remove_prob[0] > 0.0 or remove_prob[1] > 0.0:
+                # Calculate sum of interval upperbounds and lowerbounds of src
+                sum_upper = sum(
+                    interval[(src, s)][1] for s in all_states if (src, s) in interval
+                )
+                sum_lower = sum(
+                    interval[(src, s)][0] for s in all_states if (src, s) in interval
+                )
+
+                # Normalize upper- and lowerbounds of src
+                for s in all_states:
+                    if (src, s) in interval:
+                        interval[(src, s)][0] += remove_prob[0] * (
+                            interval[(src, s)][0] / sum_lower
+                        )
+                        interval[(src, s)][1] += remove_prob[1] * (
+                            interval[(src, s)][1] / sum_upper
+                        )
 
     return interval, strength_interval
 
@@ -212,6 +234,7 @@ def learn_IMC(
     i_i_nu: int = 10,
     i_nl: int = 10,
     i_nu: int = 20,
+    remove_unseen_transitions: bool = True,
 ):
     initial_interval, strength_interval_initial, interval, strength_interval = (
         premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states, all_transitions)
@@ -225,7 +248,14 @@ def learn_IMC(
         min_width,
     )
 
-    interval_learning(all_states, samples, interval, strength_interval, min_width)
+    interval_learning(
+        all_states,
+        samples,
+        interval,
+        strength_interval,
+        min_width,
+        remove_unseen_transitions,
+    )
 
     return initial_interval, interval
 
@@ -244,6 +274,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-l", "--length", type=int, default=20, help="Length of the samples to generate"
+    )
+    parser.add_argument(
+        "-t",
+        "--existing-transitions",
+        action="store_true",
+        help="Use only real transitions",
     )
 
     param_group = parser.add_argument_group("Internal Parameters")
@@ -295,7 +331,9 @@ if __name__ == "__main__":
         raise ValueError("No model specified")
 
     risk = suo.get_risk()
-    all_states, all_transitions = suo.get_states_and_transitions()
+    all_states, all_transitions = suo.get_states_and_transitions(
+        all_transitions=not args.existing_transitions
+    )
     samples = suo.generate_random_traces([], args.length, args.amount)
 
     initial_interval, interval = learn_IMC(
@@ -308,6 +346,7 @@ if __name__ == "__main__":
         args.initial_upper_strength,
         args.trans_lower_strength,
         args.trans_upper_strength,
+        remove_unseen_transitions=not args.existing_transitions,
     )
 
     numpy.save(f"premise/examples/{suo.model_name}-initial_interval.npy", initial_interval)  # type: ignore

@@ -30,16 +30,18 @@ def test_monitor(
     return risks
 
 
-def random_sample_monitor_test(suo: SystemUnderObservation, samples: Samples):
+def random_sample_monitor_test(
+    suo: SystemUnderObservation, samples: Samples, horizon, conformence_amount
+):
     risks: dict[Trace, float] = {}
     for trace in tqdm.tqdm(samples):
         alarm = 0
-        for _ in range(args.conformence_amount):
+        for _ in range(conformence_amount):
             new_trace = suo.generate_random_traces(
-                [s[1] for s in trace], length=len(trace) + args.horizon
+                [s[1] for s in trace], length=len(trace) + horizon
             )[0]
             alarm += any([s[2] for s in new_trace])
-        risks[trace] = alarm / args.conformence_amount
+        risks[trace] = alarm / conformence_amount
     return risks
 
 
@@ -65,8 +67,6 @@ def main(args: argparse.Namespace):
     interval = np.load(args.trans_path, allow_pickle=True)[()]
     initial_interval = np.load(args.init_path, allow_pickle=True)[()]
 
-    print("Ready for conformance checking")
-
     # Build the premise monitor on the learned model
     mon, observation_map, unfolder, ipomdp = create_monitor(
         interval,
@@ -74,13 +74,19 @@ def main(args: argparse.Namespace):
         "min",
         True,
         args.horizon,
+        dump_path=args.dump_model + "monitor" if args.dump_model else None,
+        verbose=args.verbose,
     )
 
-    # Run premise on the learned model
+    # Generate samples
     samples_with_prob = suo.generate_random_traces_with_prob([], args.sample_length, args.conformence_amount)  # type: ignore
     total_prob = sum(p for _, p in samples_with_prob)
     weights = {s: float(p / total_prob) for s, p in samples_with_prob}
     samples = [s[0] for s in samples_with_prob]
+
+    print("Ready for conformance checking")
+
+    # Run premise on the learned model
     monitored_risks = test_monitor(
         mon,
         samples,
@@ -88,10 +94,17 @@ def main(args: argparse.Namespace):
         skip_initial=True,
     )
     # Run premise on the true model
-    target_risks = test_monitor(suo.create_target_monitor(), samples)
+    target_risks = test_monitor(
+        suo.create_target_monitor(
+            args.dump_model + "target" if args.dump_model else None
+        ),
+        samples,
+    )
 
     # Run the conformance test
-    sampled_risks = random_sample_monitor_test(suo, samples)
+    sampled_risks = random_sample_monitor_test(
+        suo, samples, args.horizon, args.conformence_amount
+    )
 
     target_dist, target_all_dist = distance(
         weights,
@@ -107,6 +120,8 @@ def main(args: argparse.Namespace):
         all_distances=True,
     )
 
+    true_risks = suo.get_risk()
+
     # Save statistics as .npy
     if args.dump_stats:
         np.save(
@@ -119,6 +134,7 @@ def main(args: argparse.Namespace):
                 "weights": {s: float(w) for s, w in weights.items()},
                 "target_risks": {s: float(r) for s, r in target_risks.items()},
                 "monitored_risks": {s: float(r) for s, r in monitored_risks.items()},
+                "true_risks": {s: float(true_risks[s[-1][0]]) for s in samples},
                 "sampled_risks": sampled_risks,
                 "samples": samples,
             },  # type: ignore
@@ -127,9 +143,23 @@ def main(args: argparse.Namespace):
     # Print statistics
     print("Results:")
     print(f"Distance to sampling: {sample_dist}")
-    print(f"Distance to premise: {target_dist}")
-    print(f"Best trace: {min(target_all_dist, key=lambda x: x[1][1])}")
-    print(f"Worst trace: {max(target_all_dist, key=lambda x: x[1][1])}")
+    print(f"Distance to target: {target_dist}")
+
+    sorted_distances = sorted(target_all_dist, key=lambda x: x[1][1])
+    print("Best traces:")
+    for [trace, prob] in sorted_distances[: args.print_number_traces]:
+        print(
+            f"Trace with prob {prob[0]} and distance {prob[1]} "
+            f"(mon={monitored_risks[trace]}, target={float(target_risks[trace])}, true={float(true_risks[trace[-1][0]])}): "
+            f"\n{suo.trace_to_str(trace)}"
+        )
+    print("Worst traces:")
+    for [trace, prob] in sorted_distances[-args.print_number_traces :]:
+        print(
+            f"Trace with prob {prob[0]} and distance {prob[1]} "
+            f"(mon={monitored_risks[trace]}, target={float(target_risks[trace])}, true={float(true_risks[trace[-1][0]])}): "
+            f"\n{suo.trace_to_str(trace)}"
+        )
 
 
 if __name__ == "__main__":
@@ -184,7 +214,15 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dump-stats", type=str, help="Path to the file to dump stats to"
     )
+    parser.add_argument(
+        "-n",
+        "--print-number-traces",
+        type=int,
+        default=1,
+        help="Number of worst and best traces to print",
+    )
+    parser.add_argument("--dump-model", type=str, help="Path to dump the model to")
     parser.add_argument("--verbose", "-v", action="count", default=0)
 
-    args = parser.parse_args()
-    main(args)
+    parsed_args = parser.parse_args()
+    main(parsed_args)

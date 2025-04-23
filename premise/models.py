@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from itertools import product
+import json
+from typing import Any
 import stormpy as sp
 import logging
 from pathlib import Path
@@ -18,7 +20,7 @@ class ModelDescription:
 default_models = {
     "airportA-7-5-5": ModelDescription(
         Path(__file__).parent / "examples/airportA-7.nm",
-        "DMAX=5,PMAX=5",
+        "DMAX=10,PMAX=10",
         'Pmax=? [F "crash"]',
         "crash",
     ),
@@ -131,6 +133,111 @@ def _analyse_model(model, prop):
     :return:
     """
     return sp.model_checking(model, prop.raw_formula, force_fully_observable=True)
+
+
+def build_noaction_model_and_risk(model_description: ModelDescription, options):
+    # Build POMDP model
+    prism_program = sp.parse_prism_program(str(model_description.prism_program_path))
+    prop = sp.parse_properties_for_prism_program(
+        model_description.risk_property, prism_program
+    )[0]
+    prism_program, props = sp.preprocess_symbolic_input(
+        prism_program, [prop], model_description.constants
+    )
+    prop = props[0]
+    prism_program = prism_program.as_prism_program()
+    raw_formula = prop.raw_formula
+
+    logger.info("Construct MDP representation...")
+    pomdp_stormpy = _build_model(
+        prism_program, raw_formula, exact_arithmetic=options.exact_arithmetic
+    )
+    assert pomdp_stormpy.has_observation_valuations()
+
+    # Collapse to only one action per state
+    # First build state labeling
+    state_labeling = sp.StateLabeling(len(pomdp_stormpy.states))
+    for label in pomdp_stormpy.labeling.get_labels():
+        state_labeling.add_label(label)
+
+    # Build state valuations
+    manager = sp.ExpressionManager()
+    state_valuations = sp.storage.StateValuationsBuilder()
+    var_order = []
+    init_val = json.loads(str(pomdp_stormpy.state_valuations.get_json(0)))
+    for var in init_val.keys():
+        storm_var = manager.create_integer_variable(var)
+        state_valuations.add_variable(storm_var)
+        var_order.append(var)
+
+    for state in pomdp_stormpy.states:
+        if state.id >= pomdp_stormpy.state_valuations.get_nr_of_states():
+            raise ValueError(
+                f"State {state.id} is not in the state valuations. This should not happen."
+            )
+        val = json.loads(str(pomdp_stormpy.state_valuations.get_json(state.id)))
+        state_valuations.add_state(state.id, integer_values=[val[v] for v in var_order])
+
+    obs_valuations = sp.storage.StateValuationsBuilder()
+    obs_var_order = []
+    init_obs_val = json.loads(str(pomdp_stormpy.observation_valuations.get_json(0)))
+    for var in init_obs_val.keys():
+        try:
+            storm_var = manager.get_variable(var)
+        except:
+            storm_var = manager.create_integer_variable(var)
+        obs_valuations.add_variable(storm_var)
+        obs_var_order.append(var)
+
+    for obs in range(pomdp_stormpy.observation_valuations.get_nr_of_states()):
+        if obs >= pomdp_stormpy.observation_valuations.get_nr_of_states():
+            raise ValueError(
+                f"Observation {obs} is not in the observation valuations. This should not happen."
+            )
+        val = json.loads(str(pomdp_stormpy.observation_valuations.get_json(obs)))
+        obs_valuations.add_state(obs, integer_values=[val[v] for v in obs_var_order])
+
+    # Create transition matrix
+    if options.exact_arithmetic:
+        builder = sp.ExactSparseMatrixBuilder(0, 0, 0, False, False)
+    else:
+        builder = sp.SparseMatrixBuilder(0, 0, 0, False, False)
+    for s in pomdp_stormpy.states:
+        # Set labels
+        for label in s.labels:
+            state_labeling.add_label_to_state(label, s.id)
+
+        # Set transition
+        amount_of_actions = len(s.actions)
+        new_row_dict: dict[int, Any] = {}
+        for action in s.actions:
+            for transition in action.transitions:
+                dest_s = transition.column
+                if dest_s in new_row_dict:
+                    new_row_dict[dest_s] += transition.value() / amount_of_actions
+                else:
+                    new_row_dict[dest_s] = transition.value() / amount_of_actions
+
+        for new_dest_s, value in sorted(new_row_dict.items()):
+            builder.add_next_value(s.id, new_dest_s, value)
+
+    matrix = builder.build(overridden_column_count=len(pomdp_stormpy.states))
+
+    if options.exact_arithmetic:
+        components = sp.SparseExactModelComponents(matrix, state_labeling)
+        components.state_valuations = state_valuations.build()
+        components.observation_valuations = obs_valuations.build()
+        components.observability_classes = pomdp_stormpy.observations
+        model = sp.SparseExactPomdp(components)
+    else:
+        components = sp.SparseModelComponents(matrix, state_labeling)
+        components.state_valuations = state_valuations.build()
+        components.observation_valuations = obs_valuations.build()
+        components.observability_classes = pomdp_stormpy.observations
+        model = sp.SparsePomdp(components)
+
+    risk_assessment = _analyse_model(model, prop).get_values()
+    return model, risk_assessment
 
 
 def build_state_and_transition_list(

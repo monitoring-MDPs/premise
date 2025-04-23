@@ -9,7 +9,7 @@ from premise.monitor import PremiseOptions, UnfoldingRiskAssessment, Monitor
 from premise.trace_generator import ConditionalTraceGenerator
 from premise.models import (
     ModelDescription,
-    build_model_and_risk,
+    build_noaction_model_and_risk,
     build_state_and_transition_list,
 )
 
@@ -18,7 +18,7 @@ class SystemUnderObservation(ABC):
     model_name: str
 
     def get_states_and_transitions(
-        self,
+        self, all_transitions: bool = True
     ) -> tuple[list[State], list[tuple[State, State]]]:
         raise NotImplementedError("This method should be overridden by subclasses")
 
@@ -41,14 +41,17 @@ class SystemUnderObservation(ABC):
     def get_risk(self):
         raise NotImplementedError("This method should be overridden by subclasses")
 
-    def create_target_monitor(self) -> Monitor:
+    def create_target_monitor(self, dump_model=None) -> Monitor:
         raise NotImplementedError("This method should be overridden by subclasses")
+
+    def trace_to_str(self, trace: Trace) -> str:
+        return " -> ".join([f"({s[0]}, {s[1]}, {s[2]})" for s in trace])
 
 
 class MCSystemUnderObservation(SystemUnderObservation):
     def __init__(self, model_def: ModelDescription, name: str):
         self._model_def = model_def
-        self._model, self.risk = build_model_and_risk(
+        self._model, self.risk = build_noaction_model_and_risk(
             model_def,
             PremiseOptions(),
         )
@@ -57,11 +60,13 @@ class MCSystemUnderObservation(SystemUnderObservation):
             self._model, target_label=model_def.target_label
         )
 
-    def get_states_and_transitions(self, add_label_to_state=False):
+    def get_states_and_transitions(
+        self, all_transitions: bool = True, add_label_to_state=False
+    ):
         return build_state_and_transition_list(
             self._model,
             self._model_def.target_label,
-            all_transitions=True,
+            all_transitions,
             add_label_to_state=add_label_to_state,
         )
 
@@ -85,11 +90,19 @@ class MCSystemUnderObservation(SystemUnderObservation):
     def get_risk(self):
         return self.risk
 
-    def create_target_monitor(self) -> Monitor:
+    def create_target_monitor(self, dump_model=None) -> Monitor:
         expr_manager = stormpy.ExpressionManager()  # type: ignore
         unfolder = stormpy.pomdp.create_observation_trace_unfolder(
             self._model, self.risk, expr_manager
         )
-        ura = UnfoldingRiskAssessment(stormpy.Environment(), unfolder)  # type: ignore
+        ura = UnfoldingRiskAssessment(stormpy.Environment(), unfolder, dump_model_to=dump_model)  # type: ignore
         mon = Monitor(ura, 1000000)
         return mon
+
+    def trace_to_str(self, trace: Trace) -> str:
+        return "\n-> ".join(
+            [
+                f"{self._model.state_valuations.get_string(s).replace(' ', '')} {{{self._model.observation_valuations.get_string(o).replace(' ', '')}}} ({b})"
+                for (s, o, b) in trace
+            ]
+        )

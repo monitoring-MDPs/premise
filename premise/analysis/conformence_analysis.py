@@ -9,22 +9,6 @@ def load_stats(stats_path):
     return stats
 
 
-def extract_risks(stats):
-    target_risks = stats["target_risks"]
-    monitored_risks = stats["monitored_risks"]
-    sampled_risks = stats["sampled_risks"]
-    weights = stats.get("weights", None)
-    return target_risks, monitored_risks, sampled_risks, weights
-
-
-def risks_to_lists(target_risks, monitored_risks, sampled_risks):
-    traces = list(target_risks.keys())
-    t = [target_risks[tr] for tr in traces]
-    m = [monitored_risks[tr] for tr in traces]
-    s = [sampled_risks[tr] for tr in traces]
-    return t, m, s
-
-
 def plot_scatter(x, y, xlabel, ylabel, title, fname=None):
     plt.figure()
     plt.scatter(x, y, alpha=0.6)
@@ -49,18 +33,42 @@ def plot_scatter(x, y, xlabel, ylabel, title, fname=None):
 def main(stats_path="../../out/conformence.npy"):
 
     stats = load_stats(stats_path)
-    target_risks, monitored_risks, sampled_risks, weights = extract_risks(stats)
-    t, m, s = risks_to_lists(target_risks, monitored_risks, sampled_risks)
+
+    target_risks = stats["target_risks"]
+    monitored_risks = stats["monitored_risks"]
+    sampled_risks = stats["sampled_risks"]
+    true_risks = stats["true_risks"]
+    weights = stats["weights"]
+
+    traces = list(target_risks.keys())
+    t = [target_risks[tr] for tr in traces]
+    m = [monitored_risks[tr] for tr in traces]
+    s = [sampled_risks[tr] for tr in traces]
+    r = [true_risks[tr] for tr in traces]
 
     # Scatter plots
     plot_scatter(m, t, "Monitor Risk", "Target Risk", "Learned vs Target Monitor Risk")
     plot_scatter(m, s, "Monitor Risk", "Sampling Risk", "Learned vs Sampling Risk")
     plot_scatter(
+        m,
+        r,
+        "Monitored Risk",
+        "True Risk",
+        "Monitored vs True Risk",
+    )
+    plot_scatter(
         t,
-        s,
+        r,
         "Target Risk",
+        "True Risk",
+        "Target vs True Risk",
+    )
+    plot_scatter(
+        s,
+        r,
         "Sampling Risk",
-        "Target vs Sampling Risk",
+        "True Risk",
+        "Sampling vs True Risk",
     )
 
     # Compare distances
