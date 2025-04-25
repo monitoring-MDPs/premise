@@ -26,17 +26,17 @@ def plot_roc_curve(alarms, risks, fname=None):
 
 def plot_risk_histogram(risks, alarms, fname=None):
     plt.figure(figsize=(8, 6))
-    plt.hist(
+    _, bins, _ = plt.hist(
         [risks[i] for i in range(len(risks)) if alarms[i]],
         bins=30,
         alpha=0.5,
-        label="Alarmed",
+        label="Crash",
     )
     plt.hist(
         [risks[i] for i in range(len(risks)) if not alarms[i]],
-        bins=30,
+        bins=bins,
         alpha=0.5,
-        label="Not Alarmed",
+        label="Not Crashed",
     )
     plt.xlabel("Risk")
     plt.ylabel("Count")
@@ -53,6 +53,7 @@ def main(
 ):
     data = np.load(stats_path, allow_pickle=True).item()
     risks = data["risks"]
+    target_risks = [float(r) for r in data["target_risks"]]
     alarms = data["alarms"]
     samples = data["samples"]
 
@@ -64,7 +65,11 @@ def main(
 
     plot_roc_curve(alarms, risks)
     plot_risk_histogram(risks, alarms)
+    plot_roc_curve(alarms, target_risks)
+    plot_risk_histogram(target_risks, alarms)
 
 
 if __name__ == "__main__":
     main()
+
+# %%

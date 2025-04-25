@@ -1,6 +1,6 @@
 {
 	"name": "Premise dev container",
-	"image": "lukovdm/premise:latest",
+	"image": "lukovdm/premise:interval",
 	"customizations": {
 		"vscode": {
 			"extensions": [
@@ -8,7 +8,8 @@
 				"ms-python.vscode-pylance",
 				"ms-python.black-formatter",
 				"ms-toolsai.jupyter",
-				"ms-toolsai.jupyter-keymap"
+				"ms-toolsai.jupyter-keymap",
+				"Percy.vscode-pydata-viewer"
 			]
 		}
 	}

@@ -90,8 +90,11 @@ if __name__ == "__main__":
         args.verbose,
     )
 
+    target_monitor = suo.create_target_monitor()
+
     alarms: list[bool] = []
     risks = []
+    target_risks = []
     traces = []
 
     for x in trange(args.samples):
@@ -110,7 +113,14 @@ if __name__ == "__main__":
             with_tqdm=False,
         )[sub_trace]
 
+        target_risk = test_monitor(
+            target_monitor,
+            [sub_trace],
+            with_tqdm=False,
+        )[sub_trace]
+
         risks.append(risk)
+        target_risks.append(target_risk)
 
     if args.dump_stats:
         np.save(
@@ -119,6 +129,7 @@ if __name__ == "__main__":
                 "samples": traces,
                 "alarms": alarms,
                 "risks": risks,
+                "target_risks": target_risks,
             },  # type: ignore
         )
 
@@ -138,6 +149,7 @@ if __name__ == "__main__":
         if alarms[i]:
             print(f"Trace {i}: {suo.trace_to_str(trace)}")
             print(f"Risk: {risks[i]}")
+            print(f"Target risk: {target_risks[i]}")
             print(
                 f"True risk before horizon: {float(suo.get_risk()[trace[args.sample_length][0]])}"
             )
@@ -148,6 +160,7 @@ if __name__ == "__main__":
         if not alarms[i]:
             print(f"Trace {i}: {suo.trace_to_str(trace)}")
             print(f"Risk: {risks[i]}")
+            print(f"Target risk: {target_risks[i]}")
             print(
                 f"True risk before horizon: {float(suo.get_risk()[trace[args.sample_length][0]])}"
             )
