@@ -1,6 +1,7 @@
 import argparse
 import numpy
 
+from premise.interval.loading import build_suo_args_parser
 from premise.models import default_models
 from premise.system import MCSystemUnderObservation, SystemUnderObservation
 from premise.interval.interval import Samples, State
@@ -43,9 +44,7 @@ def initial_interval_learning(
         initial_count[s] = 0
 
     for t in samples:
-        for s in all_states:
-            if s == t[0]:
-                initial_count[s] += 1
+        initial_count[t[0]] += 1
 
     for n in initial_interval.keys():  # learns the lower bound of the initial interval
         if any(
@@ -103,23 +102,22 @@ def interval_learning(
     strength_interval,
     min_width: float,
     remove_unseen_transitions: bool = True,
+    min_trans_prob: float = 0.01,
 ):
 
-    trace_len = len(samples[0])
-
-    transition_count = {}
+    visit_state_count = {}
 
     for s in all_states:
-        transition_count[s] = 0
+        visit_state_count[s] = 0
 
     for t in samples:
         for s in t[:-1]:
-            transition_count[s] += 1
+            visit_state_count[s] += 1
 
     one_transition: dict[State, bool | State] = {s: False for s in all_states}
-    tau_count = {}
+    visit_trans_count = {}
     for a, b in interval.keys():
-        tau_count[a, b] = 0
+        visit_trans_count[a, b] = 0
         if one_transition[a] == False:
             one_transition[a] = b
         elif one_transition[a] != True and one_transition[a] != False:
@@ -130,44 +128,44 @@ def interval_learning(
             interval[s, one_transition[s]] = [1.0, 1.0]  # type: ignore
 
     for s in samples:
-        for y in range(trace_len - 1):
-            tau_count[s[y], s[y + 1]] += 1
+        for y in range(len(s) - 1):
+            visit_trans_count[s[y], s[y + 1]] += 1
 
     for i in interval.keys():  # learns the lower bound of the interval
         n = i[0]
-        if transition_count[n] != 0:
+        if visit_state_count[n] != 0:
             if any(
-                (tau_count[n, s] / transition_count[n] < interval[n, s][0])
+                (visit_trans_count[n, s] / visit_state_count[n] < interval[n, s][0])
                 for s in all_states
                 if (n, s) in interval
             ):
                 interval[i][0] = (
-                    (strength_interval[i][0] * interval[i][0]) + tau_count[i]
+                    (strength_interval[i][0] * interval[i][0]) + visit_trans_count[i]
                 ) / (
-                    strength_interval[i][0] + transition_count[n]
+                    strength_interval[i][0] + visit_state_count[n]
                 )  # FIX THE USE OF nl and nu
             else:
                 interval[i][0] = (
-                    (strength_interval[i][1] * interval[i][0]) + tau_count[i]
+                    (strength_interval[i][1] * interval[i][0]) + visit_trans_count[i]
                 ) / (
-                    strength_interval[i][1] + transition_count[n]
+                    strength_interval[i][1] + visit_state_count[n]
                 )  # FIX THE USE OF nl and nu
 
     for i in interval.keys():  # learns the upper bound of the interval
         n = i[0]
-        if transition_count[n] != 0:
+        if visit_state_count[n] != 0:
             if any(
-                (tau_count[n, s] / transition_count[n] > interval[n, s][1])
+                (visit_trans_count[n, s] / visit_state_count[n] > interval[n, s][1])
                 for s in all_states
                 if (n, s) in interval
             ):
                 interval[i][1] = (
-                    (strength_interval[i][0] * interval[i][1]) + tau_count[i]
-                ) / (strength_interval[i][0] + transition_count[n])
+                    (strength_interval[i][0] * interval[i][1]) + visit_trans_count[i]
+                ) / (strength_interval[i][0] + visit_state_count[n])
             else:
                 interval[i][1] = (
-                    (strength_interval[i][1] * interval[i][1]) + tau_count[i]
-                ) / (strength_interval[i][1] + transition_count[n])
+                    (strength_interval[i][1] * interval[i][1]) + visit_trans_count[i]
+                ) / (strength_interval[i][1] + visit_state_count[n])
 
     for k in interval.keys():  # Adjusting interval width
         if interval[k][1] - interval[k][0] < min_width:
@@ -181,15 +179,19 @@ def interval_learning(
         elif interval[k][1] > 1:
             interval[k][1] = 1.0
 
-    for t in tau_count.keys():  # updates strength intervals
+    for t in visit_trans_count.keys():  # updates strength intervals
         k = t[0]
-        strength_interval[t][0] += transition_count[k]
-        strength_interval[t][1] += transition_count[k]
+        strength_interval[t][0] += visit_state_count[k]
+        strength_interval[t][1] += visit_state_count[k]
 
     if remove_unseen_transitions:
         to_remove = {}
-        for src, dest in tau_count.keys():
-            if tau_count[src, dest] == 0:
+        for src, dest in visit_trans_count.keys():
+            if (
+                visit_trans_count[src, dest] == 0
+                and 1 / visit_state_count[src]
+                < min_trans_prob  # TODO: I am not sure of this condition
+            ):
                 if src not in to_remove:
                     to_remove[src] = []
 
@@ -235,6 +237,7 @@ def learn_IMC(
     i_nl: int = 10,
     i_nu: int = 20,
     remove_unseen_transitions: bool = True,
+    min_trans_prob: float = 0.01,
 ):
     initial_interval, strength_interval_initial, interval, strength_interval = (
         premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states, all_transitions)
@@ -255,34 +258,37 @@ def learn_IMC(
         strength_interval,
         min_width,
         remove_unseen_transitions,
+        min_trans_prob,
     )
 
     return initial_interval, interval
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Learn an IMC")
-    model_group = parser.add_mutually_exclusive_group(required=True)
-    model_group.add_argument(
-        "-mc", "--mc", type=str, help="Use the premise model with the given name"
+def build_learning_args_parser(parser: argparse.ArgumentParser):
+    group = parser.add_argument_group("Learning Parameters")
+    group.add_argument(
+        "-a", "--amount", type=int, default=1000, help="Amount of samples to generate"
     )
-    model_group.add_argument(
-        "-sim", "--sim", type=str, help="Use the simulation model with the given name"
-    )
-    parser.add_argument(
-        "-a", "--amount", type=int, default=250, help="Amount of samples to generate"
-    )
-    parser.add_argument(
+    group.add_argument(
         "-l", "--length", type=int, default=20, help="Length of the samples to generate"
     )
-    parser.add_argument(
+    trans_del_group = group.add_mutually_exclusive_group(required=False)
+    trans_del_group.add_argument(
         "-t",
         "--existing-transitions",
         action="store_true",
         help="Use only real transitions",
     )
+    trans_del_group.add_argument(
+        "--min-trans-prob",
+        type=float,
+        default=0.01,
+        help="Minimum transition probability assumed of a transition",
+    )
 
-    param_group = parser.add_argument_group("Internal Parameters")
+
+def build_learning_params_args_parser(parser: argparse.ArgumentParser):
+    param_group = parser.add_argument_group("Internal Learning Parameters")
     param_group.add_argument(
         "--epsilon",
         type=float,
@@ -320,6 +326,13 @@ if __name__ == "__main__":
         help="Fix minimum interval width",
     )
 
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Learn an IMC")
+    build_suo_args_parser(parser)
+    build_learning_args_parser(parser)
+    build_learning_params_args_parser(parser)
+
     args = parser.parse_args()
 
     if args.mc:
@@ -330,7 +343,6 @@ if __name__ == "__main__":
     else:
         raise ValueError("No model specified")
 
-    risk = suo.get_risk()
     all_states, all_transitions = suo.get_states_and_transitions(
         all_transitions=not args.existing_transitions
     )
@@ -347,6 +359,7 @@ if __name__ == "__main__":
         args.trans_lower_strength,
         args.trans_upper_strength,
         remove_unseen_transitions=not args.existing_transitions,
+        min_trans_prob=args.min_trans_prob,
     )
 
     numpy.save(f"premise/examples/{suo.model_name}-initial_interval.npy", initial_interval)  # type: ignore

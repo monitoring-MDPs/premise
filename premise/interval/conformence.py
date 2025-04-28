@@ -3,10 +3,15 @@ from typing import Any
 import numpy as np
 import tqdm
 
+from premise.interval.loading import (
+    build_imc_loading_args_parser,
+    build_suo_args_parser,
+    build_suo,
+    load_imc,
+)
 from premise.interval.interval import Samples, Trace, create_monitor
-from premise.system import MCSystemUnderObservation, SystemUnderObservation
+from premise.system import SystemUnderObservation
 from premise.monitor import Monitor
-from premise.models import default_models
 from premise.interval.loss import distance_measures
 
 
@@ -51,26 +56,11 @@ def random_sample_monitor_test(
 
 
 def main(args: argparse.Namespace):
-    if args.mc:
-        model_def = default_models[args.mc]
-        model_def.risk_property = (
-            f'Pmax=? [F<={args.horizon} "{model_def.target_label}" ]'
-        )
-        suo: SystemUnderObservation = MCSystemUnderObservation(model_def, args.mc)
+    suo = build_suo(args)
 
-        if args.verbose > 1:
-            for i, r in enumerate(suo.get_risk()):
-                print(f"{suo._model.state_valuations.get_string(i)}: {float(r)}")
-    elif args.sim:
-        suo: SystemUnderObservation = None  # type: ignore
-    else:
-        raise ValueError("No model specified")
+    distance = distance_measures[args.distance](args.distance_threshold)
 
-    distance = distance_measures[args.distance].distance
-
-    # Load learned model
-    interval = np.load(args.trans_path, allow_pickle=True)[()]
-    initial_interval = np.load(args.init_path, allow_pickle=True)[()]
+    interval, initial_interval = load_imc(args)
 
     # Build the premise monitor on the learned model
     mon, observation_map, unfolder, ipomdp = create_monitor(
@@ -111,14 +101,14 @@ def main(args: argparse.Namespace):
         suo, samples, args.horizon, args.conformence_amount
     )
 
-    target_dist, target_all_dist = distance(
+    target_dist, target_all_dist = distance.distance(
         weights,
         {s: float(r) for s, r in target_risks.items()},
         {s: float(r) for s, r in monitored_risks.items()},
         all_distances=True,
     )
 
-    sample_dist, sample_all_dist = distance(
+    sample_dist, sample_all_dist = distance.distance(
         weights,
         {s: float(r) for s, r in target_risks.items()},
         sampled_risks,
@@ -169,35 +159,21 @@ def main(args: argparse.Namespace):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Conformance checking")
+    build_suo_args_parser(parser)
+    build_imc_loading_args_parser(parser)
 
-    model_group = parser.add_mutually_exclusive_group(required=True)
-    model_group.add_argument(
-        "-mc", "--mc", type=str, help="Use the premise model with the given name"
-    )
-    model_group.add_argument(
-        "-sim", "--sim", type=str, help="Use the simulation model with the given name"
-    )
-
-    parser.add_argument(
-        "-t",
-        "--trans_path",
-        required=True,
-        type=str,
-        help="Path to the transition dictionary",
-    )
-    parser.add_argument(
-        "-i",
-        "--init_path",
-        required=True,
-        type=str,
-        help="Path to the initial state dictionary",
-    )
     parser.add_argument(
         "-d",
         "--distance",
         choices=distance_measures.keys(),
         default="mae",
         help="Distance measure to use",
+    )
+    parser.add_argument(
+        "-dt",
+        "--distance-threshold",
+        type=float,
+        help="Distance threshold to use for the threshold distance",
     )
     parser.add_argument(
         "-l",
@@ -211,7 +187,7 @@ if __name__ == "__main__":
         "--sample-count",
         type=int,
         default=100,
-        help="Amount of extensions to generate for a sample",
+        help="Amount of sample to generate",
     )
     parser.add_argument(
         "-a",

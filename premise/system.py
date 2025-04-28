@@ -47,6 +47,9 @@ class SystemUnderObservation(ABC):
     def trace_to_str(self, trace: Trace) -> str:
         return " -> ".join([f"({s[0]}, {s[1]}, {s[2]})" for s in trace])
 
+    def stats(self) -> dict[str, Any]:
+        raise NotImplementedError("This method should be overridden by subclasses")
+
 
 class MCSystemUnderObservation(SystemUnderObservation):
     def __init__(self, model_def: ModelDescription, name: str):
@@ -59,6 +62,8 @@ class MCSystemUnderObservation(SystemUnderObservation):
         self._ctr = ConditionalTraceGenerator(
             self._model, target_label=model_def.target_label
         )
+
+        self._sample_count = 0
 
     def get_states_and_transitions(
         self, all_transitions: bool = True, add_label_to_state=False
@@ -73,6 +78,7 @@ class MCSystemUnderObservation(SystemUnderObservation):
     def generate_random_traces(
         self, observation_prefix: list[Any], length: int, amount=1
     ) -> Samples:
+        self._sample_count += amount
         samples = [
             self._ctr.generate_random_trace(observation_prefix, length)
             for _ in range(amount)
@@ -82,6 +88,7 @@ class MCSystemUnderObservation(SystemUnderObservation):
     def generate_random_traces_with_prob(
         self, observation_prefix: list[Any], length: int, amount=1
     ) -> list[tuple[Trace, Any]]:
+        self._sample_count += amount
         return [
             self._ctr.generate_random_trace(observation_prefix, length)
             for _ in range(amount)
@@ -106,3 +113,8 @@ class MCSystemUnderObservation(SystemUnderObservation):
                 for (s, o, b) in trace
             ]
         )
+
+    def stats(self) -> dict[str, Any]:
+        return {
+            "sample_count": self._sample_count,
+        }
