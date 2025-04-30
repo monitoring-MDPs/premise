@@ -2,7 +2,7 @@ from argparse import ArgumentParser, Namespace
 
 import numpy as np
 
-from premise.system import MCSystemUnderObservation, SystemUnderObservation
+from premise.system import MCSystemUnderObservation, SystemUnderObservation, CarlaSystemUnderObservation
 from premise.models import default_models
 
 
@@ -47,7 +47,7 @@ def build_suo(args: Namespace):
             for i, r in enumerate(suo.get_risk()):
                 print(f"{suo._model.state_valuations.get_string(i)}: {float(r)}")
     elif args.sim:
-        suo: SystemUnderObservation = None  # type: ignore
+        suo: SystemUnderObservation = CarlaSystemUnderObservation(args.sim)
     else:
         raise ValueError("No model specified")
     return suo

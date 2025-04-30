@@ -12,6 +12,8 @@ from premise.models import (
     build_noaction_model_and_risk,
     build_state_and_transition_list,
 )
+from premise.carla.IMC_model_info import get_states_and_transitions
+from premise.carla.IMC_data_record import sample
 
 
 class SystemUnderObservation(ABC):
@@ -118,3 +120,40 @@ class MCSystemUnderObservation(SystemUnderObservation):
         return {
             "sample_count": self._sample_count,
         }
+
+class CarlaSystemUnderObservation(SystemUnderObservation): 
+    def __init__(self, scenic_path):
+        self.scenic_path=scenic_path
+
+    def get_states_and_transitions(
+        self, all_transitions: bool = True
+    ) -> tuple[list[State], list[tuple[State, State]]]:
+        return get_states_and_transitions()
+
+    def generate_random_traces(
+        self,
+        observation_prefix: list[Any],
+        length: int,
+        amount: int = 1,
+    ) -> Samples:
+        if observation_prefix != []:
+            raise ValueError("No prefix support yet")
+        
+        return sample(self.scenic_path,amount,length)
+        
+
+
+    def generate_random_traces_with_prob(
+        self,
+        observation_prefix: list[Any],
+        length: int,
+        amount=1,
+    ) -> list[tuple[Trace, Any]]:
+        return [(t,1/amount)for t in self.generate_random_traces(observation_prefix, length, amount)]
+
+    def create_target_monitor(self, dump_model=None) -> Monitor:
+        raise NotImplementedError("This method should be overridden by subclasses")
+
+    def stats(self) -> dict[str, Any]:
+        raise NotImplementedError("This method should be overridden by subclasses")
+
