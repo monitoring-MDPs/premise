@@ -1,6 +1,9 @@
 {
 	"name": "Premise dev container",
 	"image": "lukovdm/premise:interval",
+	"runArgs": [
+		"--net=host"
+	],
 	"customizations": {
 		"vscode": {
 			"extensions": [
