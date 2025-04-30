@@ -111,10 +111,14 @@ class ThresholdStoppingCondition(TargetDistanceStoppingCondition):
         self,
         *args,
         threshold: float,
+        patience: int,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.threshold = threshold
+        self.patience = patience
+
+        self.not_improved = 0
 
     def check(self, interval, initial_interval) -> None | tuple[Samples, Samples]:
         target_dist, target_all_dist, samples = self.distance(
@@ -126,11 +130,19 @@ class ThresholdStoppingCondition(TargetDistanceStoppingCondition):
 
         # If the distance is below the threshold, stop refinement
         if target_dist < self.threshold:
+            self.not_improved += 1
+
             if self.verbose > 0:
                 print(
-                    f"Stopping refinement at distance {target_dist} < {self.threshold}"
+                    f"Not improved for {self.not_improved} iterations, target distance: {target_dist:.4f} < {self.threshold:.4f}"
                 )
-            return None
+
+            if self.not_improved >= self.patience:
+                if self.verbose > 0:
+                    print(
+                        f"Stopping refinement at distance {target_dist} < {self.threshold}"
+                    )
+                return None
 
         # Otherwise, return the samples that are above the threshold
         interresting_traces = [t for t, (_, d) in target_all_dist if d > self.threshold]
@@ -298,6 +310,7 @@ def main(args: argparse.Namespace):
             args.conformence_amount,
             distance,
             threshold=args.stopping_threshold,
+            patience=args.stopping_patience,
             verbose=args.verbose,
         )
 
