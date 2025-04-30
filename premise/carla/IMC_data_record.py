@@ -92,12 +92,31 @@ def sample(scenic_path, num_sim, time_steps):
             result = simulation.result
 
             if len(result.records["distance"]) >= time_steps: 
-                records.append([
-                        (discr_color(result.records), discr_speed(result.records, x), discr_distance(result.records, x), discr_percived_distance(result.records, x), discr_collision(result.records, x))
-                        for x in range(2, time_steps)]
-                )
+                sample = []
+            
+                collision_detected = False
+                for x in range(2, time_steps): 
+                    if not collision_detected:
+                        if discr_collision(result.records, x) == False: 
+                            sample.append((
+                            (discr_color(result.records),
+                            discr_speed(result.records, x),
+                            discr_distance(result.records, x),
+                            discr_percived_distance(result.records, x)),
+                            discr_percived_distance(result.records, x),
+                            discr_collision(result.records, x)))
+
+                        else:
+                            collision_detected = True
+                            sample.append((('collision'),'collision',True))
+                    else:
+                        sample.append((('collision'),'collision',True))
+                
+                records.append(sample)
+                    
         else:
             print('Restart Carla')
+
     return records
     
 def main(args):
