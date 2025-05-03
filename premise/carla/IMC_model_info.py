@@ -23,7 +23,7 @@ def get_states_and_transitions():
                 for z in distance: 
                     for v in percived_distance: 
                         #for u in collision: 
-                            all_states.append(((x,y,z,v),v,False))
+                            all_states.append(((y,z,x,v),(x,v),False))
 
 
     all_states = [s for s in all_states if not (s[2] == 'd70' and s[1] == 'fastest')]
@@ -35,27 +35,27 @@ def get_states_and_transitions():
     for x in all_states[:-1]: 
             for y in all_states[:-1]: 
                 if x[0][0] == y[0][0]: 
-                    if  abs(int(x[0][2][1:]) - int(y[0][2][1:])) <=10 and (int(x[0][2][1:]) >= int(y[0][2][1:])):
-                                    if x[0][1]== 'slowest' and (y[0][1]=='slowest' or y[0][1]=='slow'): 
+                    if  abs(int(x[0][1][1:]) - int(y[0][1][1:])) <=10 and (int(x[0][1][1:]) >= int(y[0][1][1:])):
+                                    if x[0][0]== 'slowest' and (y[0][0]=='slowest' or y[0][0]=='slow'): 
                                         all_transitions.append((x,y))
-                                    elif x[0][1]== 'slow' and y[0][1] != 'fastest':
+                                    elif x[0][0]== 'slow' and y[0][0] != 'fastest':
                                         all_transitions.append((x,y)) 
-                                    elif x[0][1]== 'fast' and y[0][1] != 'slowest':
+                                    elif x[0][0]== 'fast' and y[0][0] != 'slowest':
                                         all_transitions.append((x,y)) 
-                                    elif x[0][1]== 'fastest' and (y[0][1]=='fast' or y[0][1]=='fastest'):
+                                    elif x[0][0]== 'fastest' and (y[0][0]=='fast' or y[0][0]=='fastest'):
                                         all_transitions.append((x,y))
 
 
     filtered_transitions = []
 
     for x in all_transitions: 
-            if (x[0][0][3] == 'pd10' and x[0][0][1] == 'slowest') and x[1][0][1] != 'slowest': 
+            if (x[0][0][3] == 'pd10' and x[0][0][0] == 'slowest') and x[1][0][0] != 'slowest': 
                 continue  
-            if (x[0][0][3] == 'pd10' and x[0][0][1] == 'slow') and not (x[1][0][1] == 'slowest' or x[1][0][1] == 'slow'): 
+            if (x[0][0][3] == 'pd10' and x[0][0][0] == 'slow') and not (x[1][0][0] == 'slowest' or x[1][0][0] == 'slow'): 
                 continue
-            if (x[0][0][3] == 'pd10' and x[0][0][1] == 'fast') and not (x[1][0][1] == 'fast' or x[1][0][1] == 'slow'): 
+            if (x[0][0][3] == 'pd10' and x[0][0][0] == 'fast') and not (x[1][0][0] == 'fast' or x[1][0][0] == 'slow'): 
                 continue
-            if (x[0][0][3] == 'pd10' and x[0][0][1] == 'fastest') and not (x[1][0][1] == 'fast' or x[1][0][1] == 'fastest'): 
+            if (x[0][0][3] == 'pd10' and x[0][0][0] == 'fastest') and not (x[1][0][0] == 'fast' or x[1][0][0] == 'fastest'): 
                 continue
             filtered_transitions.append(x)
 
@@ -65,9 +65,10 @@ def get_states_and_transitions():
             all_transitions.append((x,all_states[-1]))
         
     all_transitions.append((all_states[-1], all_states[-1]))
+    print(len(all_states), len(all_transitions), all_states[0], all_transitions[0])
 
     return all_states, all_transitions
        
 
 if __name__ == '__main__':
-      print(get_states_and_transitions())
+      get_states_and_transitions()
