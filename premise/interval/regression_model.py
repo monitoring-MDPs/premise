@@ -11,12 +11,12 @@ X = []
 y = []
 
 
-for l in range(len(leaning_samples)):  # one of 25 sets
+for l in range(len(leaning_samples)):  # one of 25 sets 
     for s in leaning_samples[l]:  # 250 sample paths
 
         # Flatten the trace and append to training_data
         flattened_trace = []
-        for x in s[:-5]:  # Exclude the last 5 elements (prediction)
+        for x in s[:-5]:  # Exclude the last 5 elements (prediction) - horizon length
             flattened_trace.append(x[1])  # Assuming x[1] contains the feature value
         X.append(flattened_trace)
 

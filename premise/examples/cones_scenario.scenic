@@ -18,11 +18,10 @@ behavior EgoBehavior():
         take SetThrottleAction(0), SetBrakeAction(1)
 
 
-
 lane = Uniform(*network.lanes)
 start = new OrientedPoint on lane.centerline
 
-ego = new ConesCar at start, with behavior EgoBehavior()
+ego = new ConesCar at start, with behavior EgoBehavior() #COLOR 
 
 
 blockageSite = new OrientedPoint ahead of ego by Range(50,65)
@@ -44,6 +43,7 @@ badAngle = Uniform(1.0, -1.0) * Range(15, 70) deg
 broken_car  = new ConesCar ahead of blockageSite by Range(0, 1), facing badAngle relative to roadDirection
 
 require broken_car in ego.lane
+
 
 record ego.speed as speed 
 record initial broken_car.color as color 

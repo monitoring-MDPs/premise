@@ -123,7 +123,7 @@ def main(args):
     scenic_path = args.scenic_path
     num_sim = args.num_sim
     time_steps = args.num_steps
-    rounds = args.num_rounds
+
 
 if __name__ == "__main__":
     import argparse

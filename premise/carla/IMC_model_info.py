@@ -26,7 +26,7 @@ def get_states_and_transitions():
                             all_states.append(((y,z,x,v),(x,v),False))
 
 
-    all_states = [s for s in all_states if not (s[2] == 'd70' and s[1] == 'fastest')]
+    all_states = [s for s in all_states if not (s[0][1] == 'd70' and s[0][0] == 'fastest')]
     all_states.append((('collision'),'collision',True))
 
 
@@ -65,7 +65,6 @@ def get_states_and_transitions():
             all_transitions.append((x,all_states[-1]))
         
     all_transitions.append((all_states[-1], all_states[-1]))
-    print(len(all_states), len(all_transitions), all_states[0], all_transitions[0])
 
     return all_states, all_transitions
        
