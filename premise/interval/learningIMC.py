@@ -1,11 +1,14 @@
 import argparse
 import numpy
+import pickle
 
 from premise.interval.loading import build_suo_args_parser
 from premise.models import default_models
 from premise.system import MCSystemUnderObservation, SystemUnderObservation
 from premise.interval.interval import Samples, State
+from premise.carla.IMC_model_info import get_states_and_transitions
 
+carla = True
 
 def premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states, all_intervals):
 
@@ -342,11 +345,18 @@ if __name__ == "__main__":
         suo: SystemUnderObservation = None  # type: ignore
     else:
         raise ValueError("No model specified")
+    
+    if carla == False:
 
-    all_states, all_transitions = suo.get_states_and_transitions(
-        all_transitions=not args.existing_transitions
-    )
-    samples = suo.generate_random_traces([], args.length, args.amount)
+        all_states, all_transitions = suo.get_states_and_transitions(
+            all_transitions=not args.existing_transitions
+        )
+        samples = suo.generate_random_traces([], args.length, args.amount)
+    else: 
+        all_states, all_transitions = get_states_and_transitions()
+        with open("/workspaces/premise/premise/carla/carla_samples/all_data.pkl", "rb") as f:
+            samples = pickle.load(f)
+    
 
     initial_interval, interval = learn_IMC(
         all_states,

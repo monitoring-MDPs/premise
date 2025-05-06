@@ -1,4 +1,5 @@
 import pickle
+import os
 from IMC_model_info import get_states_and_transitions
 
 all_data = [] 
@@ -31,6 +32,14 @@ with open("/workspaces/premise/premise/carla/carla_samples/1000.pkl", "rb") as g
     for b in data5: 
         all_data.append(b)
 
+output_dir = '/workspaces/premise/premise/carla/carla_samples' 
+output_file = os.path.join(output_dir, 'all_data.pkl')
+os.makedirs(output_dir, exist_ok=True)
+
+with open(output_file, "wb") as f:
+    pickle.dump(all_data, f)
+
+
 all_states = get_states_and_transitions()[0]
 
 
@@ -58,8 +67,17 @@ for x in all_data:
         if x[0][0][2] == c: 
             color_freq[c] +=1 
 
-print(color_freq)
+#print(color_freq)
 
+
+for x in range(len(all_data)):
+    for s in range(250): 
+        if all_data[x][s] == (('collision'),'collision',True): 
+            print(x,s)
+            quit
+
+
+    
 
 #ood = 0 
 #ood_diff = 0  
