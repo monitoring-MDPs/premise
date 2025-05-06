@@ -33,7 +33,7 @@ def test_monitor(
             mon.initialize(obs_func(observations[0]))
 
         for obs in observations[0 if skip_initial else 1 : -1]:
-            risk = mon.step(obs_func(obs), compute_risk=True)
+            mon.step(obs_func(obs), compute_risk=False)
 
         last_risk = mon.step(obs_func(observations[-1]), compute_risk=True)
         risks[trace] = last_risk

@@ -214,7 +214,7 @@ def refinement_learning(
     i_nu: int = 20,
     verbose: int = 0,
 ):
-    all_states, all_transitions = suo.get_states_and_transitions(
+    all_states, all_transitions, initial_states = suo.get_states_and_transitions(
         all_transitions=not existing_transitions
     )
 
@@ -222,7 +222,16 @@ def refinement_learning(
     extra_samples: Samples = []
 
     initial_interval, strength_interval_initial, interval, strength_interval = (
-        premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states, all_transitions)
+        premilinaries(
+            epsilon,
+            i_i_nl,
+            i_i_nu,
+            i_nl,
+            i_nu,
+            all_states,
+            all_transitions,
+            initial_states,
+        )
     )
 
     if verbose > 0:

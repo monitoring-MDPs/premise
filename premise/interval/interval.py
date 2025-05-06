@@ -108,18 +108,13 @@ def dict_to_interval_ipomdp(
     observations = {}
     observation_map = {}
 
+    # Get all states
+    state_index = 1
+
     real_states = set()
     for (s, d), (l, u) in trans_dict.items():
         real_states.add(s)
         real_states.add(d)
-
-    init_state = 0
-    state_index = 1
-    transitions[init_state] = {}
-
-    for d, (l, u) in sorted(init_dict.items()):
-        if d not in real_states:
-            continue
 
         if d not in state_index_map:
             # Add not seen observations to the observation map
@@ -131,10 +126,32 @@ def dict_to_interval_ipomdp(
             observations[state_index] = observation_map[d[-2]]
             state_index += 1
 
+        if s not in state_index_map:
+            # Add not seen observations to the observation map
+            if s[-2] not in observation_map:
+                observation_map[s[-2]] = len(observation_map)
+
+            state_index_map[s] = state_index
+            transitions[state_index] = {}
+            observations[state_index] = observation_map[s[-2]]
+            state_index += 1
+
+    init_state = 0
+    transitions[init_state] = {}
+    for d, (l, u) in sorted(
+        init_dict.items(),
+        key=lambda x: (x[0][0][0] if isinstance(x[0][0], tuple) else x[0][0]),
+    ):
+        if d not in real_states:
+            continue
+
         interval = Interval(l, u)
         transitions[init_state][state_index_map[d]] = interval
 
-    for (s, d), (l, u) in sorted(trans_dict.items()):
+    for (s, d), (l, u) in sorted(
+        trans_dict.items(),
+        key=lambda x: x[0][0][0][0] if isinstance(x[0][0][0], tuple) else x[0][0][0],
+    ):
         if s not in state_index_map:
             state_index_map[s] = state_index
             transitions[state_index] = {}
@@ -314,7 +331,7 @@ if __name__ == "__main__":
         trans_dict,
         init_dict,
         args.maxmin,
-        args.target,
+        bool(args.target),
         args.horizon,
         args.dump,
         args.verbose,
@@ -350,8 +367,8 @@ if __name__ == "__main__":
                 print(mon.step(int(action)))
             elif action == "speed":
                 t = time()
-                for i in range(100):
-                    print(mon.step(2), " -> ", end="")
+                for i in range(30):
+                    print(mon.step(188), " -> ", end="")
                 print(f"done in {time() - t}s")
             else:
                 print(mon.step(int(hamming_lookup(observation_map, action))))

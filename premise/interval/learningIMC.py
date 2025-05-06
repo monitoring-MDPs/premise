@@ -2,7 +2,7 @@ import argparse
 import numpy
 import pickle
 
-from premise.interval.loading import build_suo_args_parser
+from premise.interval.loading import build_suo, build_suo_args_parser
 from premise.models import default_models
 from premise.system import MCSystemUnderObservation, SystemUnderObservation
 from premise.interval.interval import Samples, State
@@ -10,11 +10,14 @@ from premise.carla.IMC_model_info import get_states_and_transitions
 
 carla = True
 
-def premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states, all_intervals):
+
+def premilinaries(
+    epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states, all_intervals, initial_states
+):
 
     initial_interval = {}
 
-    for s in all_states:
+    for s in initial_states:
         initial_interval[s] = [epsilon, 1 - epsilon]
 
     strength_interval_initial = {}
@@ -36,7 +39,11 @@ def premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states, all_intervals
 
 
 def initial_interval_learning(
-    all_states, samples: Samples, strength_interval_initial, initial_interval, min_width
+    all_states,
+    samples: Samples,
+    strength_interval_initial,
+    initial_interval,
+    min_width,
 ):
 
     trace_num = len(samples)  # number of traces in a sample
@@ -192,6 +199,7 @@ def interval_learning(
         for src, dest in visit_trans_count.keys():
             if (
                 visit_trans_count[src, dest] == 0
+                and visit_state_count[src] != 0
                 and 1 / visit_state_count[src]
                 < min_trans_prob  # TODO: I am not sure of this condition
             ):
@@ -232,6 +240,7 @@ def interval_learning(
 def learn_IMC(
     all_states: list,
     all_transitions: list,
+    initial_states: list,
     samples: Samples,
     min_width: float,
     epsilon: float = 1 / 1000,
@@ -243,7 +252,16 @@ def learn_IMC(
     min_trans_prob: float = 0.01,
 ):
     initial_interval, strength_interval_initial, interval, strength_interval = (
-        premilinaries(epsilon, i_i_nl, i_i_nu, i_nl, i_nu, all_states, all_transitions)
+        premilinaries(
+            epsilon,
+            i_i_nl,
+            i_i_nu,
+            i_nl,
+            i_nu,
+            all_states,
+            all_transitions,
+            initial_states,
+        )
     )
 
     initial_interval_learning(
@@ -275,17 +293,16 @@ def build_learning_args_parser(parser: argparse.ArgumentParser):
     group.add_argument(
         "-l", "--length", type=int, default=20, help="Length of the samples to generate"
     )
-    trans_del_group = group.add_mutually_exclusive_group(required=False)
-    trans_del_group.add_argument(
+    group.add_argument(
         "-t",
         "--existing-transitions",
         action="store_true",
-        help="Use only real transitions",
+        help="Use only real transitions as defined by the model",
     )
-    trans_del_group.add_argument(
+    group.add_argument(
         "--min-trans-prob",
         type=float,
-        default=0.01,
+        default=None,
         help="Minimum transition probability assumed of a transition",
     )
 
@@ -338,29 +355,17 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.mc:
-        model_def = default_models[args.mc]
-        suo: SystemUnderObservation = MCSystemUnderObservation(model_def, args.mc)
-    elif args.sim:
-        suo: SystemUnderObservation = None  # type: ignore
-    else:
-        raise ValueError("No model specified")
-    
-    if carla == False:
+    suo = build_suo(args)
 
-        all_states, all_transitions = suo.get_states_and_transitions(
-            all_transitions=not args.existing_transitions
-        )
-        samples = suo.generate_random_traces([], args.length, args.amount)
-    else: 
-        all_states, all_transitions = get_states_and_transitions()
-        with open("/workspaces/premise/premise/carla/carla_samples/all_data.pkl", "rb") as f:
-            samples = pickle.load(f)
-    
+    all_states, all_transitions, initial_states = suo.get_states_and_transitions(
+        all_transitions=not args.existing_transitions
+    )
+    samples = suo.generate_random_traces([], args.length, args.amount)
 
     initial_interval, interval = learn_IMC(
         all_states,
         all_transitions,
+        initial_states,
         samples,
         args.interval_min_width,
         args.epsilon,
@@ -368,7 +373,7 @@ if __name__ == "__main__":
         args.initial_upper_strength,
         args.trans_lower_strength,
         args.trans_upper_strength,
-        remove_unseen_transitions=not args.existing_transitions,
+        remove_unseen_transitions=args.min_trans_prob is not None,
         min_trans_prob=args.min_trans_prob,
     )
 

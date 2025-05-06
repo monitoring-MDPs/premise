@@ -1,10 +1,7 @@
 import argparse
 import numpy as np
 from tqdm import trange
-import matplotlib.pyplot as plt
-from sklearn import metrics
 
-import interval
 from premise.interval.loading import (
     build_imc_loading_args_parser,
     build_suo,
@@ -13,8 +10,6 @@ from premise.interval.loading import (
 )
 from premise.interval.conformence import test_monitor
 from premise.interval.interval import create_monitor
-from premise.models import default_models
-from premise.system import MCSystemUnderObservation, SystemUnderObservation
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Conformance checking")
@@ -36,6 +31,9 @@ if __name__ == "__main__":
         "-ho", "--horizon", required=True, type=int, help="The horizon to monitor on"
     )
     parser.add_argument(
+        "--no-target", action="store_true", help="Do not use the target monitor"
+    )
+    parser.add_argument(
         "--dump", type=str, help="Path to the file to dump the model to"
     )
 
@@ -49,8 +47,6 @@ if __name__ == "__main__":
     suo = build_suo(args)
     interval, initial_interval = load_imc(args)
 
-    print("Ready for testing")
-
     # Build the premise monitor on the learned model
     mon, observation_map, unfolder, ipomdp = create_monitor(
         interval,
@@ -62,16 +58,20 @@ if __name__ == "__main__":
         args.verbose,
     )
 
-    target_monitor = suo.create_target_monitor()
+    if not args.no_target:
+        target_monitor = suo.create_target_monitor()
 
     alarms: list[bool] = []
     risks = []
     target_risks = []
     traces = []
 
+    print("Ready for testing")
+
     for x in trange(args.samples):
 
         trace = suo.generate_random_traces([], args.sample_length + args.horizon)[0]
+
         traces.append(trace)
         alarms.append(any([s[2] for s in trace]))
 
@@ -85,24 +85,27 @@ if __name__ == "__main__":
             with_tqdm=False,
         )[sub_trace]
 
-        target_risk = test_monitor(
-            target_monitor,
-            [sub_trace],
-            with_tqdm=False,
-        )[sub_trace]
-
         risks.append(risk)
-        target_risks.append(target_risk)
+
+        if not args.no_target:
+            target_risk = test_monitor(
+                target_monitor,
+                [sub_trace],
+                with_tqdm=False,
+            )[sub_trace]
+            target_risks.append(target_risk)
 
     if args.dump_stats:
+        stats = {
+            "samples": traces,
+            "alarms": alarms,
+            "risks": risks,
+        }
+        if not args.no_target:
+            stats["target_risks"] = target_risks
         np.save(
             args.dump_stats,
-            {
-                "samples": traces,
-                "alarms": alarms,
-                "risks": risks,
-                "target_risks": target_risks,
-            },  # type: ignore
+            stats,  # type: ignore
         )
 
     print("Results:")
@@ -121,20 +124,22 @@ if __name__ == "__main__":
         if alarms[i]:
             print(f"Trace {i}: {suo.trace_to_str(trace)}")
             print(f"Risk: {risks[i]}")
-            print(f"Target risk: {target_risks[i]}")
-            print(
-                f"True risk before horizon: {float(suo.get_risk()[trace[args.sample_length][0]])}"
-            )
-            print(f"True risk at end: {float(suo.get_risk()[trace[-1][0]])}")
+            if not args.no_target:
+                print(f"Target risk: {target_risks[i]}")
+                print(
+                    f"True risk before horizon: {float(suo.get_risk()[trace[args.sample_length][0]])}"
+                )
+                print(f"True risk at end: {float(suo.get_risk()[trace[-1][0]])}")
             break
     print("Not alarmed traces:")
     for i, trace in enumerate(traces):
         if not alarms[i]:
             print(f"Trace {i}: {suo.trace_to_str(trace)}")
             print(f"Risk: {risks[i]}")
-            print(f"Target risk: {target_risks[i]}")
-            print(
-                f"True risk before horizon: {float(suo.get_risk()[trace[args.sample_length][0]])}"
-            )
-            print(f"True risk at end: {float(suo.get_risk()[trace[-1][0]])}")
+            if not args.no_target:
+                print(f"Target risk: {target_risks[i]}")
+                print(
+                    f"True risk before horizon: {float(suo.get_risk()[trace[args.sample_length][0]])}"
+                )
+                print(f"True risk at end: {float(suo.get_risk()[trace[-1][0]])}")
             break

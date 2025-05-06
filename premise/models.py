@@ -268,9 +268,15 @@ def build_state_and_transition_list(
                 model.labeling.has_state_label(target_label, state.id),
             )
 
+    initial_states = []
+    for state_id in model.initial_states:
+        initial_states.append(states_map[state_id])
+
     if all_transitions:
-        return list(states_map.values()), list(
-            product(states_map.values(), states_map.values())
+        return (
+            list(states_map.values()),
+            list(product(states_map.values(), states_map.values())),
+            list(states_map.values()),
         )
     else:
         transitions = set()
@@ -281,4 +287,4 @@ def build_state_and_transition_list(
                         (states_map[state.id], states_map[transition.column])
                     )
 
-        return list(states_map.values()), list(transitions)
+        return list(states_map.values()), list(transitions), initial_states

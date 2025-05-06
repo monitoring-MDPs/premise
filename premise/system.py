@@ -1,4 +1,5 @@
 from abc import ABC
+import pickle
 from typing import Any
 
 import stormpy
@@ -13,7 +14,8 @@ from premise.models import (
     build_state_and_transition_list,
 )
 from premise.carla.IMC_model_info import get_states_and_transitions
-from premise.carla.IMC_data_record import sample
+
+# from premise.carla.IMC_data_record import sample
 
 
 class SystemUnderObservation(ABC):
@@ -21,7 +23,7 @@ class SystemUnderObservation(ABC):
 
     def get_states_and_transitions(
         self, all_transitions: bool = True
-    ) -> tuple[list[State], list[tuple[State, State]]]:
+    ) -> tuple[list[State], list[tuple[State, State]], list[State]]:
         raise NotImplementedError("This method should be overridden by subclasses")
 
     def generate_random_traces(
@@ -121,13 +123,21 @@ class MCSystemUnderObservation(SystemUnderObservation):
             "sample_count": self._sample_count,
         }
 
-class CarlaSystemUnderObservation(SystemUnderObservation): 
-    def __init__(self, scenic_path):
-        self.scenic_path=scenic_path
+
+class CarlaSystemUnderObservation(SystemUnderObservation):
+    def __init__(self, sample_path: str, condition_sample_paths: dict[str, str] = {}):
+        self.model_name = "Carla"
+        self.sample_path = sample_path
+        self.condition_sample_paths = condition_sample_paths
+
+        with open(sample_path, "rb") as f:
+            self.samples = pickle.load(f)
+
+        self.sample_index = 0
 
     def get_states_and_transitions(
         self, all_transitions: bool = True
-    ) -> tuple[list[State], list[tuple[State, State]]]:
+    ) -> tuple[list[State], list[tuple[State, State]], list[State]]:
         return get_states_and_transitions()
 
     def generate_random_traces(
@@ -138,10 +148,20 @@ class CarlaSystemUnderObservation(SystemUnderObservation):
     ) -> Samples:
         if observation_prefix != []:
             raise ValueError("No prefix support yet")
-        
-        return sample(self.scenic_path,amount,length)
-        
 
+        if self.sample_index + amount > len(self.samples):
+            samples = (
+                self.samples[min(len(self.samples), self.sample_index + amount) :]
+                + self.samples[: self.sample_index + amount % len(self.samples)]
+            )
+            self.sample_index = (self.sample_index + amount) % len(self.samples)
+            return [tuple(s[:length]) for s in samples]
+        else:
+            samples = self.samples[self.sample_index : self.sample_index + amount]
+            self.sample_index += amount
+            return [tuple(s[:length]) for s in samples]
+
+        # return sample(self.scenic_path,amount,length)
 
     def generate_random_traces_with_prob(
         self,
@@ -149,11 +169,13 @@ class CarlaSystemUnderObservation(SystemUnderObservation):
         length: int,
         amount=1,
     ) -> list[tuple[Trace, Any]]:
-        return [(t,1/amount)for t in self.generate_random_traces(observation_prefix, length, amount)]
+        return [
+            (t, 1 / amount)
+            for t in self.generate_random_traces(observation_prefix, length, amount)
+        ]
 
     def create_target_monitor(self, dump_model=None) -> Monitor:
         raise NotImplementedError("This method should be overridden by subclasses")
 
     def stats(self) -> dict[str, Any]:
         raise NotImplementedError("This method should be overridden by subclasses")
-
