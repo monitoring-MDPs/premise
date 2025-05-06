@@ -2,6 +2,8 @@ FROM lukovdm/stormpy:premise
 
 RUN apt-get update && apt-get install texlive-latex-recommended texlive-latex-extra -y 
 
+RUN apt-get install python3.7 -y
+
 RUN mkdir /opt/premise
 WORKDIR /opt/premise
 
@@ -14,6 +16,3 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 RUN python setup.py install
-
-
-
