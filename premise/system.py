@@ -125,13 +125,17 @@ class MCSystemUnderObservation(SystemUnderObservation):
 
 
 class CarlaSystemUnderObservation(SystemUnderObservation):
-    def __init__(self, sample_path: str, condition_sample_paths: dict[str, str] = {}):
+    def __init__(
+        self, sample_paths: list[str], condition_sample_paths: dict[str, str] = {}
+    ):
         self.model_name = "Carla"
-        self.sample_path = sample_path
+        self.sample_paths = sample_paths
         self.condition_sample_paths = condition_sample_paths
 
-        with open(sample_path, "rb") as f:
-            self.samples = pickle.load(f)
+        self.samples = []
+        for s_p in sample_paths:
+            with open(s_p, "rb") as f:
+                self.samples += pickle.load(f)
 
         self.sample_index = 0
 

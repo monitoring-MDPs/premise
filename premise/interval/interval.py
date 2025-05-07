@@ -365,10 +365,11 @@ if __name__ == "__main__":
                 mon.initialize(0)
             elif action.isdigit():
                 print(mon.step(int(action)))
-            elif action == "speed":
+            elif action[:5] == "speed":
+                _, obs, rep = action.split(" ")
                 t = time()
-                for i in range(30):
-                    print(mon.step(188), " -> ", end="")
+                for i in range(int(rep)):
+                    print(mon.step(int(obs)), " -> ", end="")
                 print(f"done in {time() - t}s")
             else:
                 print(mon.step(int(hamming_lookup(observation_map, action))))

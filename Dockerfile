@@ -11,15 +11,15 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-ENV CARLA_ENV=/opt/carla-venv
-ENV OLD_PATH=$PATH
-RUN pyenv global 3.10
-ENV PATH="$CARLA_ENV/bin:$PATH"
+# ENV CARLA_ENV=/opt/carla-venv
+# ENV OLD_PATH=$PATH
+# RUN pyenv global 3.10
+# ENV PATH="$CARLA_ENV/bin:$PATH"
 
-COPY carla-requirements.txt ./
-RUN pip install --no-cache-dir -r carla-requirements.txt
+# COPY carla-requirements.txt ./
+# RUN pip install --no-cache-dir -r carla-requirements.txt
 
-ENV PATH=$OLD_PATH
+# ENV PATH=$OLD_PATH
 
 COPY . .
 

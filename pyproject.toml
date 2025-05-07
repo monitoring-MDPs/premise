@@ -6,7 +6,7 @@ authors = []
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 tqdm = "^4.67.0"
 stormpy = { path = "../stormpy-premise"}
 black = "^24.10.0"
@@ -15,6 +15,8 @@ scenic = "^3.0.0"
 jupyter = "^1.1.1"
 scikit-learn = "^1.6.1"
 torch = "^2.7.0"
+torchvision = "^0.22.0"
+carla = "^0.9.15"
 
 [tool.poetry.group.dev.dependencies]
 pybind11-stubgen = "^2.5.1"

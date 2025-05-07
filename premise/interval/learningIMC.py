@@ -288,6 +288,9 @@ def learn_IMC(
 def build_learning_args_parser(parser: argparse.ArgumentParser):
     group = parser.add_argument_group("Learning Parameters")
     group.add_argument(
+        "-m", "--model-path", type=str, default=None, help="Path to store the model"
+    )
+    group.add_argument(
         "-a", "--amount", type=int, default=1000, help="Amount of samples to generate"
     )
     group.add_argument(
@@ -377,5 +380,8 @@ if __name__ == "__main__":
         min_trans_prob=args.min_trans_prob,
     )
 
-    numpy.save(f"premise/examples/{suo.model_name}-initial_interval.npy", initial_interval)  # type: ignore
-    numpy.save(f"premise/examples/{suo.model_name}-interval.npy", interval)  # type: ignore
+    model_path = args.model_path
+    if model_path is None:
+        model_path = f"out/{suo.model_name}"
+    numpy.save(f"{model_path}-initial_interval.npy", initial_interval)  # type: ignore
+    numpy.save(f"{model_path}-interval.npy", interval)  # type: ignore

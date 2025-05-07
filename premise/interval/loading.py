@@ -2,7 +2,11 @@ from argparse import ArgumentParser, Namespace
 
 import numpy as np
 
-from premise.system import MCSystemUnderObservation, SystemUnderObservation, CarlaSystemUnderObservation
+from premise.system import (
+    MCSystemUnderObservation,
+    SystemUnderObservation,
+    CarlaSystemUnderObservation,
+)
 from premise.models import default_models
 
 
@@ -13,7 +17,11 @@ def build_suo_args_parser(parser: ArgumentParser):
         "-mc", "--mc", type=str, help="Use the premise model with the given name"
     )
     model_group.add_argument(
-        "-sim", "--sim", type=str, help="Use the simulation model with the given name"
+        "-sim",
+        "--sim",
+        nargs="+",
+        type=str,
+        help="Use the simulation model with the given name",
     )
 
 
