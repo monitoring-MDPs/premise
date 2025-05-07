@@ -5,7 +5,7 @@ import numpy as np
 from premise.system import (
     MCSystemUnderObservation,
     SystemUnderObservation,
-    CarlaSystemUnderObservation,
+    CarlaPreSampledSystemUnderObservation,
 )
 from premise.models import default_models
 
@@ -55,7 +55,7 @@ def build_suo(args: Namespace):
             for i, r in enumerate(suo.get_risk()):
                 print(f"{suo._model.state_valuations.get_string(i)}: {float(r)}")
     elif args.sim:
-        suo: SystemUnderObservation = CarlaSystemUnderObservation(args.sim)
+        suo: SystemUnderObservation = CarlaPreSampledSystemUnderObservation(args.sim)
     else:
         raise ValueError("No model specified")
     return suo

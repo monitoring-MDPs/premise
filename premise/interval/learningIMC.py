@@ -6,7 +6,7 @@ from premise.interval.loading import build_suo, build_suo_args_parser
 from premise.models import default_models
 from premise.system import MCSystemUnderObservation, SystemUnderObservation
 from premise.interval.interval import Samples, State
-from premise.carla.IMC_model_info import get_states_and_transitions
+from premise.carla.model_info import get_states_and_transitions
 
 carla = True
 

@@ -5,6 +5,7 @@ from typing import Any
 import stormpy
 import stormpy.pomdp
 
+from premise.carla.sample import sample
 from premise.interval.interval import Samples, State, Trace
 from premise.monitor import PremiseOptions, UnfoldingRiskAssessment, Monitor
 from premise.trace_generator import ConditionalTraceGenerator
@@ -13,9 +14,7 @@ from premise.models import (
     build_noaction_model_and_risk,
     build_state_and_transition_list,
 )
-from premise.carla.IMC_model_info import get_states_and_transitions
-
-# from premise.carla.IMC_data_record import sample
+from premise.carla.model_info import get_states_and_transitions
 
 
 class SystemUnderObservation(ABC):
@@ -124,11 +123,11 @@ class MCSystemUnderObservation(SystemUnderObservation):
         }
 
 
-class CarlaSystemUnderObservation(SystemUnderObservation):
+class CarlaPreSampledSystemUnderObservation(SystemUnderObservation):
     def __init__(
         self, sample_paths: list[str], condition_sample_paths: dict[str, str] = {}
     ):
-        self.model_name = "Carla"
+        self.model_name = "CarlaPS"
         self.sample_paths = sample_paths
         self.condition_sample_paths = condition_sample_paths
 
@@ -166,6 +165,46 @@ class CarlaSystemUnderObservation(SystemUnderObservation):
             return [tuple(s[:length]) for s in samples]
 
         # return sample(self.scenic_path,amount,length)
+
+    def generate_random_traces_with_prob(
+        self,
+        observation_prefix: list[Any],
+        length: int,
+        amount=1,
+    ) -> list[tuple[Trace, Any]]:
+        return [
+            (t, 1 / amount)
+            for t in self.generate_random_traces(observation_prefix, length, amount)
+        ]
+
+    def create_target_monitor(self, dump_model=None) -> Monitor:
+        raise NotImplementedError("This method should be overridden by subclasses")
+
+    def stats(self) -> dict[str, Any]:
+        raise NotImplementedError("This method should be overridden by subclasses")
+
+
+class CarlaSimSystemUnderObservation(SystemUnderObservation):
+    def __init__(self, scenic_path) -> None:
+        super().__init__()
+        self.model_name = "CarlaSim"
+        self.scenic_path = scenic_path
+
+    def get_states_and_transitions(
+        self, all_transitions: bool = True
+    ) -> tuple[list[State], list[tuple[State, State]], list[State]]:
+        return get_states_and_transitions()
+
+    def generate_random_traces(
+        self,
+        observation_prefix: list[Any],
+        length: int,
+        amount: int = 1,
+    ) -> Samples:
+        if observation_prefix != []:
+            raise ValueError("No prefix support yet")
+
+        return sample(self.scenic_path, amount, length)
 
     def generate_random_traces_with_prob(
         self,

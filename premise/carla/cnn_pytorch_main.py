@@ -4,8 +4,6 @@ import os
 import torch
 import torchvision
 
-print("CUDA enabled:", torch.cuda.is_available())
-
 
 class resNet(torch.nn.Module):
     """
@@ -59,19 +57,19 @@ class CNN(torch.nn.Module):
         #     torch.nn.Linear(1024, 1)
         # )
         # self.relu = torch.nn.ReLU()
-        self.fc1 = torch.nn.Linear(4096,1024)
+        self.fc1 = torch.nn.Linear(4096, 1024)
         self.head = torch.nn.Linear(1024, 1)
         print(self.model)
 
     def forward(self, x):
-        #x1 = self.model(x) #ANTONINA
+        # x1 = self.model(x) #ANTONINA
         x1 = self.model(x)
-        
-        #x = torch.cat((x1),dim=1) #ANTONINA 
+
+        # x = torch.cat((x1),dim=1) #ANTONINA
         x = self.fc1(x1)
 
         h = self.head(x)
-        
+
         # if not self.training:
         #     return self.relu(self.head(h))
         return h
@@ -111,7 +109,7 @@ def train_cnn(
         test_loss = 0
         for x_batch, y_batch in test_loader:
             y_batch = y_batch.to(device)
-            y_pred = model(x_batch.to(device) )
+            y_pred = model(x_batch.to(device))
             test_loss += criterion(y_pred, y_batch).item()
         test_loss /= len(test_loader)
     print(f"Epoch {-1}: val loss = {test_loss}")
@@ -143,15 +141,20 @@ def train_cnn(
         # save model
         if test_loss < best_val_loss and epoch > 50:
             best_val_loss = test_loss
-            torch.save(model.state_dict(), os.path.join(save_path, f"{model_name}_{epoch}.pth"))
-        if epoch % 50 == 0 or epoch == n_epochs-1:
-            torch.save(model.state_dict(), os.path.join(save_path, f"{model_name}_{epoch}.pth"))
+            torch.save(
+                model.state_dict(), os.path.join(save_path, f"{model_name}_{epoch}.pth")
+            )
+        if epoch % 50 == 0 or epoch == n_epochs - 1:
+            torch.save(
+                model.state_dict(), os.path.join(save_path, f"{model_name}_{epoch}.pth")
+            )
 
     return model
 
 
 from torch.utils.data import Dataset
 from torchvision.io import read_image
+
 
 def load_data_csv(
     data_dir,
@@ -185,6 +188,7 @@ def load_data_csv(
     )
     return train_dataset, val_dataset
 
+
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, img_dir):
         self.img_labels = pd.read_csv(annotations_file)
@@ -199,8 +203,8 @@ class CustomImageDataset(Dataset):
         label = self.img_labels.iloc[idx, 1]
 
         return image, torch.FloatTensor([label])
-    
-    
+
+
 class NPZDataset(Dataset):
 
     def __init__(self, input_file, transform=None):
@@ -211,25 +215,28 @@ class NPZDataset(Dataset):
         with np.load(self.path, allow_pickle=True) as fh:
             self.data = fh["arr_0"]
             self.labels = fh["arr_1"]
-            #self.turn = fh["arr_1"][:,1]
+            # self.turn = fh["arr_1"][:,1]
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, index):
-        img = (torch.from_numpy(self.data[index]) / 255).permute(2,0,1)[[2,1,0],:,:]
-        
-        #turn = self.turn[index]
+        img = (torch.from_numpy(self.data[index]) / 255).permute(2, 0, 1)[
+            [2, 1, 0], :, :
+        ]
+
+        # turn = self.turn[index]
         label = self.labels[index]
-        
-        #print(f"Sample {index} shape: {img.shape}")  #ANTONINA
+
+        # print(f"Sample {index} shape: {img.shape}")  #ANTONINA
 
         if self.transform:
             return self.transform(img), torch.FloatTensor([label])
         else:
             return img, torch.FloatTensor([label])
-        
-def load_data_np( 
+
+
+def load_data_np(
     data_dir,
     split_ratio=0.1,
     seed=0,
@@ -242,30 +249,37 @@ def load_data_np(
     paths = [data_dir + e for e in os.listdir(data_dir) if "npz" in e]
     ds = NPZDataset(paths[0])
     for i in range(1, len(paths)):
-        ds = torch.utils.data.ConcatDataset([ds,NPZDataset(paths[i])])
+        ds = torch.utils.data.ConcatDataset([ds, NPZDataset(paths[i])])
 
-    train_dataset, val_dataset = torch.utils.data.random_split(ds, [1-split_ratio, split_ratio])
-    
+    train_dataset, val_dataset = torch.utils.data.random_split(
+        ds, [1 - split_ratio, split_ratio]
+    )
+
     return train_dataset, val_dataset
 
 
-
-Train = False
 if __name__ == "__main__":
-    if Train == True: 
+    print("CUDA enabled:", torch.cuda.is_available())
+    Train = False
+
+    if Train == True:
         import argparse
 
-        parser = argparse.ArgumentParser(description="Train CNN") 
-        parser.add_argument("--data_dir", type=str, default="training_data/") #'/mimer/NOBACKUP/groups/naiss2024-22-404/cones_npz_datasets/' + f"/cones_npz_dataset_{i}.npz"
-        parser.add_argument("--model_dir", type=str, default="models/") #/cephyr/users/skurka/Alvis/MODD/experiments/contextual_MODD/carla/lane_keeping/cones_cnn
-        parser.add_argument("--model_name", type=str, default="model") #cones_model
+        parser = argparse.ArgumentParser(description="Train CNN")
+        parser.add_argument(
+            "--data_dir", type=str, default="training_data/"
+        )  #'/mimer/NOBACKUP/groups/naiss2024-22-404/cones_npz_datasets/' + f"/cones_npz_dataset_{i}.npz"
+        parser.add_argument(
+            "--model_dir", type=str, default="models/"
+        )  # /cephyr/users/skurka/Alvis/MODD/experiments/contextual_MODD/carla/lane_keeping/cones_cnn
+        parser.add_argument("--model_name", type=str, default="model")  # cones_model
         args = parser.parse_args()
 
         # build test.csv where is row is {i}.jpg
         import os
 
         os.makedirs(args.model_dir, exist_ok=True)
-    
+
         train_dataset, val_dataset = load_data_np(args.data_dir)
         print("Total of: ", len(train_dataset) + len(val_dataset), " images")
         train_cnn(
@@ -276,34 +290,20 @@ if __name__ == "__main__":
             model_name=args.model_name,
         )
     else:
-        device="cuda"
+        device = "cuda"
 
         model = CNN().to(device)
-        model_path = '/cephyr/users/skurka/Alvis/MODD/models/model_499.pth'
+        model_path = "/cephyr/users/skurka/Alvis/MODD/models/model_499.pth"
         model.load_state_dict(torch.load(model_path))
         model.eval()
 
-        
-        train_dataset, val_dataset = load_data_np('/mimer/NOBACKUP/groups/naiss2024-22-404/cones_npz_datasets/')
+        train_dataset, val_dataset = load_data_np(
+            "/mimer/NOBACKUP/groups/naiss2024-22-404/cones_npz_datasets/"
+        )
         test_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1)
-     
 
         for x_batch, y_batch in test_loader:
             y_batch = y_batch.to(device)
-            y_pred = model(x_batch.to(device) )
+            y_pred = model(x_batch.to(device))
             print(x_batch.shape)
             print(y_pred, y_batch)
-
-
-
-        
-
-        
-
-
-
-
-
-
-
-

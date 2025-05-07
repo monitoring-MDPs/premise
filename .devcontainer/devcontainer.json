@@ -2,7 +2,10 @@
 	"name": "Premise dev container",
 	"image": "lukovdm/premise:interval",
 	"runArgs": [
-		"--net=host"
+		"--net=host",
+		"--gpus",
+		"all",
+		"--runtime=nvidia"
 	],
 	"customizations": {
 		"vscode": {
@@ -12,6 +15,7 @@
 				"ms-python.black-formatter",
 				"ms-toolsai.jupyter",
 				"ms-toolsai.jupyter-keymap",
+				"UCSCFormalMethods.Scenic",
 				"Percy.vscode-pydata-viewer"
 			]
 		}
