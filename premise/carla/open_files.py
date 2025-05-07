@@ -15,15 +15,27 @@ with open("/workspaces/premise/premise/carla/carla_samples/batch_11.pkl", "rb") 
         if len(s) == 250:
             all_data.append(s) 
 
+with open("/workspaces/premise/premise/carla/carla_samples/batch_12.pkl", "rb") as g:
+    data = pickle.load(g)
+    for s in data: 
+        if len(s) == 250:
+            all_data.append(s) 
+
+with open("/workspaces/premise/premise/carla/carla_samples/batch_13.pkl", "rb") as g:
+    data = pickle.load(g)
+    for s in data: 
+        if len(s) == 250:
+            all_data.append(s) 
+
 
 print(len(all_data))
 
-#output_dir = '/workspaces/premise/premise/carla/carla_samples' 
-#output_file = os.path.join(output_dir, 'test_data.pkl')
-#os.makedirs(output_dir, exist_ok=True)
+output_dir = '/workspaces/premise/premise/carla/carla_samples' 
+output_file = os.path.join(output_dir, 'test_data.pkl')
+os.makedirs(output_dir, exist_ok=True)
 
-#with open(output_file, "wb") as f:
-#    pickle.dump(all_data, f)
+with open(output_file, "wb") as f:
+    pickle.dump(all_data, f)
 
 
 
