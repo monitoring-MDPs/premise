@@ -1,7 +1,5 @@
 from abc import ABC
 import argparse
-from math import ceil, floor
-from tabnanny import verbose
 from typing import Any
 
 import numpy as np
@@ -29,6 +27,18 @@ class RefinementStoppingCondition(ABC):
         raise NotImplementedError(
             "RefinementStoppingCondition is an abstract class, please implement the stats method"
         )
+
+
+class SampleCountStoppingCondition(RefinementStoppingCondition):
+    def __init__(self, suo: SystemUnderObservation, sample_count: int):
+        self.suo = suo
+        self.sample_count = sample_count
+
+    def check(self, interval, initial_interval) -> None | tuple[Samples, Samples]:
+        if self.suo.stats()["sample_count"] >= self.sample_count:
+            return None
+
+        return [tuple()], []
 
 
 class TargetDistanceStoppingCondition(RefinementStoppingCondition, ABC):
@@ -292,7 +302,7 @@ def refinement_learning(
     return interval, initial_interval
 
 
-def main(args: argparse.Namespace):
+def ref_main(args: argparse.Namespace):
     if args.conformence_length is None:
         args.conformence_length = args.sample_length
 
@@ -322,6 +332,11 @@ def main(args: argparse.Namespace):
             patience=args.stopping_patience,
             verbose=args.verbose,
         )
+    elif args.stopping_criteria == "samples":
+        ref_stop_cond = SampleCountStoppingCondition(
+            suo,
+            args.stopping_samples,
+        )
 
     interval, initial_interval = refinement_learning(
         suo,
@@ -343,11 +358,17 @@ def main(args: argparse.Namespace):
         stats = ref_stop_cond.stats() | suo.stats()
         np.save(args.dump_stats, stats)  # type: ignore
 
-    np.save(f"out/{suo.model_name}-initial_interval.npy", initial_interval)  # type: ignore
-    np.save(f"out/{suo.model_name}-interval.npy", interval)  # type: ignore
+    model_path = args.model_path
+    if model_path is None:
+        model_path = f"out/{suo.model_name}"
+    numpy.save(f"{model_path}-initial_interval.npy", initial_interval)  # type: ignore
+    numpy.save(f"{model_path}-interval.npy", interval)  # type: ignore
+
+    return stats
 
 
-if __name__ == "__main__":
+def ref_args_parser():
+
     parser = argparse.ArgumentParser(description="Conformance checking")
 
     build_suo_args_parser(parser)
@@ -373,6 +394,9 @@ if __name__ == "__main__":
         type=int,
         default=2,
         help="Amount of refinement samples to learn on per prefix",
+    )
+    learning_group.add_argument(
+        "-m", "--model-path", type=str, default=None, help="Path to store the model"
     )
     trans_del_group = learning_group.add_mutually_exclusive_group(required=False)
     trans_del_group.add_argument(
@@ -422,7 +446,7 @@ if __name__ == "__main__":
     conformence_group.add_argument(
         "-sc",
         "--stopping-criteria",
-        choices=["threshold", "stabilization"],
+        choices=["threshold", "stabilization", "samples"],
     )
     conformence_group.add_argument(
         "-st",
@@ -445,6 +469,12 @@ if __name__ == "__main__":
         default=3,
         help="The amount of iterations to wait before stopping refinement",
     )
+    conformence_group.add_argument(
+        "-ss",
+        "--stopping-samples",
+        type=int,
+        help="The amount of samples to stop refinement at",
+    )
 
     parser.add_argument(
         "--dump-stats",
@@ -455,7 +485,11 @@ if __name__ == "__main__":
     parser.add_argument("--verbose", "-v", action="count", default=0)
 
     build_learning_params_args_parser(parser)
+    return parser
 
+
+if __name__ == "__main__":
+    parser = ref_args_parser()
     parsed_args = parser.parse_args()
 
-    main(parsed_args)
+    ref_main(parsed_args)

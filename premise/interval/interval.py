@@ -174,11 +174,11 @@ def dict_to_interval_ipomdp(
         builder.new_row_group(current_row)
         if sum([x.upper() for x in d_dict.values()]) < 1:
             raise ValueError(
-                f"Upper bounds are below 1 for {s} ({sum([x.upper() for x in d_dict.values()])}): {d_dict}"
+                f"Upper bounds are below 1 for state {s} ({sum([x.upper() for x in d_dict.values()])}): {d_dict}"
             )
         if sum([x.lower() for x in d_dict.values()]) > 1:
             raise ValueError(
-                f"Lower bounds are above 1 for {s} ({sum([x.lower() for x in d_dict.values()])}): {d_dict}"
+                f"Lower bounds are above 1 for state {s} ({sum([x.lower() for x in d_dict.values()])}): {d_dict}"
             )
         for dest, interval in sorted(d_dict.items()):
             builder.add_next_value(current_row, dest, interval)

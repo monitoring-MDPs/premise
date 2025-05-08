@@ -1,0 +1,2 @@
+python -u -m premise.interval.refinement -mc airportA-7-50-30 -ll 200 -ia 100 -ra 100 -d mse -ca 50 -cl 75 -ho 75 -sc threshold -sp 3 --dump-stats out/res/date/airportA-7-50-30_refinement.npy -v --epsilon 0.0005 -t -m out/res/date/airportA-7-50-30
+python -u -m premise.interval.refinement -mc SnL-10x10 -ll 20 -ia 100 -ra 100 -t -ca 50 -cl 15 -ho 5 -sc threshold -sp 3 --dump-stats out/res/date/SnL-10x10_refinement.npy -v -m out/res/date/SnL-10x10
