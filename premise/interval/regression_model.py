@@ -16,7 +16,7 @@ from premise.carla.model_info import get_states_and_transitions
 from premise.interval.loss import Distance, distance_measures
 
 
-def learn_regression_model(train_samples, observations, testing_samples,args): 
+def learn_regression_model(train_samples, observations, testing_samples, args):
     X = []
     y = []
 
@@ -55,7 +55,6 @@ def learn_regression_model(train_samples, observations, testing_samples,args):
         t = tuple(x[1] for x in s)
         testing_traces.append(t)
 
-
     binary_test_data = []
     for trace in testing_traces:
         row = []
@@ -63,7 +62,6 @@ def learn_regression_model(train_samples, observations, testing_samples,args):
             obs = trace[step]
             row.extend([1 if obs == o else 0 for o in observations])
         binary_test_data.append(row)
-
 
     X_test = pd.DataFrame(binary_test_data, columns=column_names)
 
@@ -75,7 +73,7 @@ def learn_regression_model(train_samples, observations, testing_samples,args):
     for sample, risk in zip(testing_samples, risks):
         regression_risks[tuple(sample)] = risk
 
-    return testing_samples, regression_risks #dictionary trace + risk
+    return testing_samples, regression_risks  # dictionary trace + risk
 
 
 def test_monitor(
@@ -103,11 +101,12 @@ def test_monitor(
     return risks
 
 
-def regression_distance(testing_samples, regression_risks, distance, test_weights, suo, args):
+def regression_distance(
+    testing_samples, regression_risks, distance, test_weights, suo, args
+):
 
-    target_risks = test_monitor(     #ANTONINA - CHANGE
+    target_risks = test_monitor( 
         suo.create_target_monitor(
-            args.dump_model + "target" if args.dump_model else None
         ),
         testing_samples,
     )
@@ -120,6 +119,54 @@ def regression_distance(testing_samples, regression_risks, distance, test_weight
     )
 
     return target_risks, target_dist, target_all_dist
+
+
+def reg_main(args: argparse.Namespace):
+    suo = build_suo(args)
+
+    train_samples = suo.generate_random_traces([], args.length + args.horizon, args.amount)
+
+    all_states = suo.get_states_and_transitions()[0]
+    
+    observations = []
+    for x in all_states: 
+        if x[1] not in observations: 
+            observations.append(x[1])
+
+    samples_with_prob = suo.generate_random_traces_with_prob(
+            [], args.length, args.test_samples)
+    
+    total_prob = sum(p for _, p in samples_with_prob)
+    test_weights = {s: float(p / total_prob) for s, p in samples_with_prob}
+    testing_samples = [s[0] for s in samples_with_prob]
+
+    distance = distance_measures[args.distance]()
+
+
+    testing_samples, regression_risks = learn_regression_model(train_samples, observations, testing_samples,args)
+    target_risks, target_dist, target_all_dist = regression_distance(testing_samples, regression_risks, distance, test_weights, suo, args)
+
+
+    if args.dump_stats:
+        np.save(
+            args.dump_stats,
+            {
+                "target_dist": target_dist,
+                "target_all_dist": target_all_dist,
+                "weights": {s: float(w) for s, w in test_weights.items()},
+                "target_risks": {s: float(r) for s, r in target_risks.items()},
+                "regression_risks": {s: float(r) for s, r in regression_risks.items()},
+                "samples": testing_samples,
+            },  # type: ignore
+        )
+    
+
+    #target_values = [float(v) for v in target_risks.values()]
+    #print(target_values)
+    #print(list(regression_risks.values()))
+    #print(target_dist)
+    #print(target_all_dist)
+
 
 
 def build_learning_args_parser(parser: argparse.ArgumentParser):
@@ -141,8 +188,7 @@ def build_learning_args_parser(parser: argparse.ArgumentParser):
     )
 
 
-if __name__ == "__main__":
-
+def reg_argsparser():
     parser = argparse.ArgumentParser(description="Learn an IMC")
     build_suo_args_parser(parser)
     build_learning_args_parser(parser)
@@ -168,49 +214,10 @@ if __name__ == "__main__":
         "--dump-stats", type=str, help="Path to the file to dump stats to"
     )
 
+if __name__ == '__main__': 
+    parser=reg_argsparser()
     args = parser.parse_args()
-    suo = build_suo(args)
+    reg_main(args)
 
-    train_samples = suo.generate_random_traces([], args.length + args.horizon, args.amount)
-
-    all_states = suo.get_states_and_transitions()[0]
     
-    observations = []
-    for x in all_states: 
-        if x[1] not in observations: 
-            observations.append(x[1])
-
-    samples_with_prob = suo.generate_random_traces_with_prob(
-            [], args.length, args.test_samples)
     
-    total_prob = sum(p for _, p in samples_with_prob)
-    test_weights = {s: float(p / total_prob) for s, p in samples_with_prob}
-    testing_samples = [s[0] for s in samples_with_prob]
-
-    #distance = distance_measures[args.distance](args.distance_threshold) #ANTONINA
-    distance = distance_measures[args.distance]()
-
-
-    testing_samples, regression_risks = learn_regression_model(train_samples, observations, testing_samples,args)
-    target_risks, target_dist, target_all_dist = regression_distance(testing_samples, regression_risks, distance, test_weights, suo, args)
-
-
-    if args.dump_stats:
-        np.save(
-            args.dump_stats,
-            {
-                "target_dist": target_dist,
-                "target_all_dist": target_all_dist,
-                "weights": {s: float(w) for s, w in test_weights.items()},
-                "target_risks": {s: float(r) for s, r in target_risks.items()},
-                "regression_risks": {s: float(r) for s, r in regression_risks.items()},
-                "samples": testing_samples,
-            },  # type: ignore
-        )
-    
-
-    #target_values = [float(v) for v in target_risks.values()]
-    #print(target_values)
-    #print(list(regression_risks.values()))
-    print(target_dist)
-    #print(target_all_dist)

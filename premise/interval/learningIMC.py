@@ -14,6 +14,9 @@ def premilinaries(
     for s in initial_states:
         initial_interval[s] = [epsilon, 1 - epsilon]
 
+    if len(initial_states) == 1:
+        initial_interval[initial_states[0]] = [1.0, 1.0]
+
     strength_interval_initial = {}
 
     for s in all_states:
