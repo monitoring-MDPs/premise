@@ -11,6 +11,22 @@ X = []
 y = []
 
 
+
+def build_learning_args_parser(parser: argparse.ArgumentParser):
+    group = parser.add_argument_group("Learning Parameters")
+    group.add_argument(
+        "-m", "--model-path", type=str, default=None, help="Path to store the model"
+    )
+    group.add_argument(
+        "-a", "--amount", type=int, default=1000, help="Amount of samples to generate"
+    )
+    group.add_argument(
+        "-l", "--length", type=int, default=20, help="Length of the samples to generate"
+    )
+
+
+
+
 for l in range(len(leaning_samples)):  # one of 25 sets 
     for s in leaning_samples[l]:  # 250 sample paths
 
