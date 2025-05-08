@@ -1,12 +1,6 @@
 {
 	"name": "Premise dev container",
 	"image": "lukovdm/premise:interval",
-	"runArgs": [
-		"--net=host",
-		"--gpus",
-		"all",
-		"--runtime=nvidia"
-	],
 	"customizations": {
 		"vscode": {
 			"extensions": [
