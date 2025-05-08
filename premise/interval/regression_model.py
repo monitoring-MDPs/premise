@@ -161,6 +161,7 @@ def reg_main(args: argparse.Namespace):
                 "target_risks": {s: float(r) for s, r in target_risks.items()},
                 "regression_risks": {s: float(r) for s, r in regression_risks.items()},
                 "samples": testing_samples,
+                "args": vars(args),
             },  # type: ignore
         )
 

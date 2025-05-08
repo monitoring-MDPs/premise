@@ -367,8 +367,7 @@ def ref_main(args: argparse.Namespace):
         stats = (
             ref_stop_cond.stats()
             | suo.stats()
-            | {"sample_count": sample_counts}
-            | vars(args)
+            | {"samples_iter": sample_counts, "args": vars(args)}
         )
         np.save(args.dump_stats, stats)  # type: ignore
 
