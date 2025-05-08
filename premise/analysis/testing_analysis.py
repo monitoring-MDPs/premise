@@ -87,7 +87,9 @@ def plot_risk_histogram(risks, alarms, fname=None):
     plt.show()
 
 
-def main(stats_path="../../out/testing_carla_75_10.npy", split_on_color=True):
+def main(
+    stats_path="../../out/test-refine-HHH/carla-5-testing.npy", split_on_color=True
+):
     data = np.load(stats_path, allow_pickle=True).item()
     risks = data["risks"]
     if "target_risks" not in data:

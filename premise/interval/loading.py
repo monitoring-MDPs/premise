@@ -3,6 +3,7 @@ from argparse import ArgumentParser, Namespace
 import numpy as np
 
 from premise.system import (
+    CarlaSimSystemUnderObservation,
     MCSystemUnderObservation,
     SystemUnderObservation,
     CarlaPreSampledSystemUnderObservation,
@@ -17,9 +18,15 @@ def build_suo_args_parser(parser: ArgumentParser):
         "-mc", "--mc", type=str, help="Use the premise model with the given name"
     )
     model_group.add_argument(
+        "-sam",
+        "--sam",
+        nargs="+",
+        type=str,
+        help="Use the simulation model with the given name",
+    )
+    model_group.add_argument(
         "-sim",
         "--sim",
-        nargs="+",
         type=str,
         help="Use the simulation model with the given name",
     )
@@ -54,8 +61,10 @@ def build_suo(args: Namespace):
         if args.verbose > 1:
             for i, r in enumerate(suo.get_risk()):
                 print(f"{suo._model.state_valuations.get_string(i)}: {float(r)}")
+    elif args.sam:
+        suo: SystemUnderObservation = CarlaPreSampledSystemUnderObservation(args.sam)
     elif args.sim:
-        suo: SystemUnderObservation = CarlaPreSampledSystemUnderObservation(args.sim)
+        suo: SystemUnderObservation = CarlaSimSystemUnderObservation(args.sim)
     else:
         raise ValueError("No model specified")
     return suo

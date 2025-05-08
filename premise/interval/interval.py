@@ -247,7 +247,7 @@ def create_monitor(
     )
     if verbose > 1:
         print(ipomdp)
-        with open("models/imc.dot", "w") as f:
+        with open("out/imc.dot", "w") as f:
             f.write(ipomdp.to_dot())
 
     options = ObservationTraceUnfolderOptions()

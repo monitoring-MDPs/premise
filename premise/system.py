@@ -5,7 +5,6 @@ from typing import Any
 import stormpy
 import stormpy.pomdp
 
-from premise.carla.sample import sample
 from premise.interval.interval import Samples, State, Trace
 from premise.monitor import PremiseOptions, UnfoldingRiskAssessment, Monitor
 from premise.trace_generator import ConditionalTraceGenerator
@@ -201,6 +200,8 @@ class CarlaSimSystemUnderObservation(SystemUnderObservation):
         length: int,
         amount: int = 1,
     ) -> Samples:
+        from premise.carla.sample import sample
+
         if observation_prefix != []:
             raise ValueError("No prefix support yet")
 
