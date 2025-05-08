@@ -1,5 +1,6 @@
 import sys
 
+from interval.regression_model import reg_argsparser, reg_main
 from premise.interval.refinement import ref_args_parser, ref_main
 
 
@@ -22,10 +23,11 @@ if __name__ == "__main__":
     elif sys.argv[1] == "comp_methods":
         if len(args) != 3:
             print(
-                "Usage: python run.py comp_methods <args refinement> <> <args no refinement without -ss> <> <args regression>"
+                "Usage: python run.py comp_methods <args refinement> <> <args no refinement without -ss and -sc> <> <args regression>"
             )
             sys.exit(1)
         ref_parser = ref_args_parser()
+
         ref_args = ref_parser.parse_args(args[0])
         ref_stats = ref_main(ref_args)
         samples = ref_stats["sample_count"]
@@ -34,3 +36,8 @@ if __name__ == "__main__":
         ref_args_2.sample_count = samples
         ref_args_2.stopping_criteria = "samples"
         ref_main(ref_args_2)
+
+        reg_parser = reg_argsparser()
+        reg_args = reg_parser.parse_args(args[2])
+        reg_args.amount = samples
+        reg_main(reg_args)
