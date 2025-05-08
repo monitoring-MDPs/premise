@@ -1,6 +1,6 @@
 import sys
 
-from interval.regression_model import reg_argsparser, reg_main
+from premise.interval.regression_model import reg_argsparser, reg_main
 from premise.interval.refinement import ref_args_parser, ref_main
 
 
@@ -15,7 +15,7 @@ def split_args(args, delim):
 
 
 if __name__ == "__main__":
-    args = split_args(sys.argv[2:], "<>")
+    args = split_args(sys.argv[2:], "::")
     if sys.argv[1] == "refinement":
         ref_parser = ref_args_parser()
         ref_args = ref_parser.parse_args(args[0])
@@ -23,7 +23,9 @@ if __name__ == "__main__":
     elif sys.argv[1] == "comp_methods":
         if len(args) != 3:
             print(
-                "Usage: python run.py comp_methods <args refinement> <> <args no refinement without -ss and -sc> <> <args regression>"
+                "Usage: python run.py comp_methods <args refinement> <> <args no refinement without -ss and -sc> <> <args regression>",
+                args,
+                sys.argv,
             )
             sys.exit(1)
         ref_parser = ref_args_parser()

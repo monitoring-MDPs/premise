@@ -29,18 +29,6 @@ class RefinementStoppingCondition(ABC):
         )
 
 
-class SampleCountStoppingCondition(RefinementStoppingCondition):
-    def __init__(self, suo: SystemUnderObservation, sample_count: int):
-        self.suo = suo
-        self.sample_count = sample_count
-
-    def check(self, interval, initial_interval) -> None | tuple[Samples, Samples]:
-        if self.suo.stats()["sample_count"] >= self.sample_count:
-            return None
-
-        return [tuple()], []
-
-
 class TargetDistanceStoppingCondition(RefinementStoppingCondition, ABC):
     def __init__(
         self,
@@ -114,6 +102,19 @@ class TargetDistanceStoppingCondition(RefinementStoppingCondition, ABC):
         return {
             "distances": self.distances,
         }
+
+
+class SampleCountStoppingCondition(TargetDistanceStoppingCondition):
+    def __init__(self, *args, sample_count: int, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.sample_count = sample_count
+
+    def check(self, interval, initial_interval) -> None | tuple[Samples, Samples]:
+        _ = self.distance(interval, initial_interval)
+        if self.suo.stats()["sample_count"] >= self.sample_count:
+            return None
+
+        return [tuple()] * int(self.sample_count / 20), []
 
 
 class ThresholdStoppingCondition(TargetDistanceStoppingCondition):
@@ -247,6 +248,8 @@ def refinement_learning(
     if verbose > 0:
         iteration = 0
 
+    samples_learned = []
+
     while True:
         if verbose > 0:
             print(
@@ -269,6 +272,8 @@ def refinement_learning(
                 initial_samples += s
 
             samples += [t[len(prefix) :] for t in s]
+
+        samples_learned.append(len(samples))
 
         if len(initial_samples) > 0:
             initial_interval_learning(
@@ -299,7 +304,7 @@ def refinement_learning(
         else:
             break
 
-    return interval, initial_interval
+    return interval, initial_interval, samples_learned
 
 
 def ref_main(args: argparse.Namespace):
@@ -335,10 +340,14 @@ def ref_main(args: argparse.Namespace):
     elif args.stopping_criteria == "samples":
         ref_stop_cond = SampleCountStoppingCondition(
             suo,
-            args.stopping_samples,
+            args.conformence_length,
+            args.horizon,
+            args.conformence_amount,
+            distance,
+            sample_count=args.stopping_samples,
         )
 
-    interval, initial_interval = refinement_learning(
+    interval, initial_interval, sample_counts = refinement_learning(
         suo,
         args.existing_transitions,
         args.sample_length,
@@ -355,14 +364,19 @@ def ref_main(args: argparse.Namespace):
     )
 
     if args.dump_stats:
-        stats = ref_stop_cond.stats() | suo.stats()
+        stats = (
+            ref_stop_cond.stats()
+            | suo.stats()
+            | {"sample_count": sample_counts}
+            | vars(args)
+        )
         np.save(args.dump_stats, stats)  # type: ignore
 
     model_path = args.model_path
     if model_path is None:
         model_path = f"out/{suo.model_name}"
-    numpy.save(f"{model_path}-initial_interval.npy", initial_interval)  # type: ignore
-    numpy.save(f"{model_path}-interval.npy", interval)  # type: ignore
+    np.save(f"{model_path}-initial_interval.npy", initial_interval)  # type: ignore
+    np.save(f"{model_path}-interval.npy", interval)  # type: ignore
 
     return stats
 
