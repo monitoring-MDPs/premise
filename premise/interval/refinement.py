@@ -146,7 +146,7 @@ class ThresholdStoppingCondition(TargetDistanceStoppingCondition):
 
         # Otherwise, return the samples that are above the threshold
         interresting_traces = [t for t, (_, d) in target_all_dist if d > self.threshold]
-        return ([t[:l] for t in interresting_traces for l in range(1, len(t))], samples)
+        return ([t[:l] for t in interresting_traces for l in range(0, len(t))], samples)
 
 
 class StabalizationStoppingCondition(TargetDistanceStoppingCondition):
@@ -196,7 +196,7 @@ class StabalizationStoppingCondition(TargetDistanceStoppingCondition):
 
         # Return samples with a distance above the full distance
         interresting_traces = [s for s, (_, d) in target_all_dist if d > target_dist]
-        return [t[:l] for t in interresting_traces for l in range(1, len(t))], samples
+        return [t[:l] for t in interresting_traces for l in range(0, len(t))], samples
 
 
 def refinement_learning(
@@ -253,7 +253,7 @@ def refinement_learning(
             s = suo.generate_random_traces(
                 [s[1] for s in prefix],
                 learning_length,
-                ceil(amount / len(prefixes)),
+                amount,
             )
             if len(prefix) == 0:
                 initial_samples += s
@@ -371,8 +371,8 @@ if __name__ == "__main__":
         "-ra",
         "--refinement-amount",
         type=int,
-        default=100,
-        help="Amount of refinement samples to learn on",
+        default=2,
+        help="Amount of refinement samples to learn on per prefix",
     )
     trans_del_group = learning_group.add_mutually_exclusive_group(required=False)
     trans_del_group.add_argument(
