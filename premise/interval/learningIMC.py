@@ -355,6 +355,13 @@ if __name__ == "__main__":
     build_suo_args_parser(parser)
     build_learning_args_parser(parser)
     build_learning_params_args_parser(parser)
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="Increase verbosity level (can be used multiple times)",
+    )
 
     args = parser.parse_args()
 

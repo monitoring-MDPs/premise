@@ -54,7 +54,7 @@ def build_suo(args: Namespace):
     if args.mc:
         model_def = default_models[args.mc]
         model_def.risk_property = (
-            f'Pmax=? [F<={args.horizon} "{model_def.target_label}" ]'
+            f'Pmax=? [F<={vars(args).get("horizon", 1)} "{model_def.target_label}" ]'
         )
         suo: SystemUnderObservation = MCSystemUnderObservation(model_def, args.mc)
 
