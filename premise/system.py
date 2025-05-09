@@ -10,6 +10,7 @@ from premise.monitor import PremiseOptions, UnfoldingRiskAssessment, Monitor
 from premise.trace_generator import ConditionalTraceGenerator
 from premise.models import (
     ModelDescription,
+    build_coarse_state_map,
     build_noaction_model_and_risk,
     build_state_and_transition_list,
 )
@@ -67,14 +68,9 @@ class MCSystemUnderObservation(SystemUnderObservation):
 
         self._sample_count = 0
 
-    def get_states_and_transitions(
-        self, all_transitions: bool = True, add_label_to_state=False
-    ):
+    def get_states_and_transitions(self, all_transitions: bool = True, **kwargs):
         return build_state_and_transition_list(
-            self._model,
-            self._model_def.target_label,
-            all_transitions,
-            add_label_to_state=add_label_to_state,
+            self._model, self._model_def.target_label, all_transitions, **kwargs
         )
 
     def generate_random_traces(
@@ -120,6 +116,55 @@ class MCSystemUnderObservation(SystemUnderObservation):
         return {
             "sample_count": self._sample_count,
         }
+
+
+class CoarseMCSystemUnderObservation(MCSystemUnderObservation):
+    def __init__(self, model_def: ModelDescription, name: str, sys_vars: list[str]):
+        super().__init__(model_def, name)
+        self.sys_vars = sys_vars
+        self.coarse_state_map, self.state_coarse_map = build_coarse_state_map(
+            self._model, self.sys_vars
+        )
+
+    def get_states_and_transitions(self, all_transitions: bool = True):
+        return super().get_states_and_transitions(
+            all_transitions, state_coarse_map=self.state_coarse_map
+        )
+
+    def generate_random_traces(
+        self, observation_prefix: list[Any], length: int, amount=1
+    ) -> Samples:
+        fine_traces = super().generate_random_traces(observation_prefix, length, amount)
+        coarse_traces = [
+            tuple((self.state_coarse_map[s], o, l) for s, o, l in t)
+            for t in fine_traces
+        ]
+        return coarse_traces
+
+    def generate_random_traces_with_prob(
+        self, observation_prefix: list[Any], length: int, amount=1
+    ) -> list[tuple[Trace, Any]]:
+        fine_traces = super().generate_random_traces_with_prob(
+            observation_prefix, length, amount
+        )
+        coarse_traces = [
+            (tuple((self.state_coarse_map[s], o, l) for s, o, l in t), p)
+            for t, p in fine_traces
+        ]
+        return coarse_traces
+
+    def get_risk(self):
+        raise NotImplementedError(
+            "CoarseMCSystemUnderObservation does not support risk assessment on its states"
+        )
+
+    def trace_to_str(self, trace: Trace) -> str:
+        return "\n-> ".join(
+            [
+                f"{';'.join(s)} {{{self._model.observation_valuations.get_string(o).replace(' ', '')}}} ({b})"
+                for (s, o, b) in trace
+            ]
+        )
 
 
 class CarlaPreSampledSystemUnderObservation(SystemUnderObservation):

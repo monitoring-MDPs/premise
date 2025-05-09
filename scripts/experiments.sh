@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 now=$(date +"%Y-%m-%d_%H-%M-%S")
 mkdir -p out/logs

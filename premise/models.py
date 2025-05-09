@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from itertools import product
 import json
-from typing import Any
+from typing import Any, Optional
 import stormpy as sp
 import logging
 from pathlib import Path
@@ -74,6 +74,12 @@ default_models = {
     ),
     "SnL-10x10": ModelDescription(
         Path(__file__).parent / "examples/SnL.nm",
+        "n=100, l1s=1, l1d=38, l2s=4, l2d=14, l3s=9, l3d=31, l4s=28, l4d=64, l5s=40, l5d=42, l6s=36, l6d=44, l7s=51, l7d=67, l8d=91, l8s=71, l9s=80, l9d=100, l10s=-1, l10d=-1, s1s=98, s1d=76, s2s=95, s2d=75, s3s=93, s3d=73, s4s=87, s4d=24, s5s=64, s5d=60, s6s=62, s6d=19, s7s=55, s7d=53, s8d=11, s8s=49, s9s=47, s9d=26, s10s=16, s10d=6",
+        'Pmax=? [F<3 "good" ]',
+        "good",
+    ),
+    "SnLw-10x10": ModelDescription(
+        Path(__file__).parent / "examples/SnL-weighted.nm",
         "n=100, l1s=1, l1d=38, l2s=4, l2d=14, l3s=9, l3d=31, l4s=28, l4d=64, l5s=40, l5d=42, l6s=36, l6d=44, l7s=51, l7d=67, l8d=91, l8s=71, l9s=80, l9d=100, l10s=-1, l10d=-1, s1s=98, s1d=76, s2s=95, s2d=75, s3s=93, s3d=73, s4s=87, s4d=24, s5s=64, s5d=60, s6s=62, s6d=19, s7s=55, s7d=53, s8d=11, s8s=49, s9s=47, s9d=26, s10s=16, s10d=6",
         'Pmax=? [F<3 "good" ]',
         "good",
@@ -241,7 +247,10 @@ def build_noaction_model_and_risk(model_description: ModelDescription, options):
 
 
 def build_state_and_transition_list(
-    model, target_label: str, all_transitions=False, add_label_to_state=False
+    model,
+    target_label: str,
+    all_transitions=False,
+    state_coarse_map: Optional[dict[int, tuple]] = None,
 ):
     """
     Build a list of states and a list of transitions from the model
@@ -250,27 +259,15 @@ def build_state_and_transition_list(
     """
     states_map = {}
     for state in model.states:
-        if add_label_to_state:
-            states_map[state.id] = (
-                (state.id, model.state_valuations.get_string(state.id)),
-                (
-                    model.get_observation(state.id),
-                    model.observation_valuations.get_string(
-                        model.get_observation(state.id)
-                    ),
-                ),
-                model.labeling.has_state_label(target_label, state.id),
-            )
-        else:
-            states_map[state.id] = (
-                state.id,
-                model.get_observation(state.id),
-                model.labeling.has_state_label(target_label, state.id),
-            )
+        states_map[state.id] = (
+            state.id if state_coarse_map is None else state_coarse_map[state.id],
+            model.get_observation(state.id),
+            model.labeling.has_state_label(target_label, state.id),
+        )
 
-    initial_states = []
+    initial_states = set()
     for state_id in model.initial_states:
-        initial_states.append(states_map[state_id])
+        initial_states.add(states_map[state_id])
 
     if all_transitions:
         return (
@@ -287,4 +284,17 @@ def build_state_and_transition_list(
                         (states_map[state.id], states_map[transition.column])
                     )
 
-        return list(states_map.values()), list(transitions), initial_states
+        return list(set(states_map.values())), list(transitions), list(initial_states)
+
+
+def build_coarse_state_map(model, sys_vars: list[str]):
+    coarse_state_map = {}
+    state_coarse_map = {}
+    for state in model.states:
+        val = json.loads(str(model.state_valuations.get_json(state.id)))
+        coarse_state = tuple(val[v] for v in sys_vars)
+        state_coarse_map[state.id] = coarse_state
+        if coarse_state not in coarse_state_map:
+            coarse_state_map[coarse_state] = []
+        coarse_state_map[coarse_state].append(state.id)
+    return coarse_state_map, state_coarse_map

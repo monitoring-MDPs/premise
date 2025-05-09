@@ -1,6 +1,6 @@
 FROM lukovdm/stormpy:premise
 
-RUN apt-get update && apt-get install texlive-latex-recommended texlive-latex-extra -y 
+RUN apt-get update && apt-get install texlive-latex-recommended texlive-latex-extra parallel -y 
 
 RUN mkdir /opt/premise
 WORKDIR /opt/premise

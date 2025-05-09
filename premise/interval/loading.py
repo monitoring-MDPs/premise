@@ -4,6 +4,7 @@ import numpy as np
 
 from premise.system import (
     CarlaSimSystemUnderObservation,
+    CoarseMCSystemUnderObservation,
     MCSystemUnderObservation,
     SystemUnderObservation,
     CarlaPreSampledSystemUnderObservation,
@@ -17,6 +18,15 @@ def build_suo_args_parser(parser: ArgumentParser):
     model_group.add_argument(
         "-mc", "--mc", type=str, help="Use the premise model with the given name"
     )
+    group.add_argument(
+        "-sv",
+        "--sys-vars",
+        nargs="+",
+        type=str,
+        default=None,
+        help="System variables to be used",
+    )
+
     model_group.add_argument(
         "-sam",
         "--sam",
@@ -56,11 +66,20 @@ def build_suo(args: Namespace):
         model_def.risk_property = (
             f'Pmax=? [F<={vars(args).get("horizon", 1)} "{model_def.target_label}" ]'
         )
-        suo: SystemUnderObservation = MCSystemUnderObservation(model_def, args.mc)
-
-        if args.verbose > 1:
-            for i, r in enumerate(suo.get_risk()):
-                print(f"{suo._model.state_valuations.get_string(i)}: {float(r)}")
+        if args.sys_vars is not None:
+            suo: SystemUnderObservation = CoarseMCSystemUnderObservation(
+                model_def, args.mc, args.sys_vars
+            )
+            if args.verbose > 1:
+                for s, c in suo.state_coarse_map.items():
+                    print(
+                        f"{suo._model.state_valuations.get_string(s)}: {c} [{float(suo.risk[s])}]"
+                    )
+        else:
+            suo: SystemUnderObservation = MCSystemUnderObservation(model_def, args.mc)
+            if args.verbose > 1:
+                for i, r in enumerate(suo.get_risk()):
+                    print(f"{suo._model.state_valuations.get_string(i)}: {float(r)}")
     elif args.sam:
         suo: SystemUnderObservation = CarlaPreSampledSystemUnderObservation(args.sam)
     elif args.sim:

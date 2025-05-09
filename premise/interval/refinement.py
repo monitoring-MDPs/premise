@@ -154,6 +154,8 @@ class ThresholdStoppingCondition(TargetDistanceStoppingCondition):
                         f"Stopping refinement at distance {target_dist} < {self.threshold}"
                     )
                 return None
+        else:
+            self.not_improved = 0
 
         # Otherwise, return the samples that are above the threshold
         interresting_traces = [t for t, (_, d) in target_all_dist if d > self.threshold]
