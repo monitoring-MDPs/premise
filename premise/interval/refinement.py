@@ -110,11 +110,14 @@ class SampleCountStoppingCondition(TargetDistanceStoppingCondition):
         self.sample_count = sample_count
 
     def check(self, interval, initial_interval) -> None | tuple[Samples, Samples]:
-        _ = self.distance(interval, initial_interval)
+        _, _, samples = self.distance(interval, initial_interval)
         if self.suo.stats()["sample_count"] >= self.sample_count:
             return None
 
-        return [tuple()] * int(self.sample_count / 20), []
+        if self.sample_count - self.suo.stats()["sample_count"] < len(samples):
+            return [], samples[: self.sample_count - self.suo.stats()["sample_count"]]
+
+        return [], samples
 
 
 class ThresholdStoppingCondition(TargetDistanceStoppingCondition):
