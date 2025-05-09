@@ -18,7 +18,7 @@ class ModelDescription:
 
 
 default_models = {
-    "airportA-7-5-5": ModelDescription(
+    "airportA-7-10-10": ModelDescription(
         Path(__file__).parent / "examples/airportA-7.nm",
         "DMAX=10,PMAX=10",
         'Pmax=? [F "crash"]',
