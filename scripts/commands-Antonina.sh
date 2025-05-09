@@ -1,0 +1,3 @@
+python -u -m premise.interval.refinement -mc airportA-7-50-30 -ll 200 -ia 100 -ra 2 -d mse -ca 50 -cl 100 -ho 100 -sc threshold -sp 3 --dump-stats out/stats/date/airportA-7-50-30_refinement.npy -v --epsilon 0.0005 -t -m out/models/date/airportA-7-50-30
+python -u -m premise.interval.run comp_methods -mc airportA-7-50-30 -ll 200 -ia 100 -ra 2 -t -ca 50 -cl 15 -ho 5 --dump-stats out/stats/date/airportA-7-50-30-comp-noref-stats.npy -v -m out/models/date/airportA-7-50-30-comp
+python -u -m premise.interval.run comp_methods -mc airportA-7-50-30 -l 100 --horizon 100 -m out/models/date/airportA-7-50-30-comp-reg --dump-stats out/stats/date/airportA-7-50-30-comp-reg-stats.npy -a 0 -t 50
