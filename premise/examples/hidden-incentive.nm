@@ -39,12 +39,6 @@ module ego
 
     [ego] true -> 1/4 : (ax'=max(ax-1,aXMIN)) +  1/4: (ax'=min(ax+1,aXMAX))
                 + 1/4 : (ay'=max(ay-1,aYMIN)) + 1/4 : (ay'=min(ay+1,aYMAX));
-    //[ego] true -> 1/8 : (ax'=max(ax-1,aXMIN)) +  1/8: (ax'=min(ax+1,aXMAX))
-    //            + 1/8 : (ay'=max(ay-1,aYMIN)) + 1/8 : (ay'=min(ay+1,aYMAX))
-    //            + 1/16 : (ax'=max(ax-2,aXMIN)) +  1/16: (ax'=min(ax+2,aXMAX))
-    //            + 1/16 : (ay'=max(ay-2,aYMIN)) + 1/16 : (ay'=min(ay+2,aYMAX))
-    //            + 1/16 : (ax'=max(ax-1,aXMIN)) & (ay'=max(ay-1,aYMIN)) +  1/16: (ax'=min(ax+1,aXMAX)) & (ay'=max(ay-1,aYMIN))
-    //            + 1/16 : (ax'=max(ax-1,aXMIN)) & (ay'=min(ay+1,aYMAX)) +  1/16: (ax'=min(ax+1,aXMAX)) & (ay'=min(ay+1,aYMAX));
 endmodule
 
 module drone

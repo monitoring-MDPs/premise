@@ -54,6 +54,12 @@ default_models = {
         'Pmax=? [F<=12 "crash"]',
         "crash",
     ),
+    "evadeV-6-3-coarse": ModelDescription(
+        Path(__file__).parent / "examples/evade-monitoring-coarse.nm",
+        "N=6,RADIUS=3",
+        'Pmax=? [F<=12 "crash"]',
+        "crash",
+    ),
     "evadeV-6-3": ModelDescription(
         Path(__file__).parent / "examples/evade-monitoring.nm",
         "N=6,RADIUS=3",

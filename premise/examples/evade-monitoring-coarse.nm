@@ -22,14 +22,14 @@ const int dxMIN = 0;
 const int dyMIN = 0;
 const double slippery = 0.2;
 
-const int caxMIN = floor(aXMIN/coarse);
-const int cayMIN = floor(aYMIN/coarse);
-const int caxMAX = floor(aXMAX/coarse);
-const int cayMAX = floor(aYMAX/coarse);
-const int cdxMIN = floor(dxMIN/coarse);
-const int cdyMIN = floor(dyMIN/coarse);
-const int cdxMAX = floor(dxMAX/coarse);
-const int cdyMAX = floor(dyMAX/coarse);
+const int caXMIN = floor(aXMIN/coarse);
+const int caYMIN = floor(aYMIN/coarse);
+const int caXMAX = floor(aXMAX/coarse);
+const int caYMAX = floor(aYMAX/coarse);
+const int cdXMIN = floor(dxMIN/coarse);
+const int cdYMIN = floor(dyMIN/coarse);
+const int cdXMAX = floor(dxMAX/coarse);
+const int cdYMAX = floor(dyMAX/coarse);
 
 
 formula done = ax = aXMIN & ay = aYMIN;
@@ -54,26 +54,29 @@ endmodule
 module ego
     ax : [aXMIN..aXMAX] init aXMAX-1;
     ay : [aYMIN..aYMAX] init aYMAX;
-    c_ax : [caXMIN..caXMAX] init floor((aXMAX-1)/coarse);
+    c_ax : [caXMIN..caXMAX] init caXMAX;
     c_ay : [caYMIN..caYMAX] init caYMAX;
 
-    [ego] true -> 1/4 : (ax'=max(ax-1,aXMIN))&(c_ax'=max(floor((ax-1)/coarse), caxMAX)) 
-                + 1/4: (ax'=min(ax+1,aXMAX))&(c_ax'=min(floor((ax+1)/coarse), caxMAX)) 
-                + 1/4 : (ay'=max(ay-1,aYMIN))&(c_ay'=max(floor((ay-1)/coarse), cayMAX))
-                + 1/4 : (ay'=min(ay+1,aYMAX))&(c_ay'=min(floor((ay+1)/coarse), cayMAX));
-    endmodule
+    [ego] true -> 1/4 : (ax'=max(ax-1,aXMIN))&(c_ax'=max(floor((ax-1)/coarse), caXMAX)) 
+                + 1/4: (ax'=min(ax+1,aXMAX))&(c_ax'=min(floor((ax+1)/coarse), caXMAX)) 
+                + 1/4 : (ay'=max(ay-1,aYMIN))&(c_ay'=max(floor((ay-1)/coarse), caYMAX))
+                + 1/4 : (ay'=min(ay+1,aYMAX))&(c_ay'=min(floor((ay+1)/coarse), caYMAX));
+endmodule
 
 module drone
     dx : [dxMIN..dxMAX] init 0;
     dy : [dyMIN..dyMAX] init 0;
-    c_dx : [cdxMIN..cdxMAX] init 0;
-    c_dy : [cdyMIN..cdyMAX] init 0;
+    c_dx : [cdXMIN..cdXMAX] init 0;
+    c_dy : [cdYMIN..cdYMAX] init 0;
 
-    [adv] true -> (1-slippery): (dx'=max(dx-1,dxMIN))&(c_dx'=max(floor((dx-1)/coarse), cdxMIN)) 
-                                + slippery: (dx'=max(dx,dxMIN));
-    [adv] true -> (1-slippery): (dx'=min(dx+1,dxMAX)) + slippery: (dx'=min(dx,dxMAX));
-    [adv]  true -> (1-slippery): (dy'=min(dy+1,dyMAX)) + slippery: (dy'=min(dy,dyMAX));
-    [adv]  true -> (1-slippery): (dy'=max(dy-1,dyMIN)) + slippery: (dy'=max(dy,dyMIN));
+    [adv] true -> (1-slippery): (dx'=max(dx-1,dxMIN))&(c_dx'=max(floor((dx-1)/coarse), cdXMIN)) 
+                                + slippery: (dx'=max(dx,dxMIN))&(c_dx'=max(floor(dx/coarse), cdXMIN));
+    [adv] true -> (1-slippery): (dx'=min(dx+1,dxMAX))&(c_dx'=min(floor((dx+1)/coarse), cdXMAX))
+                                + slippery: (dx'=min(dx,dxMAX))&(c_dx'=min(floor(dx/coarse), cdXMAX));
+    [adv]  true -> (1-slippery): (dy'=min(dy+1,dyMAX))&(c_dy'=min(floor((dy+1)/coarse), cdYMAX)) 
+                                + slippery: (dy'=min(dy,dyMAX))&(c_dy'=min(floor(dy/coarse), cdYMAX));
+    [adv]  true -> (1-slippery): (dy'=max(dy-1,dyMIN))&(c_dy'=max(floor((dy-1)/coarse), cdYMIN)) 
+                                + slippery: (dy'=max(dy,dyMIN))&(c_dy'=max(floor(dy/coarse), cdYMIN));
 endmodule
 
 label "goal" = done;
