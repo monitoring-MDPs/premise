@@ -2,6 +2,8 @@ import argparse
 import numpy as np
 from tqdm import trange
 import os
+import pickle
+
 
 from premise.interval.loading import (
     build_suo,
@@ -46,6 +48,8 @@ if __name__ == "__main__":
         trace = tuple(suo.generate_random_traces([], args.sample_length + args.horizon)[0])
         traces.append(trace)
 
+        
+
     
     if args.dump:
     # Construct the full path with the desired filename format
@@ -55,7 +59,10 @@ if __name__ == "__main__":
         os.makedirs(os.path.dirname(filename), exist_ok=True)
 
     # Save the traces to the constructed filename
-        np.save(filename, traces)
+        #np.save(filename, traces)
+
+        with open(filename, 'wb') as f:
+            pickle.dump(traces, f)
 
 
 #python -m premise.interval.test_case_generation -mc SnL-10x10 -l 15 -ho 5 --no-target --dump premise/analysis/test_sets/
