@@ -37,7 +37,7 @@ def plot_roc_curve(alarms, risks, fname=None):
 
 def plot_mult_roc_curve(alarms_dict, risks_dict, fname=None):
     plt.figure(figsize=(12, 12))
-    plt.title("Receiver Operating Characteristic")
+    #plt.title("Receiver Operating Characteristic")
     for label, alarms in alarms_dict.items():
         if len(alarms) <= 0 or not any(alarms) or all(alarms):
             continue
@@ -47,19 +47,21 @@ def plot_mult_roc_curve(alarms_dict, risks_dict, fname=None):
         plt.plot(
             fpr,
             tpr,
-            label=f"{label} [{np.sum(alarms)} / {len(alarms)} crashes] (AUC = {roc_auc:.2f})"
+            label=f"{label} [{np.sum(alarms)} / {len(alarms)} crashes] (AUC = {roc_auc:.2f})",
+            linewidth=3
             #,color=color_to_rgb(label),
         )
     plt.plot([0, 1], [0, 1], "r--")
     plt.xlim((0, 1))
     plt.ylim((0, 1))
-    plt.ylabel("True Positive Rate")
-    plt.xlabel("False Positive Rate")
-    plt.legend(loc="lower right")
+    plt.ylabel("True Positive Rate", fontsize=16)
+    plt.xlabel("False Positive Rate", fontsize=16)
+    plt.legend(loc="lower right", fontsize=14)
     plt.grid(True)
     if fname:
         plt.savefig(fname)
     plt.show()
+
 
 
 def plot_risk_histogram(risks, alarms, fname=None):
@@ -185,8 +187,10 @@ def main(stats_path_1,stats_path_2):
     alarms_dict = {}
     risks_dict = {}
     label_map = {
-        1: "No Refinement",
-        2: "Refinement"
+        1: "Model-based with refinement",
+        2: "Model-based with uniform sampling",
+        3: "Model-free"
+
     }
 
     for idx, path in enumerate([stats_path_1, stats_path_2], start=1):

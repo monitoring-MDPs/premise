@@ -28,6 +28,9 @@ if __name__ == "__main__":
         "-s", "--samples", type=int, default=100, help="Amount of samples to test on"
     )
     parser.add_argument(
+        "-ts", "--test_data_set", type=str, help="Path to a set of test cases"
+    )
+    parser.add_argument(
         "-ho", "--horizon", required=True, type=int, help="The horizon to monitor on"
     )
     parser.add_argument(
@@ -68,15 +71,24 @@ if __name__ == "__main__":
 
     print("Ready for testing")
 
-    for x in trange(args.samples):
+    if args.test_data_set: 
+        traces = np.load(args.test_data_set, allow_pickle=True)
+        traces = tuple(traces.tolist())
+        print(type(traces))
 
-        trace = suo.generate_random_traces([], args.sample_length + args.horizon)[0]
+    else:
+        for x in trange(args.samples):
 
-        traces.append(trace)
+            trace = suo.generate_random_traces([], args.sample_length + args.horizon)[0]
+            traces.append(trace)
+        
+    for trace in traces: 
+
         alarms.append(any([s[2] for s in trace]))
 
         # Run premise on the learned model
-        sub_trace = trace[: args.sample_length]
+        sub_trace = tuple(trace[: args.sample_length])
+        print(type(sub_trace))
         risk = test_monitor(
             mon,
             [sub_trace],
@@ -147,7 +159,6 @@ if __name__ == "__main__":
 
 
 
-
 #python -m premise.interval.testing -mc SnL-10x10 -l 20 -s 100 -ho 10 --no-target --trans_path /workspaces/premise/out/models/2025-05-09_07-57-58/SnL-10x10-comp-interval.npy --init_path /workspaces/premise/out/models/2025-05-09_07-57-58/SnL-10x10-comp-initial_interval.npy --dump-stats /workspaces/premise/out/analysis/data
 #python -m premise.interval.testing -mc airportA-7-10-10 -l 80 -ho 20 --no-target --trans_path /workspaces/premise/results/models/2025-05-09_15-54-18/airportA-7-10-10-interval.npy --init_path /workspaces/premise/results/models/2025-05-09_15-54-18/airportA-7-10-10-initial_interval.npy --dump-stats  /workspaces/premise/out/analysis/data/airportA-7-10-10-ref-test
-#python -m premise.interval.testing -mc airportA-7-10-10 -l 80 -ho 20 --no-target --trans_path /workspaces/premise/results/models/2025-05-09_15-54-18/airportA-7-10-10-comp-no-ref-interval.npy --init_path /workspaces/premise/results/models/2025-05-09_15-54-18/airportA-7-10-10-comp-no-ref-initial_interval.npy --dump-stats  /workspaces/premise/out/analysis/data/airportA-7-10-10-no-ref-test
+#python -m premise.interval.testing -mc airportA-7-10-10 -l 80 -ho 20 --no-target --trans_path /workspaces/premise/results/models/2025-05-09_15-54-18/airportA-7-10-10-comp-no-ref-interval.npy --init_path /workspaces/premise/results/models/2025-05-09_15-54-18/airportA-7-10-10-comp-no-ref-initial_interval.npy -ts /workspaces/premise/out/analysis/data/airportA-7-10-10-no-ref-test.npy
