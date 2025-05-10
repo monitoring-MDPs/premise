@@ -47,6 +47,7 @@ class TargetDistanceStoppingCondition(RefinementStoppingCondition, ABC):
         self.verbose = verbose
 
         self.distances = []
+        self.traces = []
 
         self.target_monitor = suo.create_target_monitor()
 
@@ -95,19 +96,22 @@ class TargetDistanceStoppingCondition(RefinementStoppingCondition, ABC):
         )
 
         self.distances.append(target_dist)
+        self.traces.append(target_all_dist)
 
         return target_dist, target_all_dist, samples
 
     def stats(self) -> dict[str, Any]:
         return {
             "distances": self.distances,
+            "dist_traces": self.traces,
         }
 
 
 class SampleCountStoppingCondition(TargetDistanceStoppingCondition):
-    def __init__(self, *args, sample_count: int, **kwargs):
+    def __init__(self, *args, sample_count: int, refine_amount: int, **kwargs):
         super().__init__(*args, **kwargs)
         self.sample_count = sample_count
+        self.refine_amount = refine_amount
 
     def check(self, interval, initial_interval) -> None | tuple[Samples, Samples]:
         _, _, samples = self.distance(interval, initial_interval)
@@ -117,7 +121,18 @@ class SampleCountStoppingCondition(TargetDistanceStoppingCondition):
         if self.sample_count - self.suo.stats()["sample_count"] < len(samples):
             return [], samples[: self.sample_count - self.suo.stats()["sample_count"]]
 
-        return [], samples
+        additional_samples = self.sample_count / 10 - len(samples)
+        print(f"{additional_samples=}")
+
+        if self.sample_count - self.suo.stats()[
+            "sample_count"
+        ] < additional_samples + len(samples):
+            additional_samples = (
+                self.sample_count - self.suo.stats()["sample_count"] - len(samples)
+            )
+            print(f"To many samples: {additional_samples=}")
+
+        return [tuple()] * (int(additional_samples / self.refine_amount)), samples
 
 
 class ThresholdStoppingCondition(TargetDistanceStoppingCondition):
@@ -350,6 +365,7 @@ def ref_main(args: argparse.Namespace):
             args.conformence_amount,
             distance,
             sample_count=args.stopping_samples,
+            refine_amount=args.refinement_amount,
         )
 
     interval, initial_interval, sample_counts = refinement_learning(
