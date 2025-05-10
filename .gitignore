@@ -139,7 +139,7 @@ dmypy.json
 .DS_Store
 
 typing/
-**/stats/
+# **/stats/
 .vscode/
 
 out/
