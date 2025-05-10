@@ -1,0 +1,272 @@
+ WARN (FormulaParserGrammar.cpp:324): Identifier `R' coincides with a reserved keyword or operator. Property expressions using the variable or constant 'R' will not be parsed correctly.
+-----------------------
+Refinement iteration 0 with 1 prefixes
+Finished learning with 100 additional samples (total: 100)
+Target distance: 0.014191328570596497 ? 0.01
+-----------------------
+Refinement iteration 1 with 2700 prefixes
+Finished learning with 5450 additional samples (total: 5550)
+Target distance: 1.0889484049304543e-32 ? 0.01
+Not improved for 1 iterations, target distance: 0.0000 < 0.0100
+-----------------------
+Refinement iteration 2 with 0 prefixes
+Finished learning with 50 additional samples (total: 5600)
+Target distance: 9.59562708638647e-45 ? 0.01
+Not improved for 2 iterations, target distance: 0.0000 < 0.0100
+-----------------------
+Refinement iteration 3 with 0 prefixes
+Finished learning with 50 additional samples (total: 5650)
+Target distance: 0.0002467608749389164 ? 0.01
+Not improved for 3 iterations, target distance: 0.0002 < 0.0100
+Stopping refinement at distance 0.0002467608749389164 < 0.01
+Samples from refinement:  5700
+ WARN (FormulaParserGrammar.cpp:324): Identifier `R' coincides with a reserved keyword or operator. Property expressions using the variable or constant 'R' will not be parsed correctly.
+-----------------------
+Refinement iteration 0 with 1 prefixes
+Finished learning with 100 additional samples (total: 100)
+-----------------------
+Refinement iteration 1 with 0 prefixes
+Finished learning with 50 additional samples (total: 150)
+-----------------------
+Refinement iteration 2 with 0 prefixes
+Finished learning with 50 additional samples (total: 200)
+-----------------------
+Refinement iteration 3 with 0 prefixes
+Finished learning with 50 additional samples (total: 250)
+-----------------------
+Refinement iteration 4 with 0 prefixes
+Finished learning with 50 additional samples (total: 300)
+-----------------------
+Refinement iteration 5 with 0 prefixes
+Finished learning with 50 additional samples (total: 350)
+-----------------------
+Refinement iteration 6 with 0 prefixes
+Finished learning with 50 additional samples (total: 400)
+-----------------------
+Refinement iteration 7 with 0 prefixes
+Finished learning with 50 additional samples (total: 450)
+-----------------------
+Refinement iteration 8 with 0 prefixes
+Finished learning with 50 additional samples (total: 500)
+-----------------------
+Refinement iteration 9 with 0 prefixes
+Finished learning with 50 additional samples (total: 550)
+-----------------------
+Refinement iteration 10 with 0 prefixes
+Finished learning with 50 additional samples (total: 600)
+-----------------------
+Refinement iteration 11 with 0 prefixes
+Finished learning with 50 additional samples (total: 650)
+-----------------------
+Refinement iteration 12 with 0 prefixes
+Finished learning with 50 additional samples (total: 700)
+-----------------------
+Refinement iteration 13 with 0 prefixes
+Finished learning with 50 additional samples (total: 750)
+-----------------------
+Refinement iteration 14 with 0 prefixes
+Finished learning with 50 additional samples (total: 800)
+-----------------------
+Refinement iteration 15 with 0 prefixes
+Finished learning with 50 additional samples (total: 850)
+-----------------------
+Refinement iteration 16 with 0 prefixes
+Finished learning with 50 additional samples (total: 900)
+-----------------------
+Refinement iteration 17 with 0 prefixes
+Finished learning with 50 additional samples (total: 950)
+-----------------------
+Refinement iteration 18 with 0 prefixes
+Finished learning with 50 additional samples (total: 1000)
+-----------------------
+Refinement iteration 19 with 0 prefixes
+Finished learning with 50 additional samples (total: 1050)
+-----------------------
+Refinement iteration 20 with 0 prefixes
+Finished learning with 50 additional samples (total: 1100)
+-----------------------
+Refinement iteration 21 with 0 prefixes
+Finished learning with 50 additional samples (total: 1150)
+-----------------------
+Refinement iteration 22 with 0 prefixes
+Finished learning with 50 additional samples (total: 1200)
+-----------------------
+Refinement iteration 23 with 0 prefixes
+Finished learning with 50 additional samples (total: 1250)
+-----------------------
+Refinement iteration 24 with 0 prefixes
+Finished learning with 50 additional samples (total: 1300)
+-----------------------
+Refinement iteration 25 with 0 prefixes
+Finished learning with 50 additional samples (total: 1350)
+-----------------------
+Refinement iteration 26 with 0 prefixes
+Finished learning with 50 additional samples (total: 1400)
+-----------------------
+Refinement iteration 27 with 0 prefixes
+Finished learning with 50 additional samples (total: 1450)
+-----------------------
+Refinement iteration 28 with 0 prefixes
+Finished learning with 50 additional samples (total: 1500)
+-----------------------
+Refinement iteration 29 with 0 prefixes
+Finished learning with 50 additional samples (total: 1550)
+-----------------------
+Refinement iteration 30 with 0 prefixes
+Finished learning with 50 additional samples (total: 1600)
+-----------------------
+Refinement iteration 31 with 0 prefixes
+Finished learning with 50 additional samples (total: 1650)
+-----------------------
+Refinement iteration 32 with 0 prefixes
+Finished learning with 50 additional samples (total: 1700)
+-----------------------
+Refinement iteration 33 with 0 prefixes
+Finished learning with 50 additional samples (total: 1750)
+-----------------------
+Refinement iteration 34 with 0 prefixes
+Finished learning with 50 additional samples (total: 1800)
+-----------------------
+Refinement iteration 35 with 0 prefixes
+Finished learning with 50 additional samples (total: 1850)
+-----------------------
+Refinement iteration 36 with 0 prefixes
+Finished learning with 50 additional samples (total: 1900)
+-----------------------
+Refinement iteration 37 with 0 prefixes
+Finished learning with 50 additional samples (total: 1950)
+-----------------------
+Refinement iteration 38 with 0 prefixes
+Finished learning with 50 additional samples (total: 2000)
+-----------------------
+Refinement iteration 39 with 0 prefixes
+Finished learning with 50 additional samples (total: 2050)
+-----------------------
+Refinement iteration 40 with 0 prefixes
+Finished learning with 50 additional samples (total: 2100)
+-----------------------
+Refinement iteration 41 with 0 prefixes
+Finished learning with 50 additional samples (total: 2150)
+-----------------------
+Refinement iteration 42 with 0 prefixes
+Finished learning with 50 additional samples (total: 2200)
+-----------------------
+Refinement iteration 43 with 0 prefixes
+Finished learning with 50 additional samples (total: 2250)
+-----------------------
+Refinement iteration 44 with 0 prefixes
+Finished learning with 50 additional samples (total: 2300)
+-----------------------
+Refinement iteration 45 with 0 prefixes
+Finished learning with 50 additional samples (total: 2350)
+-----------------------
+Refinement iteration 46 with 0 prefixes
+Finished learning with 50 additional samples (total: 2400)
+-----------------------
+Refinement iteration 47 with 0 prefixes
+Finished learning with 50 additional samples (total: 2450)
+-----------------------
+Refinement iteration 48 with 0 prefixes
+Finished learning with 50 additional samples (total: 2500)
+-----------------------
+Refinement iteration 49 with 0 prefixes
+Finished learning with 50 additional samples (total: 2550)
+-----------------------
+Refinement iteration 50 with 0 prefixes
+Finished learning with 50 additional samples (total: 2600)
+-----------------------
+Refinement iteration 51 with 0 prefixes
+Finished learning with 50 additional samples (total: 2650)
+-----------------------
+Refinement iteration 52 with 0 prefixes
+Finished learning with 50 additional samples (total: 2700)
+-----------------------
+Refinement iteration 53 with 0 prefixes
+Finished learning with 50 additional samples (total: 2750)
+-----------------------
+Refinement iteration 54 with 0 prefixes
+Finished learning with 50 additional samples (total: 2800)
+-----------------------
+Refinement iteration 55 with 0 prefixes
+Finished learning with 50 additional samples (total: 2850)
+-----------------------
+Refinement iteration 56 with 0 prefixes
+Finished learning with 50 additional samples (total: 2900)
+-----------------------
+Refinement iteration 57 with 0 prefixes
+Finished learning with 50 additional samples (total: 2950)
+-----------------------
+Refinement iteration 58 with 0 prefixes
+Finished learning with 50 additional samples (total: 3000)
+-----------------------
+Refinement iteration 59 with 0 prefixes
+Finished learning with 50 additional samples (total: 3050)
+-----------------------
+Refinement iteration 60 with 0 prefixes
+Finished learning with 50 additional samples (total: 3100)
+-----------------------
+Refinement iteration 61 with 0 prefixes
+Finished learning with 50 additional samples (total: 3150)
+-----------------------
+Refinement iteration 62 with 0 prefixes
+Finished learning with 50 additional samples (total: 3200)
+-----------------------
+Refinement iteration 63 with 0 prefixes
+Finished learning with 50 additional samples (total: 3250)
+-----------------------
+Refinement iteration 64 with 0 prefixes
+Finished learning with 50 additional samples (total: 3300)
+-----------------------
+Refinement iteration 65 with 0 prefixes
+Finished learning with 50 additional samples (total: 3350)
+-----------------------
+Refinement iteration 66 with 0 prefixes
+Finished learning with 50 additional samples (total: 3400)
+-----------------------
+Refinement iteration 67 with 0 prefixes
+Finished learning with 50 additional samples (total: 3450)
+-----------------------
+Refinement iteration 68 with 0 prefixes
+Finished learning with 50 additional samples (total: 3500)
+-----------------------
+Refinement iteration 69 with 0 prefixes
+Finished learning with 50 additional samples (total: 3550)
+-----------------------
+Refinement iteration 70 with 0 prefixes
+Finished learning with 50 additional samples (total: 3600)
+-----------------------
+Refinement iteration 71 with 0 prefixes
+Finished learning with 50 additional samples (total: 3650)
+-----------------------
+Refinement iteration 72 with 0 prefixes
+Finished learning with 50 additional samples (total: 3700)
+-----------------------
+Refinement iteration 73 with 0 prefixes
+Finished learning with 50 additional samples (total: 3750)
+-----------------------
+Refinement iteration 74 with 0 prefixes
+Finished learning with 50 additional samples (total: 3800)
+-----------------------
+Refinement iteration 75 with 0 prefixes
+Finished learning with 50 additional samples (total: 3850)
+-----------------------
+Refinement iteration 76 with 0 prefixes
+Finished learning with 50 additional samples (total: 3900)
+-----------------------
+Refinement iteration 77 with 0 prefixes
+Finished learning with 50 additional samples (total: 3950)
+-----------------------
+Refinement iteration 78 with 0 prefixes
+Finished learning with 50 additional samples (total: 4000)
+-----------------------
+Refinement iteration 79 with 0 prefixes
+Finished learning with 50 additional samples (total: 4050)
+-----------------------
+Refinement iteration 80 with 0 prefixes
+Finished learning with 50 additional samples (total: 4100)
+-----------------------
+Refinement iteration 81 with 0 prefixes
+Finished learning with 50 additional samples (total: 4150)
+-----------------------
+Refinement iteration 82 with 0 prefixes
+Finished learning with 50 additional samples (total: 4200)

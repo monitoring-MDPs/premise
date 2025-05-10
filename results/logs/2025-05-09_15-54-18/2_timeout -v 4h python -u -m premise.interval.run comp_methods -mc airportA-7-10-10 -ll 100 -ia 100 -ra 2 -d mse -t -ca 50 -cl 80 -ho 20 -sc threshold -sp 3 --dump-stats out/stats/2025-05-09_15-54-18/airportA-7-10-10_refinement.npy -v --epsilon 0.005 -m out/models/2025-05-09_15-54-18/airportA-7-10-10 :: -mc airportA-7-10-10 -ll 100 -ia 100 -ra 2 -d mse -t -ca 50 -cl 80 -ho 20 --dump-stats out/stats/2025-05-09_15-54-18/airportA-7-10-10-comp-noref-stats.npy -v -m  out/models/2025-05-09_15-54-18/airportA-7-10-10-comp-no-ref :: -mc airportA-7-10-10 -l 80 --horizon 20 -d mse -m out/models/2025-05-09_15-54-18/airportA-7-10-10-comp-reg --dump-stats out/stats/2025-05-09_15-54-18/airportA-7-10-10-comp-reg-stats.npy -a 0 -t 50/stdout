@@ -1,0 +1,29 @@
+ WARN (FormulaParserGrammar.cpp:324): Identifier `R' coincides with a reserved keyword or operator. Property expressions using the variable or constant 'R' will not be parsed correctly.
+-----------------------
+Refinement iteration 0 with 1 prefixes
+Finished learning with 100 additional samples (total: 100)
+Target distance: 4.3775416071339536e-07 ? 0.01
+Not improved for 1 iterations, target distance: 0.0000 < 0.0100
+-----------------------
+Refinement iteration 1 with 0 prefixes
+Finished learning with 50 additional samples (total: 150)
+Target distance: 0.0003619386118692779 ? 0.01
+Not improved for 2 iterations, target distance: 0.0004 < 0.0100
+-----------------------
+Refinement iteration 2 with 0 prefixes
+Finished learning with 50 additional samples (total: 200)
+Target distance: 9.379335757932074e-05 ? 0.01
+Not improved for 3 iterations, target distance: 0.0001 < 0.0100
+Stopping refinement at distance 9.379335757932074e-05 < 0.01
+Samples from refinement:  250
+ WARN (FormulaParserGrammar.cpp:324): Identifier `R' coincides with a reserved keyword or operator. Property expressions using the variable or constant 'R' will not be parsed correctly.
+-----------------------
+Refinement iteration 0 with 1 prefixes
+Finished learning with 100 additional samples (total: 100)
+-----------------------
+Refinement iteration 1 with 0 prefixes
+Finished learning with 50 additional samples (total: 150)
+-----------------------
+Refinement iteration 2 with 0 prefixes
+Finished learning with 50 additional samples (total: 200)
+ WARN (FormulaParserGrammar.cpp:324): Identifier `R' coincides with a reserved keyword or operator. Property expressions using the variable or constant 'R' will not be parsed correctly.
