@@ -180,13 +180,18 @@ def main_alt(stats_path_1='/workspaces/premise/out/analysis/data.npy', stats_pat
 
         #plot_risk_histogram(target_risks_1, alarms_1)
 
-def main(stats_path_1,stats_path_2,stats_path_3):
+def main(stats_path_1,stats_path_2):
   
     alarms_dict = {}
     risks_dict = {}
+    label_map = {
+        1: "No Refinement",
+        2: "Refinement"
+    }
 
-    for idx, path in enumerate([stats_path_1, stats_path_2, stats_path_3], start=1):
-        label = f"Model {idx}"
+    for idx, path in enumerate([stats_path_1, stats_path_2], start=1):
+        
+        label = label_map[idx]
         data = np.load(path, allow_pickle=True).item()
         alarms = data["alarms"]
         risks = data["risks"]
@@ -201,10 +206,16 @@ def main(stats_path_1,stats_path_2,stats_path_3):
 
     plot_mult_roc_curve(alarms_dict, risks_dict)
 
+    for k in alarms_dict.keys():
+        plot_risk_histogram(risks_dict[k], alarms_dict[k])
+        
+
+    
+   
+
 
 if __name__ == "__main__":
-    main('/workspaces/premise/out/analysis/data.npy', '/workspaces/premise/out/analysis/data.npy', '/workspaces/premise/out/analysis/data.npy')
+    main("/workspaces/premise/out/analysis/data/airportA-7-10-10-ref-test.npy", "/workspaces/premise/out/analysis/data/airportA-7-10-10-no-ref-test.npy")
 
-#python -m premise.interval.testing -mc SnL-10x10 -l 20 -s 100 -ho 10 --no-target --trans_path /workspaces/premise/out/models/2025-05-09_07-57-58/SnL-10x10-comp-interval.npy --init_path /workspaces/premise/out/models/2025-05-09_07-57-58/SnL-10x10-comp-initial_interval.npy --dump-stats /workspaces/premise/out/analysis/data
 
 # %%

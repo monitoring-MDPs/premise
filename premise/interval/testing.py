@@ -25,7 +25,7 @@ if __name__ == "__main__":
         help="Length of the samples to generate",
     )
     parser.add_argument(
-        "-s", "--samples", type=int, default=1000, help="Amount of samples to test on"
+        "-s", "--samples", type=int, default=100, help="Amount of samples to test on"
     )
     parser.add_argument(
         "-ho", "--horizon", required=True, type=int, help="The horizon to monitor on"
@@ -149,4 +149,5 @@ if __name__ == "__main__":
 
 
 #python -m premise.interval.testing -mc SnL-10x10 -l 20 -s 100 -ho 10 --no-target --trans_path /workspaces/premise/out/models/2025-05-09_07-57-58/SnL-10x10-comp-interval.npy --init_path /workspaces/premise/out/models/2025-05-09_07-57-58/SnL-10x10-comp-initial_interval.npy --dump-stats /workspaces/premise/out/analysis/data
-
+#python -m premise.interval.testing -mc airportA-7-10-10 -l 80 -ho 20 --no-target --trans_path /workspaces/premise/results/models/2025-05-09_15-54-18/airportA-7-10-10-interval.npy --init_path /workspaces/premise/results/models/2025-05-09_15-54-18/airportA-7-10-10-initial_interval.npy --dump-stats  /workspaces/premise/out/analysis/data/airportA-7-10-10-ref-test
+#python -m premise.interval.testing -mc airportA-7-10-10 -l 80 -ho 20 --no-target --trans_path /workspaces/premise/results/models/2025-05-09_15-54-18/airportA-7-10-10-comp-no-ref-interval.npy --init_path /workspaces/premise/results/models/2025-05-09_15-54-18/airportA-7-10-10-comp-no-ref-initial_interval.npy --dump-stats  /workspaces/premise/out/analysis/data/airportA-7-10-10-no-ref-test

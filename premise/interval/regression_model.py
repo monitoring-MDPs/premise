@@ -73,7 +73,7 @@ def learn_regression_model(train_samples, observations, testing_samples, args):
     for sample, risk in zip(testing_samples, risks):
         regression_risks[tuple(sample)] = risk
 
-    return testing_samples, regression_risks  # dictionary trace + risk
+    return testing_samples, regression_risks, model # dictionary trace + risk
 
 
 def test_monitor(
@@ -144,7 +144,7 @@ def reg_main(args: argparse.Namespace):
 
     distance = distance_measures[args.distance]()
 
-    testing_samples, regression_risks = learn_regression_model(
+    testing_samples, regression_risks, model = learn_regression_model(
         train_samples, observations, testing_samples, args
     )
     target_risks, target_dist, target_all_dist = regression_distance(
@@ -165,11 +165,8 @@ def reg_main(args: argparse.Namespace):
             },  # type: ignore
         )
 
-    # target_values = [float(v) for v in target_risks.values()]
-    # print(target_values)
-    # print(list(regression_risks.values()))
-    # print(target_dist)
-    # print(target_all_dist)
+    if args.model_path: 
+        np.save(args.model_path, model)
 
 
 def build_learning_args_parser(parser: argparse.ArgumentParser):
