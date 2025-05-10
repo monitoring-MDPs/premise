@@ -95,6 +95,11 @@ class TargetDistanceStoppingCondition(RefinementStoppingCondition, ABC):
             all_distances=True,
         )
 
+        worst_trace = max(target_all_dist, key=lambda x: x[1][1])
+        print(
+            f"Worst trace: {self.suo.trace_to_str(worst_trace[0])} with distance {worst_trace[1][1]} and probability {worst_trace[1][0]}"
+        )
+
         self.distances.append(target_dist)
         self.traces.append(target_all_dist)
 

@@ -107,8 +107,8 @@ class MCSystemUnderObservation(SystemUnderObservation):
     def trace_to_str(self, trace: Trace) -> str:
         return "\n-> ".join(
             [
-                f"{self._model.state_valuations.get_string(s).replace(' ', '')} {{{self._model.observation_valuations.get_string(o).replace(' ', '')}}} ({b})"
-                for (s, o, b) in trace
+                f"{i}: {self._model.state_valuations.get_string(s).replace(' ', '')} {{{self._model.observation_valuations.get_string(o).replace(' ', '')}}} ({b})"
+                for i, (s, o, b) in enumerate(trace)
             ]
         )
 
@@ -161,8 +161,8 @@ class CoarseMCSystemUnderObservation(MCSystemUnderObservation):
     def trace_to_str(self, trace: Trace) -> str:
         return "\n-> ".join(
             [
-                f"{';'.join(s)} {{{self._model.observation_valuations.get_string(o).replace(' ', '')}}} ({b})"
-                for (s, o, b) in trace
+                f"{i}: {';'.join(map(str, s))} {{{self._model.observation_valuations.get_string(o).replace(' ', '')}}} ({b})"
+                for i, (s, o, b) in enumerate(trace)
             ]
         )
 
