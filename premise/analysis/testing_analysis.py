@@ -47,8 +47,8 @@ def plot_mult_roc_curve(alarms_dict, risks_dict, fname=None):
         plt.plot(
             fpr,
             tpr,
-            label=f"{label} [{np.sum(alarms)} / {len(alarms)} crashes] (AUC = {roc_auc:.2f})",
-            color=color_to_rgb(label),
+            label=f"{label} [{np.sum(alarms)} / {len(alarms)} crashes] (AUC = {roc_auc:.2f})"
+            #,color=color_to_rgb(label),
         )
     plt.plot([0, 1], [0, 1], "r--")
     plt.xlim((0, 1))
@@ -87,9 +87,10 @@ def plot_risk_histogram(risks, alarms, fname=None):
     plt.show()
 
 
-def main(
-    stats_path="../../out/test-refine-HHH/carla-5-testing.npy", split_on_color=True
-):
+#def main(
+#    stats_path="../../out/test-refine-HHH/carla-5-testing.npy", split_on_color=True
+#):
+def main_old(stats_path='/workspaces/premise/out/analysis/data.npy', split_on_color=False):
     data = np.load(stats_path, allow_pickle=True).item()
     risks = data["risks"]
     if "target_risks" not in data:
@@ -134,8 +135,76 @@ def main(
         plot_roc_curve(alarms, target_risks)
         plot_risk_histogram(target_risks, alarms)
 
+def main_alt(stats_path_1='/workspaces/premise/out/analysis/data.npy', stats_path_2='/workspaces/premise/out/analysis/data.npy', stats_path_3='/workspaces/premise/out/analysis/data.npy', split_on_color=False):
+    data_1 = np.load(stats_path_1, allow_pickle=True).item()
+    risks_1 = data_1["risks"]
+    if "target_risks" not in data_1:
+        target_risks = None
+    else:
+        target_risks_1 = [float(r) for r in data_1["target_risks"]]
+    alarms_1 = data_1["alarms"]
+
+    data_2 = np.load(stats_path_2, allow_pickle=True).item()
+    risks_2 = data_2["risks"]
+    if "target_risks" not in data_2:
+        target_risks = None
+    else:
+        target_risks_2 = [float(r) for r in data_2["target_risks"]]
+    alarms_2 = data_2["alarms"]
+
+    data_3 = np.load(stats_path_3, allow_pickle=True).item()
+    risks_3 = data_3["risks"]
+    if "target_risks" not in data_3:
+        target_risks = None
+    else:
+        target_risks_3 = [float(r) for r in data_3["target_risks"]]
+    alarms_3 = data_3["alarms"]
+
+    #print(f"Loaded {len(risks_1)} samples.")
+    #print(f"Crashes: {np.sum(alarms_1)} / {len(alarms_1)} ({100*np.mean(alarms_1):.2f}%)")
+    #print(
+    #    f"Risks: min={np.min(risks_1):.4f}, max={np.max(risks_1):.4f}, mean={np.mean(risks_1):.4f}"
+    #)
+
+
+    plot_roc_curve(alarms_1, risks_1)
+    plot_roc_curve(alarms_2, risks_2)
+    plot_roc_curve(alarms_3, risks_3)
+
+    #plot_risk_histogram(risks_1, alarms_1)
+
+    if target_risks is not None:
+        plot_roc_curve(alarms_1, target_risks_1)
+        plot_roc_curve(alarms_2, target_risks_2)
+        plot_roc_curve(alarms_3, target_risks_3)
+
+        #plot_risk_histogram(target_risks_1, alarms_1)
+
+def main(stats_path_1,stats_path_2,stats_path_3):
+  
+    alarms_dict = {}
+    risks_dict = {}
+
+    for idx, path in enumerate([stats_path_1, stats_path_2, stats_path_3], start=1):
+        label = f"Model {idx}"
+        data = np.load(path, allow_pickle=True).item()
+        alarms = data["alarms"]
+        risks = data["risks"]
+
+        alarms_dict[label] = alarms
+        risks_dict[label] = risks
+
+        if "target_risks" in data:
+            target_label = f"{label} (Target)"
+            alarms_dict[target_label] = alarms
+            risks_dict[target_label] = [float(r) for r in data["target_risks"]]
+
+    plot_mult_roc_curve(alarms_dict, risks_dict)
+
 
 if __name__ == "__main__":
-    main()
+    main('/workspaces/premise/out/analysis/data.npy', '/workspaces/premise/out/analysis/data.npy', '/workspaces/premise/out/analysis/data.npy')
+
+#python -m premise.interval.testing -mc SnL-10x10 -l 20 -s 100 -ho 10 --no-target --trans_path /workspaces/premise/out/models/2025-05-09_07-57-58/SnL-10x10-comp-interval.npy --init_path /workspaces/premise/out/models/2025-05-09_07-57-58/SnL-10x10-comp-initial_interval.npy --dump-stats /workspaces/premise/out/analysis/data
 
 # %%

@@ -143,3 +143,10 @@ if __name__ == "__main__":
                 )
                 print(f"True risk at end: {float(suo.get_risk()[trace[-1][0]])}")
             break
+
+
+
+
+
+#python -m premise.interval.testing -mc SnL-10x10 -l 20 -s 100 -ho 10 --no-target --trans_path /workspaces/premise/out/models/2025-05-09_07-57-58/SnL-10x10-comp-interval.npy --init_path /workspaces/premise/out/models/2025-05-09_07-57-58/SnL-10x10-comp-initial_interval.npy --dump-stats /workspaces/premise/out/analysis/data
+
