@@ -37,6 +37,8 @@ def plot_roc_curve(alarms, risks, fname=None):
 
 def plot_mult_roc_curve(alarms_dict, risks_dict, fname=None):
     plt.figure(figsize=(12, 12))
+    line_styles = ['-', '--', ':']  
+    style_index = 0
     #plt.title("Receiver Operating Characteristic")
     for label, alarms in alarms_dict.items():
         if len(alarms) <= 0 or not any(alarms) or all(alarms):
@@ -47,16 +49,19 @@ def plot_mult_roc_curve(alarms_dict, risks_dict, fname=None):
         plt.plot(
             fpr,
             tpr,
-            label=f"{label} [{np.sum(alarms)} / {len(alarms)} crashes] (AUC = {roc_auc:.2f})",
-            linewidth=3
+            label=f"{label}, (AUC = {roc_auc:.2f})",
+            linewidth=6,
+            linestyle=line_styles[style_index]
             #,color=color_to_rgb(label),
         )
+        style_index = (style_index + 1) % len(line_styles)
     plt.plot([0, 1], [0, 1], "r--")
     plt.xlim((0, 1))
     plt.ylim((0, 1))
-    plt.ylabel("True Positive Rate", fontsize=16)
-    plt.xlabel("False Positive Rate", fontsize=16)
-    plt.legend(loc="lower right", fontsize=14)
+    plt.ylabel("True Positive Rate", fontsize=35)
+    plt.xlabel("False Positive Rate", fontsize=35)
+    plt.legend(loc="lower right", prop={'size': 22})
+    plt.tick_params(axis='both', which='major', labelsize=20)
     plt.grid(True)
     if fname:
         plt.savefig(fname)
@@ -65,6 +70,7 @@ def plot_mult_roc_curve(alarms_dict, risks_dict, fname=None):
 
 
 def plot_risk_histogram(risks, alarms, fname=None):
+
     plt.figure(figsize=(8, 6))
     bins = np.linspace(0, 1, 100)
     plt.hist(
@@ -182,21 +188,27 @@ def main_alt(stats_path_1='/workspaces/premise/out/analysis/data.npy', stats_pat
 
         #plot_risk_histogram(target_risks_1, alarms_1)
 
-def main(stats_path_1,stats_path_2):
-  
+
+def main(stats_path_1, stats_path_2, stats_path_3):
     alarms_dict = {}
     risks_dict = {}
+    
     label_map = {
         1: "Model-based with refinement",
         2: "Model-based with uniform sampling",
         3: "Model-free"
-
     }
 
-    for idx, path in enumerate([stats_path_1, stats_path_2], start=1):
-        
+    paths = [stats_path_1, stats_path_2, stats_path_3]
+
+    for idx, path in enumerate(paths, start=1):
         label = label_map[idx]
-        data = np.load(path, allow_pickle=True).item()
+        data = np.load(path, allow_pickle=True)
+
+        # If it's a numpy array that wraps a dict (common with np.save on dict), unpack it
+        if not isinstance(data, dict):
+            data = data.item()
+
         alarms = data["alarms"]
         risks = data["risks"]
 
@@ -210,16 +222,12 @@ def main(stats_path_1,stats_path_2):
 
     plot_mult_roc_curve(alarms_dict, risks_dict)
 
+
     for k in alarms_dict.keys():
         plot_risk_histogram(risks_dict[k], alarms_dict[k])
         
 
-    
-   
-
-
 if __name__ == "__main__":
-    main("/workspaces/premise/out/analysis/data/airportA-7-10-10-ref-test.npy", "/workspaces/premise/out/analysis/data/airportA-7-10-10-no-ref-test.npy")
-
+    main('/workspaces/premise/premise/analysis/test_results/SnL-10x10_l15_ho5_ref.npy','/workspaces/premise/premise/analysis/test_results/SnL-10x10_l15_ho5_no_ref.npy','/workspaces/premise/premise/analysis/test_results/SnL-10x10_l15_ho5_reg.npy')
 
 # %%

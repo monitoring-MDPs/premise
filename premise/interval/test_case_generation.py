@@ -47,6 +47,7 @@ if __name__ == "__main__":
 
         trace = tuple(suo.generate_random_traces([], args.sample_length + args.horizon)[0])
         traces.append(trace)
+        print(len(traces))
 
         
 

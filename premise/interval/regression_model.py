@@ -121,40 +121,40 @@ def regression_distance(
 
 
 def reg_main(args: argparse.Namespace):
-    suo = build_suo(args)
+        suo = build_suo(args)
 
-    train_samples = suo.generate_random_traces(
-        [], args.length + args.horizon, args.amount
-    )
+        train_samples = suo.generate_random_traces(
+            [], args.length + args.horizon, args.amount
+        )
 
-    all_states = suo.get_states_and_transitions()[0]
+        all_states = suo.get_states_and_transitions()[0]
 
-    observations = []
-    for x in all_states:
-        if x[1] not in observations:
-            observations.append(x[1])
+        observations = []
+        for x in all_states:
+            if x[1] not in observations:
+                observations.append(x[1])
 
-    samples_with_prob = suo.generate_random_traces_with_prob(
-        [], args.length, args.test_samples
-    )
+        samples_with_prob = suo.generate_random_traces_with_prob(
+            [], args.length, args.test_samples
+        )
 
-    total_prob = sum(p for _, p in samples_with_prob)
-    test_weights = {s: float(p / total_prob) for s, p in samples_with_prob}
-    testing_samples = [s[0] for s in samples_with_prob]
+        total_prob = sum(p for _, p in samples_with_prob)
+        test_weights = {s: float(p / total_prob) for s, p in samples_with_prob}
+        testing_samples = [s[0] for s in samples_with_prob]
 
-    distance = distance_measures[args.distance]()
+        distance = distance_measures[args.distance]()
 
-    testing_samples, regression_risks, model = learn_regression_model(
-        train_samples, observations, testing_samples, args
-    )
-    target_risks, target_dist, target_all_dist = regression_distance(
-        testing_samples, regression_risks, distance, test_weights, suo, args
-    )
+        testing_samples, regression_risks, model = learn_regression_model(
+            train_samples, observations, testing_samples, args
+        )
+        target_risks, target_dist, target_all_dist = regression_distance(
+            testing_samples, regression_risks, distance, test_weights, suo, args
+        )
 
-    if args.dump_stats:
-        np.save(
-            args.dump_stats,
-            {
+        if args.dump_stats:
+            np.save(
+                args.dump_stats,
+                {
                 "target_dist": target_dist,
                 "target_all_dist": target_all_dist,
                 "weights": {s: float(w) for s, w in test_weights.items()},
@@ -162,11 +162,12 @@ def reg_main(args: argparse.Namespace):
                 "regression_risks": {s: float(r) for s, r in regression_risks.items()},
                 "samples": testing_samples,
                 "args": vars(args),
-            },  # type: ignore
-        )
+                "observations": observations
+                },  # type: ignore
+            )
 
-    if args.model_path: 
-        np.save(args.model_path, model)
+        if args.model_path: 
+            np.save(args.model_path, model)
 
 
 def build_learning_args_parser(parser: argparse.ArgumentParser):
@@ -181,7 +182,10 @@ def build_learning_args_parser(parser: argparse.ArgumentParser):
         "-l", "--length", type=int, default=20, help="Length of the samples to generate"
     )
     group.add_argument(
-        "-t", "--test_samples", type=int, default=100, help="Amount of test samples"
+        "-t", "--test_samples", type=int, default=50, help="Amount of test samples"
+    )
+    group.add_argument(
+        "--model", type=bool, default=False, help="If a model exists"
     )
     group.add_argument("--horizon", type=int, default=20, help="Length horizon")
 
@@ -217,3 +221,5 @@ if __name__ == "__main__":
     parser = reg_argsparser()
     args = parser.parse_args()
     reg_main(args)
+
+

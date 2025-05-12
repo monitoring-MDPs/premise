@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/opt/pyenv/versions/3.10.17/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/opt/pyenv/versions/3.10.17/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/workspaces/premise/premise/interval/run.py", line 42, in <module>
+    ref_main(ref_args_2)
+  File "/workspaces/premise/premise/interval/refinement.py", line 398, in ref_main
+    np.save(args.dump_stats, stats)  # type: ignore
+  File "/opt/venv/lib/python3.10/site-packages/numpy/lib/npyio.py", line 542, in save
+    file_ctx = open(file, "wb")
+FileNotFoundError: [Errno 2] No such file or directory: 'out/stats/2025-05-11_18-07-23/airportA-7-50-30-comp-noref-stats.npy'

@@ -36,7 +36,7 @@ def test_monitor(
             mon.step(obs_func(obs), compute_risk=False)
 
         last_risk = mon.step(obs_func(observations[-1]), compute_risk=True)
-        risks[trace] = last_risk
+        risks[tuple(tuple(tuple(step) for step in trace))]  = last_risk
     return risks
 
 

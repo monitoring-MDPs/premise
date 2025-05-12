@@ -1,6 +1,8 @@
 import argparse
 import numpy as np
 from tqdm import trange
+import os
+import pickle
 
 from premise.interval.loading import (
     build_imc_loading_args_parser,
@@ -44,22 +46,27 @@ if __name__ == "__main__":
         "--dump-stats", type=str, help="Path to the file to dump stats to"
     )
     parser.add_argument("--verbose", "-v", action="count", default=0)
+    parser.add_argument("--premise", "-p", type=bool, default=True, help='Is the monior an IMC meant as Premise input')
 
     args = parser.parse_args()
 
     suo = build_suo(args)
-    interval, initial_interval = load_imc(args)
 
-    # Build the premise monitor on the learned model
-    mon, observation_map, unfolder, ipomdp = create_monitor(
-        interval,
-        initial_interval,
-        "min",
-        True,
-        args.horizon,
-        args.dump,
-        args.verbose,
-    )
+    if args.premise == True: 
+
+        interval, initial_interval = load_imc(args)
+
+        # Build the premise monitor on the learned model
+        mon, observation_map, unfolder, ipomdp = create_monitor(
+            interval,
+            initial_interval,
+            "min",
+            True,
+            args.horizon,
+            args.dump,
+            args.verbose,
+        )
+
 
     if not args.no_target:
         target_monitor = suo.create_target_monitor()
@@ -86,27 +93,36 @@ if __name__ == "__main__":
 
         alarms.append(any([s[2] for s in trace]))
 
-        # Run premise on the learned model
-        sub_trace = tuple(trace[: args.sample_length])
-        print(type(sub_trace))
-        risk = test_monitor(
-            mon,
-            [sub_trace],
-            obs_func=lambda x: observation_map[x],
-            skip_initial=True,
-            with_tqdm=False,
-        )[sub_trace]
+        if args.premise == True: 
 
-        risks.append(risk)
-
-        if not args.no_target:
-            target_risk = test_monitor(
-                target_monitor,
+            # Run premise on the learned model
+            sub_trace = tuple(tuple(step) for step in trace[:args.sample_length])
+            print(type(sub_trace[0]))
+            risk = test_monitor(
+                mon,
                 [sub_trace],
+                obs_func=lambda x: observation_map[x],
+                skip_initial=True,
                 with_tqdm=False,
             )[sub_trace]
-            target_risks.append(target_risk)
 
+            risks.append(risk)
+
+            if not args.no_target:
+                target_risk = test_monitor(
+                    target_monitor,
+                    [sub_trace],
+                    with_tqdm=False,
+                )[sub_trace]
+                target_risks.append(target_risk)
+
+        else: 
+            model = np.load('/workspaces/premise/results/models/2025-05-10_12-12-21/airportA-7-10-10-comp-reg.npy', allow_pickle=True)
+            prob = model.predict_proba(traces)
+
+            risks = prob[:, 1]
+
+  
     if args.dump_stats:
         stats = {
             "samples": traces,
@@ -115,10 +131,13 @@ if __name__ == "__main__":
         }
         if not args.no_target:
             stats["target_risks"] = target_risks
-        np.save(
-            args.dump_stats,
-            stats,  # type: ignore
-        )
+        
+        filename = os.path.join(args.dump_stats, f"{args.mc}_l{args.sample_length}_ho{args.horizon}.npy")
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        with open(filename, 'wb') as f:
+            pickle.dump(stats, f)
+
+       
 
     print("Results:")
     print(f"Loaded {len(risks)} samples.")
@@ -159,6 +178,24 @@ if __name__ == "__main__":
 
 
 
-#python -m premise.interval.testing -mc SnL-10x10 -l 20 -s 100 -ho 10 --no-target --trans_path /workspaces/premise/out/models/2025-05-09_07-57-58/SnL-10x10-comp-interval.npy --init_path /workspaces/premise/out/models/2025-05-09_07-57-58/SnL-10x10-comp-initial_interval.npy --dump-stats /workspaces/premise/out/analysis/data
-#python -m premise.interval.testing -mc airportA-7-10-10 -l 80 -ho 20 --no-target --trans_path /workspaces/premise/results/models/2025-05-09_15-54-18/airportA-7-10-10-interval.npy --init_path /workspaces/premise/results/models/2025-05-09_15-54-18/airportA-7-10-10-initial_interval.npy --dump-stats  /workspaces/premise/out/analysis/data/airportA-7-10-10-ref-test
-#python -m premise.interval.testing -mc airportA-7-10-10 -l 80 -ho 20 --no-target --trans_path /workspaces/premise/results/models/2025-05-09_15-54-18/airportA-7-10-10-comp-no-ref-interval.npy --init_path /workspaces/premise/results/models/2025-05-09_15-54-18/airportA-7-10-10-comp-no-ref-initial_interval.npy -ts /workspaces/premise/out/analysis/data/airportA-7-10-10-no-ref-test.npy
+
+#python -m premise.interval.testing -mc airportA-7-10-10 -l 25 -ho 15 --no-target --trans_path /workspaces/premise/results/models/2025-05-11_18-07-23/airportA-7-10-10-interval.npy --init_path /workspaces/premise/results/models/2025-05-11_18-07-23/airportA-7-10-10-initial_interval.npy --dump-stats /workspaces/premise/premise/analysis/test_results_2025-05-11 -ts /workspaces/premise/premise/analysis/test_sets/airportA-7-10-10_l25_ho15.npy
+#python -m premise.interval.testing -mc airportA-7-10-10 -l 25 -ho 15 --no-target --trans_path  /workspaces/premise/results/models/2025-05-11_18-07-23/airportA-7-10-10-comp-no-ref-interval.npy --init_path /workspaces/premise/results/models/2025-05-11_18-07-23/airportA-7-10-10-comp-no-ref-initial_interval.npy --dump-stats /workspaces/premise/premise/analysis/test_results/test_results_2025-05-11 -ts /workspaces/premise/premise/analysis/test_sets/airportA-7-10-10_l25_ho15.npy
+
+#python -m premise.interval.testing -mc SnL-10x10 -l 15 -ho 5 --no-target --trans_path /workspaces/premise/results/models/2025-05-11_18-07-23/SnL-10x10-comp-interval.npy  --init_path /workspaces/premise/results/models/2025-05-11_18-07-23/SnL-10x10-comp-initial_interval.npy --dump-stats /workspaces/premise/premise/analysis/test_results/test_results_2025-05-11 -ts /workspaces/premise/premise/analysis/test_sets/SnL-10x10_l15_ho5.npy
+#python -m premise.interval.testing -mc SnL-10x10 -l 15 -ho 5 --no-target --trans_path /workspaces/premise/results/models/2025-05-11_18-07-23/SnL-10x10-comp-no-ref-interval.npy /workspaces/premise/results/models/2025-05-11_18-07-23/SnL-10x10-comp-no-ref-initial_interval.npy --init_path --dump-stats /workspaces/premise/premise/analysis/test_results/test_results_2025-05-11 -ts /workspaces/premise/premise/analysis/test_sets/SnL-10x10_l15_ho5.npy
+
+#python -m premise.interval.testing -mc evadeV-6-3 -l 20 -ho 12 --no-target --trans_path /workspaces/premise/results/models/2025-05-10_12-12-21/evadeV-interval.npy --init_path /workspaces/premise/results/models/2025-05-10_12-12-21/evadeV-initial_interval.npy --dump-stats /workspaces/premise/premise/analysis/test_results -ts /workspaces/premise/premise/analysis/test_sets/evadeV-6-3_l20_ho12.npy
+#python -m premise.interval.testing -mc evadeV-6-3 -l 20 -ho 12 --no-target --trans_path /workspaces/premise/results/models/2025-05-10_12-12-21/evadeV-comp-no-ref-interval.npy --init_path  /workspaces/premise/results/models/2025-05-10_12-12-21/evadeV-comp-no-ref-initial_interval.npy --dump-stats /workspaces/premise/premise/analysis/test_results -ts /workspaces/premise/premise/analysis/test_sets/evadeV-6-3_l20_ho12.npy
+
+
+#python -m premise.interval.testing -mc -l -ho  --no-target --trans_path --init_path  --dump-stats /workspaces/premise/premise/analysis/test_results -ts
+#python -m premise.interval.testing -mc  -l -ho  --no-target --trans_path --init_path  --dump-stats /workspaces/premise/premise/analysis/test_results -ts
+
+#python -m premise.interval.testing -mc  -l -ho  --no-target --trans_path --init_path  --dump-stats /workspaces/premise/premise/analysis/test_results -ts
+#python -m premise.interval.testing -mc  -l -ho  --no-target --trans_path --init_path  --dump-stats /workspaces/premise/premise/analysis/test_results -ts
+
+
+#python -m premise.interval.testing -mc airportA-7-10-10 -l 25 -ho 15 --no-target --dump-stats /workspaces/premise/premise/analysis/test_results -ts /workspaces/premise/premise/analysis/test_sets/airportA-7-10-10_l25_ho15.npy
+
+

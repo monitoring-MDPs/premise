@@ -1,5 +1,6 @@
 import argparse
-import numpy
+import numpy as np
+import os
 
 from premise.interval.loading import build_suo, build_suo_args_parser
 from premise.interval.interval import Samples, State
@@ -367,25 +368,30 @@ if __name__ == "__main__":
     all_states, all_transitions, initial_states = suo.get_states_and_transitions(
         all_transitions=not args.existing_transitions
     )
-    samples = suo.generate_random_traces([], args.length, args.amount)
 
-    initial_interval, interval = learn_IMC(
-        all_states,
-        all_transitions,
-        initial_states,
-        samples,
-        args.interval_min_width,
-        args.epsilon,
-        args.initial_lower_strength,
-        args.initial_upper_strength,
-        args.trans_lower_strength,
-        args.trans_upper_strength,
-        remove_unseen_transitions=args.min_trans_prob is not None,
-        min_trans_prob=args.min_trans_prob,
-    )
+    save_path = os.path.join("/workspaces/premise/premise/", "SnL-10x10_l15_ho5_reg.npy")
+    np.save(save_path, stats, allow_pickle=True)
 
-    model_path = args.model_path
-    if model_path is None:
-        model_path = f"out/{suo.model_name}"
-    numpy.save(f"{model_path}-initial_interval.npy", initial_interval)  # type: ignore
-    numpy.save(f"{model_path}-interval.npy", interval)  # type: ignore
+
+    #samples = suo.generate_random_traces([], args.length, args.amount)
+
+    #initial_interval, interval = learn_IMC(
+    #    all_states,
+    #    all_transitions,
+    #    initial_states,
+    #    samples,
+    #    args.interval_min_width,
+    #    args.epsilon,
+    #    args.initial_lower_strength,
+    #    args.initial_upper_strength,
+    #    args.trans_lower_strength,
+    #    args.trans_upper_strength,
+    #    remove_unseen_transitions=args.min_trans_prob is not None,
+    #    min_trans_prob=args.min_trans_prob,
+    #)
+
+    #model_path = args.model_path
+    #if model_path is None:
+    #    model_path = f"out/{suo.model_name}"
+    #numpy.save(f"{model_path}-initial_interval.npy", initial_interval)  # type: ignore
+    #numpy.save(f"{model_path}-interval.npy", interval)  # type: ignore
