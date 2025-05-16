@@ -71,6 +71,38 @@ class MSEDistance(Distance):
         return total
 
 
+class UMSEDistance(Distance):
+    def distance(
+        self,
+        weights: dict[Any, float],
+        target_risks: dict[Any, float],
+        risks: dict[Any, float],
+        all_distances=False,
+    ) -> float | tuple[float, list[tuple[Trace, tuple[float, float]]]]:
+        total = 0
+        all_distances_list = []
+        for key in target_risks.keys():
+            if key in risks:
+                total += (1 / len(target_risks)) * (target_risks[key] - risks[key]) ** 2
+                all_distances_list.append(
+                    (
+                        key,
+                        (
+                            1 / len(target_risks),
+                            (target_risks[key] - risks[key]) ** 2,
+                        ),
+                    )
+                )
+            else:
+                raise ValueError(
+                    f"Key {key} not found in risks. Please check the input data."
+                )
+
+        if all_distances:
+            return total, all_distances_list
+        return total
+
+
 class RMSEDistance(Distance):
     def distance(
         self,
@@ -152,6 +184,7 @@ class ThresholdDistance(Distance):
 
 distance_measures: dict[str, type[Distance]] = {
     "mse": MSEDistance,
+    "umse": UMSEDistance,
     "rmse": RMSEDistance,
     "mae": MAEDistance,
     "thr": ThresholdDistance,

@@ -101,7 +101,11 @@ class TargetDistanceStoppingCondition(RefinementStoppingCondition, ABC):
         )
 
         self.distances.append(target_dist)
-        self.traces.append(target_all_dist)
+        target_all_dist_w_risk = [
+            (t, (p, d, float(monitored_risks[t]), float(target_risks[t])))
+            for t, (p, d) in target_all_dist
+        ]
+        self.traces.append(target_all_dist_w_risk)
 
         return target_dist, target_all_dist, samples
 
@@ -274,6 +278,7 @@ def refinement_learning(
         iteration = 0
 
     samples_learned = []
+    all_prefixes = []
 
     while True:
         if verbose > 0:
@@ -283,6 +288,8 @@ def refinement_learning(
             iteration += 1
         if verbose > 1:
             print(f"Prefixes: {prefixes}")
+
+        all_prefixes.append(prefixes)
 
         amount = initial_learning_amount if prefixes == [tuple()] else learning_amount
         initial_samples = []
@@ -329,7 +336,9 @@ def refinement_learning(
         else:
             break
 
-    return interval, initial_interval, samples_learned
+        stats = {"all_prefixes": all_prefixes, "samples_learned": samples_learned}
+
+    return interval, initial_interval, stats
 
 
 def ref_main(args: argparse.Namespace):
@@ -373,7 +382,7 @@ def ref_main(args: argparse.Namespace):
             refine_amount=args.refinement_amount,
         )
 
-    interval, initial_interval, sample_counts = refinement_learning(
+    interval, initial_interval, ref_stats = refinement_learning(
         suo,
         args.existing_transitions,
         args.sample_length,
@@ -390,11 +399,7 @@ def ref_main(args: argparse.Namespace):
     )
 
     if args.dump_stats:
-        stats = (
-            ref_stop_cond.stats()
-            | suo.stats()
-            | {"samples_iter": sample_counts, "args": vars(args)}
-        )
+        stats = ref_stop_cond.stats() | suo.stats() | ref_stats | {"args": vars(args)}
         np.save(args.dump_stats, stats)  # type: ignore
 
     model_path = args.model_path
@@ -415,7 +420,7 @@ def ref_args_parser():
     learning_group = parser.add_argument_group("Learning")
     learning_group.add_argument(
         "-ll",
-        "--sample_length",
+        "--sample-length",
         required=True,
         type=int,
         help="Length of the samples to generate for learning",

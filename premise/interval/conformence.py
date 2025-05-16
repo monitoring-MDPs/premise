@@ -21,6 +21,7 @@ def test_monitor(
     obs_func=lambda x: x,
     skip_initial=False,
     with_tqdm=True,
+    intermediate_results=False,
 ):
     risks: dict[Trace, Any] = {}
     it = tqdm.tqdm(samples) if with_tqdm else samples
@@ -32,19 +33,25 @@ def test_monitor(
         else:
             mon.initialize(obs_func(observations[0]))
 
+        res = []
         for obs in observations[0 if skip_initial else 1 : -1]:
-            mon.step(obs_func(obs), compute_risk=False)
+            res.append(mon.step(obs_func(obs), compute_risk=intermediate_results))
 
         last_risk = mon.step(obs_func(observations[-1]), compute_risk=True)
-        risks[tuple(tuple(tuple(step) for step in trace))]  = last_risk
+        risks[trace] = last_risk
     return risks
 
 
 def random_sample_monitor_test(
-    suo: SystemUnderObservation, samples: Samples, horizon, conformence_amount
+    suo: SystemUnderObservation,
+    samples: Samples,
+    horizon,
+    conformence_amount,
+    with_tqdm=True,
 ):
     risks: dict[Trace, float] = {}
-    for trace in tqdm.tqdm(samples):
+    it = tqdm.tqdm(samples) if with_tqdm else samples
+    for trace in it:
         alarm = 0
         for _ in range(conformence_amount):
             new_trace = suo.generate_random_traces(

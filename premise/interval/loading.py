@@ -42,20 +42,22 @@ def build_suo_args_parser(parser: ArgumentParser):
     )
 
 
-def build_imc_loading_args_parser(parser: ArgumentParser):
+def build_imc_loading_args_parser(parser: ArgumentParser, required: bool = True):
     group = parser.add_argument_group("IMC loading")
     group.add_argument(
         "-t",
         "--trans_path",
-        required=True,
+        required=required,
         type=str,
+        default=None,
         help="Path to the transition dictionary",
     )
     group.add_argument(
         "-i",
         "--init_path",
-        required=True,
+        required=required,
         type=str,
+        default=None,
         help="Path to the initial state dictionary",
     )
 

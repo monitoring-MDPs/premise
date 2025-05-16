@@ -16,7 +16,14 @@ jupyter = "^1.1.1"
 scikit-learn = "^1.6.1"
 torch = "^2.7.0"
 torchvision = "^0.22.0"
-carla = "^0.9.15"
+
+[tool.poetry.group.carla.dependencies]
+python = "~=3.10.0"
+carla = {version = "^0.9.15", markers = "python_version <= '3.10'"}
+
+[tool.poetry.group.sv.dependencies]
+python = "~=3.11"
+stormvogel = { version = "^0.1.1", markers = "python_version >= '3.11'" }
 
 [tool.poetry.group.dev.dependencies]
 pybind11-stubgen = "^2.5.1"

@@ -107,7 +107,8 @@ class MCSystemUnderObservation(SystemUnderObservation):
     def trace_to_str(self, trace: Trace) -> str:
         return "\n-> ".join(
             [
-                f"{i}: {self._model.state_valuations.get_string(s).replace(' ', '')} {{{self._model.observation_valuations.get_string(o).replace(' ', '')}}} ({b})"
+                f"{i}: {self._model.state_valuations.get_string(s).replace(' ', '')} "
+                f"{{{self._model.observation_valuations.get_string(o).replace(' ', '')}}} ({b}) [{(s,o,b)}]"
                 for i, (s, o, b) in enumerate(trace)
             ]
         )

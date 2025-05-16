@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from typing import Any
+from premise.interval.conformence import random_sample_monitor_test
 from premise.monitor import Monitor
 from sklearn.linear_model import LogisticRegression
 from premise.interval.interval import Samples, Trace
@@ -12,55 +13,36 @@ from premise.interval.interval import Samples
 from premise.interval.loss import distance_measures
 
 
+def prep_trace_for_regression(trace, observations):
+    row = []
+    for _, obs, _ in trace:
+        row.extend([1 if obs == o else 0 for o in observations])
+    return row
+
+
 def learn_regression_model(train_samples, observations, testing_samples, args):
-    X = []
-    y = []
-
-    for l in train_samples:  # path
-        flattened_trace = []
-        for x in l[: -args.horizon]:  # Exclude the horizon length
-            flattened_trace.append(
-                x[1]
-            )  # Assuming x[1] contains the observable variables
-        X.append(flattened_trace)
-
-        # Determine the prediction based on the horizon
-        if any(
-            x[2] == True for x in l[-args.horizon :]
-        ):  # Look at the last h steps for error state #CHECK THE LABEL NAMES
-            y.append(1)
-        else:
-            y.append(0)
-
     num_steps = args.length
 
     column_names = [f"Step{s}_Obs{o}" for s in range(num_steps) for o in observations]
 
     binary_data = []
-    for trace in X:
-        row = []
-        for step in range(num_steps):
-            obs = trace[step]
-            row.extend([1 if obs == o else 0 for o in observations])
+    y = []
+    for trace in train_samples:
+        sub_trace = trace[:num_steps]
+        row = prep_trace_for_regression(sub_trace, observations)
         binary_data.append(row)
+
+        y.append(1 if any(x[2] == True for x in sub_trace) else 0)
 
     X = pd.DataFrame(binary_data, columns=column_names)
 
     model = LogisticRegression()
     model.fit(X, y)
 
-    testing_traces = []
-
-    for s in testing_samples:
-        t = tuple(x[1] for x in s)
-        testing_traces.append(t)
-
     binary_test_data = []
-    for trace in testing_traces:
-        row = []
-        for step in range(num_steps):
-            obs = trace[step]
-            row.extend([1 if obs == o else 0 for o in observations])
+    for trace in testing_samples:
+        sub_trace = trace[:num_steps]
+        row = prep_trace_for_regression(sub_trace, observations)
         binary_test_data.append(row)
 
     X_test = pd.DataFrame(binary_test_data, columns=column_names)
@@ -73,7 +55,7 @@ def learn_regression_model(train_samples, observations, testing_samples, args):
     for sample, risk in zip(testing_samples, risks):
         regression_risks[tuple(sample)] = risk
 
-    return testing_samples, regression_risks, model # dictionary trace + risk
+    return testing_samples, regression_risks, model  # dictionary trace + risk
 
 
 def test_monitor(
@@ -121,53 +103,58 @@ def regression_distance(
 
 
 def reg_main(args: argparse.Namespace):
-        suo = build_suo(args)
+    suo = build_suo(args)
 
-        train_samples = suo.generate_random_traces(
-            [], args.length + args.horizon, args.amount
-        )
+    train_samples = suo.generate_random_traces(
+        [], args.length + args.horizon, args.amount
+    )
 
-        all_states = suo.get_states_and_transitions()[0]
+    all_states = suo.get_states_and_transitions()[0]
 
-        observations = []
-        for x in all_states:
-            if x[1] not in observations:
-                observations.append(x[1])
+    observations = []
+    for x in all_states:
+        if x[1] not in observations:
+            observations.append(x[1])
 
-        samples_with_prob = suo.generate_random_traces_with_prob(
-            [], args.length, args.test_samples
-        )
+    samples_with_prob = suo.generate_random_traces_with_prob(
+        [], args.length, args.test_samples
+    )
 
-        total_prob = sum(p for _, p in samples_with_prob)
-        test_weights = {s: float(p / total_prob) for s, p in samples_with_prob}
-        testing_samples = [s[0] for s in samples_with_prob]
+    total_prob = sum(p for _, p in samples_with_prob)
+    test_weights = {s: float(p / total_prob) for s, p in samples_with_prob}
+    testing_samples = [s[0] for s in samples_with_prob]
 
-        distance = distance_measures[args.distance]()
+    distance = distance_measures[args.distance]()
 
-        testing_samples, regression_risks, model = learn_regression_model(
-            train_samples, observations, testing_samples, args
-        )
-        target_risks, target_dist, target_all_dist = regression_distance(
-            testing_samples, regression_risks, distance, test_weights, suo, args
-        )
+    testing_samples, regression_risks, model = learn_regression_model(
+        train_samples, observations, testing_samples, args
+    )
+    target_risks, target_dist, target_all_dist = regression_distance(
+        testing_samples, regression_risks, distance, test_weights, suo, args
+    )
 
-        if args.dump_stats:
-            np.save(
-                args.dump_stats,
-                {
+    sampled_risks = random_sample_monitor_test(
+        suo, testing_samples, args.horizon, args.conformence_amount
+    )
+
+    if args.dump_stats:
+        np.save(
+            args.dump_stats,
+            {
                 "target_dist": target_dist,
                 "target_all_dist": target_all_dist,
                 "weights": {s: float(w) for s, w in test_weights.items()},
                 "target_risks": {s: float(r) for s, r in target_risks.items()},
                 "regression_risks": {s: float(r) for s, r in regression_risks.items()},
+                "sampled_risks": sampled_risks,
                 "samples": testing_samples,
                 "args": vars(args),
-                "observations": observations
-                },  # type: ignore
-            )
+                "observations": observations,
+            },  # type: ignore
+        )
 
-        if args.model_path: 
-            np.save(args.model_path, model)
+    if args.model_path:
+        np.save(args.model_path, model)
 
 
 def build_learning_args_parser(parser: argparse.ArgumentParser):
@@ -184,9 +171,7 @@ def build_learning_args_parser(parser: argparse.ArgumentParser):
     group.add_argument(
         "-t", "--test_samples", type=int, default=50, help="Amount of test samples"
     )
-    group.add_argument(
-        "--model", type=bool, default=False, help="If a model exists"
-    )
+    group.add_argument("--model", type=bool, default=False, help="If a model exists")
     group.add_argument("--horizon", type=int, default=20, help="Length horizon")
 
 
@@ -208,6 +193,13 @@ def reg_argsparser():
         default="mae",
         help="Distance measure to use",
     )
+    parser.add_argument(
+        "-ca",
+        "--conformence-amount",
+        type=int,
+        default=500,
+        help="Amount of extensions to generate for a sample",
+    )
 
     parser.add_argument("--dump-model", type=str, help="Path to dump the model to")
     parser.add_argument(
@@ -221,5 +213,3 @@ if __name__ == "__main__":
     parser = reg_argsparser()
     args = parser.parse_args()
     reg_main(args)
-
-

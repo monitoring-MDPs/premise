@@ -1,0 +1,494 @@
+Timeout:  18000
+Starting timeout 18000
+ERROR (ExpressionManager.cpp:232): Unknown variable 'ladder'.
+ERROR (ExpressionManager.cpp:232): Unknown variable 'normal'.
+ERROR (ExpressionManager.cpp:232): Unknown variable 'snake'.
+-----------------------
+Refinement iteration 0 with 1 prefixes
+Finished learning with 100 additional samples (total: 100)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=4] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=14] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=19] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=24] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=26] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=32] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=34] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=40] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 9: [pos=42] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=47] {[ladder=0	&normal=0	&snake=1]} (False)
+-> 11: [pos=26] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=27] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=32] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=36] {[ladder=1	&normal=0	&snake=0]} (False) with distance 0.9920559328028921 and probability 0.009874285714285714
+Target distance: 0.32052861555507123 ? 0.001
+-----------------------
+Refinement iteration 1 with 570 prefixes
+Finished learning with 1190 additional samples (total: 1290)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=4] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=14] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=15] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=21] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=23] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=27] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=29] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=30] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=34] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=36] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 11: [pos=44] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=50] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=53] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=54] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.25900882843686446 and probability 0.002450646698434309
+Target distance: 0.010221470564676944 ? 0.001
+-----------------------
+Refinement iteration 2 with 405 prefixes
+Finished learning with 860 additional samples (total: 2150)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=1] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=38] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=41] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=43] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=46] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=47] {[ladder=0	&normal=0	&snake=1]} (False)
+-> 7: [pos=26] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=31] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=33] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=38] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=40] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 12: [pos=42] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=43] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=44] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.08362958692684086 and probability 0.008564631245043615
+Target distance: 0.0045308418746265395 ? 0.001
+-----------------------
+Refinement iteration 3 with 300 prefixes
+Finished learning with 650 additional samples (total: 2800)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=1] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=38] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=39] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=42] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=44] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=46] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=47] {[ladder=0	&normal=0	&snake=1]} (False)
+-> 8: [pos=26] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=27] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=33] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=35] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=36] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 13: [pos=44] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=46] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.05087236173551299 and probability 0.00285299167877427
+Target distance: 0.0016454637096625711 ? 0.001
+-----------------------
+Refinement iteration 4 with 360 prefixes
+Finished learning with 770 additional samples (total: 3570)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=4] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=14] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=17] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=20] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=24] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=29] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=34] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=40] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 9: [pos=42] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=44] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=46] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=51] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 13: [pos=67] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=69] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.020990116948609302 and probability 0.0028097195483635985
+Target distance: 0.0005010854829482035 ? 0.001
+Not improved for 1 iterations, target distance: 0.0005 < 0.0010
+-----------------------
+Refinement iteration 5 with 255 prefixes
+Finished learning with 560 additional samples (total: 4130)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=1] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=38] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=41] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=42] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=46] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=51] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 7: [pos=67] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=70] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=71] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 10: [pos=91] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=97] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=100] {[ladder=0	&normal=1	&snake=0]} (True)
+-> 13: [pos=100] {[ladder=0	&normal=1	&snake=0]} (True)
+-> 14: [pos=100] {[ladder=0	&normal=1	&snake=0]} (True) with distance 0.04960209740302095 and probability 0.2584247258225324
+Target distance: 0.014109900553828278 ? 0.001
+-----------------------
+Refinement iteration 6 with 315 prefixes
+Finished learning with 680 additional samples (total: 4810)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=1] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=38] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=43] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=46] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=51] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 6: [pos=67] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=69] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=70] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=76] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=78] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=79] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=81] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=82] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=85] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.023980997385691993 and probability 0.0008154020385050963
+Target distance: 0.002627813018725526 ? 0.001
+-----------------------
+Refinement iteration 7 with 225 prefixes
+Finished learning with 500 additional samples (total: 5310)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=6] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 2: [pos=9] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 3: [pos=31] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=34] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=37] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=40] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 7: [pos=42] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=45] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=51] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 10: [pos=67] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=71] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 12: [pos=91] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=96] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=99] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.01731411282082362 and probability 0.1435057025800022
+Target distance: 0.0033017879552817153 ? 0.001
+-----------------------
+Refinement iteration 8 with 225 prefixes
+Finished learning with 500 additional samples (total: 5810)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=1] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=38] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=44] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=45] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=51] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 6: [pos=67] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=73] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=78] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=79] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=81] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=84] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=88] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=91] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=92] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.01815154591703976 and probability 0.002008256164230726
+Target distance: 0.0038418556200353724 ? 0.001
+-----------------------
+Refinement iteration 9 with 315 prefixes
+Finished learning with 680 additional samples (total: 6490)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=1] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=38] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=39] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=42] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=44] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=50] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=53] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=54] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=59] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=65] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=66] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=67] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=71] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 14: [pos=91] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.013302525557826664 and probability 0.0005023653033030518
+Target distance: 0.00012877450486802072 ? 0.001
+Not improved for 1 iterations, target distance: 0.0001 < 0.0010
+-----------------------
+Refinement iteration 10 with 255 prefixes
+Finished learning with 560 additional samples (total: 7050)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=4] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=14] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=18] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=20] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=25] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=26] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=29] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=34] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=39] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=42] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=43] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=48] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=51] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 14: [pos=67] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.01300573786817494 and probability 0.001912249017316477
+Target distance: 0.0003925526669031085 ? 0.001
+Not improved for 2 iterations, target distance: 0.0004 < 0.0010
+-----------------------
+Refinement iteration 11 with 180 prefixes
+Finished learning with 410 additional samples (total: 7460)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=6] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 2: [pos=7] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=9] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 4: [pos=31] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=33] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=37] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=38] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=43] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=44] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=45] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=51] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 12: [pos=67] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=70] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=71] {[ladder=1	&normal=0	&snake=0]} (False) with distance 0.0033429555336851632 and probability 0.002401601067378252
+Target distance: 0.0004986984609919639 ? 0.001
+Not improved for 3 iterations, target distance: 0.0005 < 0.0010
+-----------------------
+Refinement iteration 12 with 210 prefixes
+Finished learning with 470 additional samples (total: 7930)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=4] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=14] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=19] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=24] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=29] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=35] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=39] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=41] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=43] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=46] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=50] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=51] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 13: [pos=67] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=68] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.008875067846600403 and probability 0.0013325930038867295
+Target distance: 0.000517645135547627 ? 0.001
+Not improved for 4 iterations, target distance: 0.0005 < 0.0010
+-----------------------
+Refinement iteration 13 with 225 prefixes
+Finished learning with 500 additional samples (total: 8430)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=3] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 2: [pos=5] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=10] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=14] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=18] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=22] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=27] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=28] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 9: [pos=64] {[ladder=0	&normal=0	&snake=1]} (False)
+-> 10: [pos=60] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=66] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=71] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 13: [pos=91] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=97] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.004991713339501714 and probability 0.004287245444801715
+Target distance: 0.00012891841747117238 ? 0.001
+Not improved for 5 iterations, target distance: 0.0001 < 0.0010
+Stopping refinement at distance 0.00012891841747117238 < 0.001
+Samples from refinement:  8480
+ERROR (ExpressionManager.cpp:232): Unknown variable 'ladder'.
+ERROR (ExpressionManager.cpp:232): Unknown variable 'normal'.
+ERROR (ExpressionManager.cpp:232): Unknown variable 'snake'.
+-----------------------
+Refinement iteration 0 with 1 prefixes
+Finished learning with 100 additional samples (total: 100)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=4] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=14] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=17] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=20] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=24] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=30] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=35] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=36] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 9: [pos=44] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=47] {[ladder=0	&normal=0	&snake=1]} (False)
+-> 11: [pos=26] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=31] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=36] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 14: [pos=44] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.9623502191448726 and probability 0.06895450917797286
+additional_samples=798.0
+-----------------------
+Refinement iteration 1 with 399 prefixes
+Finished learning with 848 additional samples (total: 948)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=1] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=38] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=40] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 4: [pos=42] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=46] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=51] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 7: [pos=67] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=68] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=69] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=73] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=75] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=76] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=78] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=83] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.3138910602889089 and probability 0.004027972027972028
+additional_samples=798.0
+-----------------------
+Refinement iteration 2 with 399 prefixes
+Finished learning with 848 additional samples (total: 1796)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=1] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=38] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=40] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 4: [pos=42] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=44] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=46] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=51] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 8: [pos=67] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=72] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=73] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=77] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=79] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=84] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=88] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.09901965724172632 and probability 0.0037038942332424506
+additional_samples=798.0
+-----------------------
+Refinement iteration 3 with 399 prefixes
+Finished learning with 848 additional samples (total: 2644)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=1] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=38] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=40] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 4: [pos=42] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=43] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=45] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=51] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 8: [pos=67] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=70] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=74] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=78] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=84] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=85] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=91] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.058556336460557405 and probability 0.0029910683376029906
+additional_samples=798.0
+-----------------------
+Refinement iteration 4 with 399 prefixes
+Finished learning with 848 additional samples (total: 3492)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=1] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=38] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=41] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=42] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=48] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=51] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 7: [pos=67] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=73] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=77] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=78] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=81] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=86] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=88] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=94] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.049042318139828574 and probability 0.0005741626794258372
+additional_samples=798.0
+-----------------------
+Refinement iteration 5 with 399 prefixes
+Finished learning with 848 additional samples (total: 4340)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=3] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 2: [pos=9] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 3: [pos=31] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=33] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=34] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=36] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 7: [pos=44] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=48] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=52] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=54] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=59] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=61] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=66] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=71] {[ladder=1	&normal=0	&snake=0]} (False) with distance 0.01586124986191934 and probability 0.0015883520847121111
+additional_samples=798.0
+-----------------------
+Refinement iteration 6 with 399 prefixes
+Finished learning with 848 additional samples (total: 5188)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=5] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 2: [pos=9] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 3: [pos=31] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=36] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 5: [pos=44] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=48] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=53] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=57] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=61] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=66] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=72] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=76] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=80] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 14: [pos=100] {[ladder=0	&normal=1	&snake=0]} (True) with distance 0.021297997300922914 and probability 0.007810240092565808
+additional_samples=798.0
+-----------------------
+Refinement iteration 7 with 399 prefixes
+Finished learning with 848 additional samples (total: 6036)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=6] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 2: [pos=12] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=17] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=23] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=24] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=28] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 7: [pos=64] {[ladder=0	&normal=0	&snake=1]} (False)
+-> 8: [pos=60] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=61] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=65] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=71] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 12: [pos=91] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=97] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=99] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.01747984187487365 and probability 0.00353021933121956
+additional_samples=798.0
+-----------------------
+Refinement iteration 8 with 399 prefixes
+Finished learning with 848 additional samples (total: 6884)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=6] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 2: [pos=7] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=12] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=17] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=19] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=21] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=22] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=28] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 9: [pos=64] {[ladder=0	&normal=0	&snake=1]} (False)
+-> 10: [pos=60] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=66] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=68] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 13: [pos=74] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=79] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.002269899099805553 and probability 0.00040860337097781054
+additional_samples=798.0
+-----------------------
+Refinement iteration 9 with 399 prefixes
+Finished learning with 848 additional samples (total: 7732)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=4] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=14] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=17] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=23] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=28] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 6: [pos=64] {[ladder=0	&normal=0	&snake=1]} (False)
+-> 7: [pos=60] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=65] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=70] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=75] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=80] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 12: [pos=100] {[ladder=0	&normal=1	&snake=0]} (True)
+-> 13: [pos=100] {[ladder=0	&normal=1	&snake=0]} (True)
+-> 14: [pos=100] {[ladder=0	&normal=1	&snake=0]} (True) with distance 0.005542574653025043 and probability 0.5871264078525136
+additional_samples=798.0
+To many samples: additional_samples=648
+-----------------------
+Refinement iteration 10 with 324 prefixes
+Finished learning with 698 additional samples (total: 8430)
+Worst trace: 0: [pos=0] {[ladder=0	&normal=0	&snake=0]} (False)
+-> 1: [pos=4] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 2: [pos=14] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 3: [pos=15] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 4: [pos=18] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 5: [pos=19] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 6: [pos=20] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 7: [pos=24] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 8: [pos=29] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 9: [pos=31] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 10: [pos=34] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 11: [pos=35] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 12: [pos=36] {[ladder=1	&normal=0	&snake=0]} (False)
+-> 13: [pos=44] {[ladder=0	&normal=1	&snake=0]} (False)
+-> 14: [pos=48] {[ladder=0	&normal=1	&snake=0]} (False) with distance 0.0034441349586742426 and probability 0.0002874664622460713
+ERROR (ExpressionManager.cpp:232): Unknown variable 'ladder'.
+ERROR (ExpressionManager.cpp:232): Unknown variable 'normal'.
+ERROR (ExpressionManager.cpp:232): Unknown variable 'snake'.
