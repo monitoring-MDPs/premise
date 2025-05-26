@@ -1,9 +1,11 @@
 from abc import ABC
 import pickle
+from pathlib import Path
 from typing import Any
 
 import stormpy
 import stormpy.pomdp
+from stormvogel import stormvogel_to_stormpy, Model, Path as SVPath, extensions
 
 from premise.interval.interval import Samples, State, Trace
 from premise.monitor import PremiseOptions, UnfoldingRiskAssessment, Monitor
@@ -13,8 +15,10 @@ from premise.models import (
     build_coarse_state_map,
     build_noaction_model_and_risk,
     build_state_and_transition_list,
+    _analyse_model,
 )
 from premise.carla.model_info import get_states_and_transitions
+from premise.sv_benchmarks import acas
 
 
 class SystemUnderObservation(ABC):
@@ -47,7 +51,7 @@ class SystemUnderObservation(ABC):
     def create_target_monitor(self, dump_model=None) -> Monitor:
         raise NotImplementedError("This method should be overridden by subclasses")
 
-    def trace_to_str(self, trace: Trace) -> str:
+    def trace_to_str(self, trace: Trace, gif_path=None) -> str:
         return " -> ".join([f"({s[0]}, {s[1]}, {s[2]})" for s in trace])
 
     def stats(self) -> dict[str, Any]:
@@ -55,11 +59,13 @@ class SystemUnderObservation(ABC):
 
 
 class MCSystemUnderObservation(SystemUnderObservation):
-    def __init__(self, model_def: ModelDescription, name: str):
+    def __init__(
+        self, model_def: ModelDescription, name: str, options=PremiseOptions()
+    ):
         self._model_def = model_def
         self._model, self.risk = build_noaction_model_and_risk(
             model_def,
-            PremiseOptions(),
+            options,
         )
         self.model_name = name
         self._ctr = ConditionalTraceGenerator(
@@ -96,15 +102,17 @@ class MCSystemUnderObservation(SystemUnderObservation):
         return self.risk
 
     def create_target_monitor(self, dump_model=None) -> Monitor:
-        expr_manager = stormpy.ExpressionManager()  # type: ignore
+        expr_manager = stormpy.ExpressionManager()
         unfolder = stormpy.pomdp.create_observation_trace_unfolder(
             self._model, self.risk, expr_manager
         )
-        ura = UnfoldingRiskAssessment(stormpy.Environment(), unfolder, dump_model_to=dump_model)  # type: ignore
+        ura = UnfoldingRiskAssessment(
+            stormpy.Environment(), unfolder, dump_model_to=dump_model
+        )
         mon = Monitor(ura, 1000000)
         return mon
 
-    def trace_to_str(self, trace: Trace) -> str:
+    def trace_to_str(self, trace: Trace, gif_path=None) -> str:
         return "\n-> ".join(
             [
                 f"{i}: {self._model.state_valuations.get_string(s).replace(' ', '')} "
@@ -117,6 +125,49 @@ class MCSystemUnderObservation(SystemUnderObservation):
         return {
             "sample_count": self._sample_count,
         }
+
+
+class ACASSystemUnderObservation(MCSystemUnderObservation):
+    def __init__(self, coarseness_factor: int, horizon: int):
+        self._sv_model: Model = acas.build_acas_model(
+            radius_coarse=int(acas.RADIUS_COARSE / coarseness_factor),
+            bearing_coarse=int(acas.BEARING_COARSE / coarseness_factor),
+            rel_heading_coarse=int(acas.REL_HEADING_COARSE / coarseness_factor),
+            ego_speed_coarse=int(acas.EGO_SPEED_COARSE / coarseness_factor),
+            int_speed_coarse=int(acas.INT_SPEED_COARSE / coarseness_factor),
+        )
+        self._model = stormvogel_to_stormpy(self._sv_model)
+        self._stormpy_to_storvogel_id = {
+            v: k for k, v in self._sv_model.stormpy_id.items()
+        }
+        self._model_def = ModelDescription(Path(), "", "", "nmac")
+        prop = stormpy.parse_properties(f'P<{horizon}? [F "nmac"]')
+        self._risk = _analyse_model(self._model, prop[0].raw_formula).get_values()
+        self.model_name = f"ACAS_{coarseness_factor}"
+
+    def trace_to_str(self, trace: Trace, gif_path=None) -> str:
+        if gif_path is not None:
+            path = SVPath(
+                {
+                    i: self._sv_model.states[self._stormpy_to_storvogel_id[s]]
+                    for i, (s, _, _) in enumerate(trace)
+                }
+            )
+            filename = extensions.render_model_gif(
+                model,
+                lambda s: s.valuations["ACAState"].draw(),
+                filename=gif_path,
+                path=path,
+                fps=0.5,
+            )
+        return "\n-> ".join(
+            [
+                f"{i}: {self._sv_model.states[self._stormpy_to_storvogel_id[s]].valuations} "
+                f"{{{self._sv_model.states[self._stormpy_to_storvogel_id[s]].observation}}} "
+                f"({b}) [{(s,o,b)}]"
+                for i, (s, o, b) in enumerate(trace)
+            ]
+        )
 
 
 class CoarseMCSystemUnderObservation(MCSystemUnderObservation):
@@ -159,7 +210,7 @@ class CoarseMCSystemUnderObservation(MCSystemUnderObservation):
             "CoarseMCSystemUnderObservation does not support risk assessment on its states"
         )
 
-    def trace_to_str(self, trace: Trace) -> str:
+    def trace_to_str(self, trace: Trace, gif_path=None) -> str:
         return "\n-> ".join(
             [
                 f"{i}: {';'.join(map(str, s))} {{{self._model.observation_valuations.get_string(o).replace(' ', '')}}} ({b})"

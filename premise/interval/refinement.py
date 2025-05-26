@@ -1,12 +1,12 @@
 from abc import ABC
 import argparse
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 
 from premise.interval.conformence import test_monitor
 from premise.interval.interval import Samples, Trace, create_monitor
-from premise.interval.learningIMC import (
+from premise.interval.learning import (
     build_learning_params_args_parser,
     initial_interval_learning,
     interval_learning,
@@ -37,6 +37,8 @@ class TargetDistanceStoppingCondition(RefinementStoppingCondition, ABC):
         horizon: int,
         amount: int,
         distance: Distance,
+        use_exact: bool = False,
+        precision: float = 1e-6,
         verbose: int = 0,
     ):
         self.suo = suo
@@ -44,12 +46,17 @@ class TargetDistanceStoppingCondition(RefinementStoppingCondition, ABC):
         self.horizon = horizon
         self.amount = amount
         self.distance_func = distance
+        self.use_exact = use_exact
+        self.precision = precision
         self.verbose = verbose
 
         self.distances = []
         self.traces = []
 
         self.target_monitor = suo.create_target_monitor()
+
+        self.previous_risks = {}
+        self.previous_weights = {}
 
     def distance(
         self, interval, initial_interval
@@ -69,7 +76,37 @@ class TargetDistanceStoppingCondition(RefinementStoppingCondition, ABC):
             "min",
             True,
             self.horizon,
+            use_exact=self.use_exact,
+            precision=self.precision,
         )
+
+        if self.verbose > 0:
+            print(f"Created all monitors, now testing them")
+
+        # if len(self.previous_risks) > 0:
+        #     monitored_risks_of_previous = test_monitor(
+        #         mon,
+        #         self.previous_risks.keys(),
+        #         obs_func=lambda x: observation_map[x],
+        #         skip_initial=True,
+        #         with_tqdm=False,
+        #     )
+        #
+        #     prev_dist, prev_all_dist = self.distance_func.distance(
+        #         self.previous_weights,
+        #         {s: float(r) for s, r in self.previous_risks.items()},
+        #         {s: float(r) for s, r in monitored_risks_of_previous.items()},
+        #         all_distances=True,
+        #     )
+        #
+        #     worst_trace = max(prev_all_dist, key=lambda x: x[1][1])
+        #     print(
+        #         f"Worst previous trace: {self.suo.trace_to_str(worst_trace[0])} with distance {worst_trace[1][1]} and probability {worst_trace[1][0]}"
+        #     )
+        #
+        #     print(
+        #         f"Distance was {self.distances[-1]}, now {prev_dist}, on the same samples."
+        #     )
 
         # Run premise on the learned model
         monitored_risks = test_monitor(
@@ -86,6 +123,9 @@ class TargetDistanceStoppingCondition(RefinementStoppingCondition, ABC):
             samples,
             with_tqdm=False,
         )
+
+        self.previous_risks = target_risks
+        self.previous_weights = weights
 
         # Calculate the distance
         target_dist, target_all_dist = self.distance_func.distance(
@@ -252,6 +292,7 @@ def refinement_learning(
     i_i_nu: int = 10,
     i_nl: int = 10,
     i_nu: int = 20,
+    intermediate_model_path: Optional[str] = None,
     verbose: int = 0,
 ):
     all_states, all_transitions, initial_states = suo.get_states_and_transitions(
@@ -330,15 +371,30 @@ def refinement_learning(
                 f"Finished learning with {len(samples)} additional samples (total: {suo.stats()['sample_count']})"
             )
 
+        if intermediate_model_path is not None:
+            save_imc(initial_interval, interval, suo, intermediate_model_path)
+
         res = refinement_stopping_condition.check(interval, initial_interval)
         if res is not None:
             prefixes, extra_samples = res
         else:
             break
 
-        stats = {"all_prefixes": all_prefixes, "samples_learned": samples_learned}
+    stats = {"all_prefixes": all_prefixes, "samples_learned": samples_learned}
 
     return interval, initial_interval, stats
+
+
+def save_imc(
+    initial_interval,
+    interval,
+    suo: SystemUnderObservation,
+    model_path: Optional[str] = None,
+):
+    if model_path is None:
+        model_path = f"out/{suo.model_name}"
+    np.save(f"{model_path}-initial_interval.npy", initial_interval)  # type: ignore
+    np.save(f"{model_path}-interval.npy", interval)  # type: ignore
 
 
 def ref_main(args: argparse.Namespace):
@@ -359,6 +415,8 @@ def ref_main(args: argparse.Namespace):
             relative_deviation=args.stopping_deviation,
             patience=args.stopping_patience,
             verbose=args.verbose,
+            use_exact=args.exact,
+            precision=args.precision,
         )
     elif args.stopping_criteria == "threshold":
         ref_stop_cond = ThresholdStoppingCondition(
@@ -370,6 +428,8 @@ def ref_main(args: argparse.Namespace):
             threshold=args.stopping_threshold,
             patience=args.stopping_patience,
             verbose=args.verbose,
+            use_exact=args.exact,
+            precision=args.precision,
         )
     elif args.stopping_criteria == "samples":
         ref_stop_cond = SampleCountStoppingCondition(
@@ -380,7 +440,11 @@ def ref_main(args: argparse.Namespace):
             distance,
             sample_count=args.stopping_samples,
             refine_amount=args.refinement_amount,
+            use_exact=args.exact,
+            precision=args.precision,
         )
+    else:
+        raise ValueError(f"Unknown stopping criteria: {args.stopping_criteria}")
 
     interval, initial_interval, ref_stats = refinement_learning(
         suo,
@@ -395,19 +459,15 @@ def ref_main(args: argparse.Namespace):
         args.initial_upper_strength,
         args.trans_lower_strength,
         args.trans_upper_strength,
+        args.model_path,
         args.verbose,
     )
 
+    stats = ref_stop_cond.stats() | suo.stats() | ref_stats | {"args": vars(args)}
     if args.dump_stats:
-        stats = ref_stop_cond.stats() | suo.stats() | ref_stats | {"args": vars(args)}
         np.save(args.dump_stats, stats)  # type: ignore
 
-    model_path = args.model_path
-    if model_path is None:
-        model_path = f"out/{suo.model_name}"
-    np.save(f"{model_path}-initial_interval.npy", initial_interval)  # type: ignore
-    np.save(f"{model_path}-interval.npy", interval)  # type: ignore
-
+    save_imc(initial_interval, interval, suo, args.model_path)
     return stats
 
 
@@ -457,6 +517,19 @@ def ref_args_parser():
     )
 
     conformence_group = parser.add_argument_group("Conformance")
+    conformence_group.add_argument(
+        "-e",
+        "--exact",
+        action="store_true",
+        help="Use exact conformance checking",
+    )
+    conformence_group.add_argument(
+        "-p",
+        "--precision",
+        type=float,
+        default=1e-6,
+        help="Precision to use for the exact conformance checking",
+    )
     conformence_group.add_argument(
         "-d",
         "--distance",

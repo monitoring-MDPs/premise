@@ -4,7 +4,15 @@ import pandas as pd
 from tqdm import tqdm
 import os
 import pickle
+from stormpy import AddUncertaintyExact, export_to_drn, Rational
 
+from premise.system import SystemUnderObservation, MCSystemUnderObservation
+from premise.monitor import PremiseOptions
+from premise.models import default_models
+from premise.interval.interval import (
+    stormpy_imdp_to_ipomdp,
+    stormpy_exact_pomdp_to_mdp,
+)
 from premise.interval.regression_model import prep_trace_for_regression
 from premise.interval.loading import (
     build_imc_loading_args_parser,
@@ -13,7 +21,12 @@ from premise.interval.loading import (
     load_imc,
 )
 from premise.interval.conformence import random_sample_monitor_test, test_monitor
-from premise.interval.interval import Samples, Trace, create_monitor
+from premise.interval.interval import (
+    Samples,
+    Trace,
+    create_monitor,
+    build_monitor_from_model,
+)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Conformance checking")
@@ -59,6 +72,25 @@ if __name__ == "__main__":
         help="Do not use the target monitor",
     )
     parser.add_argument(
+        "-au",
+        "--additive-uncertainty",
+        nargs="+",
+        help="Test on target monitor with specified additive uncertainty, can be given mulitple arguments for multiple monitors. Target monitor has to be turned on",
+    )
+    parser.add_argument(
+        "-e",
+        "--exact",
+        action="store_true",
+        help="Use exact conformance checking",
+    )
+    parser.add_argument(
+        "-p",
+        "--precision",
+        type=float,
+        default=1e-6,
+        help="Precision to use for the exact conformance checking",
+    )
+    parser.add_argument(
         "--sampling-amount",
         type=int,
         default=None,
@@ -80,6 +112,11 @@ if __name__ == "__main__":
 
     suo = build_suo(args)
 
+    states, trans, initial = suo.get_states_and_transitions(False)
+    print(
+        f"Testing on system with {len(states)} ({len(initial)} initial) and {len(trans)} transitions."
+    )
+
     has_imc = args.trans_path is not None and args.init_path is not None
     if has_imc:
         interval, initial_interval = load_imc(args)
@@ -92,6 +129,8 @@ if __name__ == "__main__":
             args.horizon,
             args.dump,
             args.verbose,
+            use_exact=args.exact,
+            precision=args.precision,
         )
 
     # Load the regression model
@@ -106,8 +145,40 @@ if __name__ == "__main__":
     else:
         reg_model = None
 
+    uncertain_monitors = None
     if not args.no_target:
         target_monitor = suo.create_target_monitor()
+
+        model_def = default_models[args.mc]
+        model_def.risk_property = (
+            f'Pmax=? [F<={vars(args).get("horizon", 1)} "{model_def.target_label}" ]'
+        )
+        non_exact_suo: SystemUnderObservation = MCSystemUnderObservation(
+            model_def, args.mc, PremiseOptions(exact_arithmetic=False)
+        )
+        float_target_monitor = non_exact_suo.create_target_monitor()
+
+        if (
+            args.additive_uncertaint
+            and "_model" in suo.__dict__
+            and "_model_def" in suo.__dict__
+        ):
+            uncertain_monitors = {}
+            pomdp = suo._model
+            mdp = stormpy_exact_pomdp_to_mdp(suo._model)
+            au_transformer = AddUncertaintyExact(mdp)
+            for au in args.additive_uncertainty:
+                imdp = au_transformer.transform(Rational(float(au)), Rational(0.0001))
+                ipomdp = stormpy_imdp_to_ipomdp(
+                    imdp, pomdp.observations, pomdp.observation_valuations
+                )
+                au_mon, _ = build_monitor_from_model(
+                    ipomdp,
+                    "min",
+                    args.horizon,
+                    target=suo._model_def.target_label,
+                )
+                uncertain_monitors[au] = au_mon
 
     print("Ready for testing")
 
@@ -121,8 +192,14 @@ if __name__ == "__main__":
     alarms: list[bool] = []
     imc_risks = []
     target_risks = []
+    float_target_risks = []
     regression_risks = []
     sampling_risks = []
+    uncertain_risks = {}
+
+    if uncertain_monitors is not None:
+        for au, _ in uncertain_monitors.items():
+            uncertain_risks[au] = []
 
     for trace in tqdm(traces):
         alarms.append(any([s[2] for s in trace]))
@@ -134,8 +211,27 @@ if __name__ == "__main__":
                 target_monitor,
                 [sub_trace],
                 with_tqdm=False,
-            )[sub_trace]
+            )
+            target_risk = target_risk[sub_trace]
             target_risks.append(float(target_risk))
+
+            float_target_risk = test_monitor(
+                float_target_monitor,
+                [sub_trace],
+                with_tqdm=False,
+            )
+            float_target_risk = float_target_risk[sub_trace]
+            float_target_risks.append(float(float_target_risk))
+
+        if uncertain_monitors is not None:
+            for au, au_mon in uncertain_monitors.items():
+                uncertain_risk = test_monitor(
+                    au_mon,
+                    [sub_trace],
+                    with_tqdm=False,
+                )
+                uncertain_risk = uncertain_risk[sub_trace]
+                uncertain_risks[au].append(float(uncertain_risk))
 
         # Run premise on the learned model
         if has_imc:
@@ -167,22 +263,23 @@ if __name__ == "__main__":
             sampling_risks.append(sampling_risk)
 
     if args.dump_stats is not None:
-        stats = {
-            "args": vars(args),
-            "samples": traces,
-            "alarms": alarms,
-        }
+        stats = {"args": vars(args), "samples": traces, "alarms": alarms, "risks": {}}
         if has_imc:
-            stats["imc_risks"] = imc_risks
+            stats["risks"]["imc_risks"] = imc_risks
 
         if not args.no_target:
-            stats["target_risks"] = target_risks
+            stats["risks"]["target_risks"] = target_risks
+            stats["risks"]["float_target_risks"] = float_target_risks
 
         if reg_model:
-            stats["regression_risks"] = regression_risks
+            stats["risks"]["regression_risks"] = regression_risks
 
         if args.sampling_amount is not None:
-            stats["sampling_risks"] = sampling_risks
+            stats["risks"]["sampling_risks"] = sampling_risks
+
+        if uncertain_monitors is not None:
+            for au, risks in uncertain_risks.items():
+                stats["risks"][f"uncertain_risks_{au}"] = risks
 
         if args.dump_stats == "":
             filename = os.path.join(

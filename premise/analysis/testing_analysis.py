@@ -4,6 +4,7 @@ from premise.models import default_models
 from premise.system import MCSystemUnderObservation
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 from sklearn import metrics
 
 
@@ -114,7 +115,9 @@ def inspect_traces(traces, alarms, risks_dict, suo, sample_length):
                 print(f"{k} risk: {risks_dict[k][i]}")
 
 
-def main(stats_path="out/tmp/testing-snl-umse.pkl"):
+def main(stats_path="../../out/tmp/testing-a-dtmc-umse.npy"):
+    matplotlib.rcParams["figure.dpi"] = 300
+
     data = np.load(stats_path, allow_pickle=True)
 
     if "args" not in data:
@@ -127,18 +130,9 @@ def main(stats_path="out/tmp/testing-snl-umse.pkl"):
 
     risks_dict = {}
     alarm_dict = {}
-    if "imc_risks" in data:
-        risks_dict["imc"] = data["imc_risks"]
-        alarm_dict["imc"] = data["alarms"]
-    if "target_risks" in data:
-        risks_dict["target"] = list(map(float, data["target_risks"]))
-        alarm_dict["target"] = data["alarms"]
-    if "sampling_risks" in data:
-        risks_dict["sampling"] = data["sampling_risks"]
-        alarm_dict["sampling"] = data["alarms"]
-    if "regression_risks" in data:
-        risks_dict["regression"] = data["regression_risks"]
-        alarm_dict["regression"] = data["alarms"]
+    for name, risks in data["risks"].items():
+        risks_dict[name] = risks
+        alarm_dict[name] = alarms
 
     print(f"Loaded {len(samples)} samples.")
     print(f"Crashes: {np.sum(alarms)} / {len(alarms)} ({100*np.mean(alarms):.2f}%)")
@@ -149,9 +143,9 @@ def main(stats_path="out/tmp/testing-snl-umse.pkl"):
 
     # Plot all scatter plots in a grid dynamic on the number of keys
     plots = [(k1, k2) for k1, k2 in combinations(risks_dict.keys(), 2)]
-    num_cols = 2
-    num_rows = len(plots) // num_cols
-    fig, axs = plt.subplots(num_rows, num_cols, figsize=(10, 5 * num_rows))
+    num_cols = 3
+    num_rows = int(np.ceil(len(plots) / num_cols))
+    fig, axs = plt.subplots(num_rows, num_cols, figsize=(5 * num_cols, 5 * num_rows))
     fig.subplots_adjust(hspace=0.5)
     for i, (key1, key2) in enumerate(plots):
         ax = axs[i // num_cols, i % num_cols]
@@ -172,21 +166,22 @@ def main(stats_path="out/tmp/testing-snl-umse.pkl"):
         )
         ax.grid(True)
     plt.tight_layout()
+    plt.show()
 
-    weird_indices = []
-    for i, _ in enumerate(samples):
-        if risks_dict["target"][i] > 0.9:
-            weird_indices.append(i)
-
-    risks_dict["target"] = data["target_risks"]
-
-    inspect_traces(
-        [samples[i] for i in weird_indices],
-        [alarms[i] for i in weird_indices],
-        {k: [rs[i] for i in weird_indices] for k, rs in risks_dict.items()},
-        suo,
-        data["args"]["sample_length"] if "sample_length" in data["args"] else 25,
-    )
+    # weird_indices = []
+    # for i, _ in enumerate(samples):
+    #     if risks_dict["target"][i] > 0.9:
+    #         weird_indices.append(i)
+    #
+    # risks_dict["target"] = data["target_risks"]
+    #
+    # inspect_traces(
+    #     [samples[i] for i in weird_indices],
+    #     [alarms[i] for i in weird_indices],
+    #     {k: [rs[i] for i in weird_indices] for k, rs in risks_dict.items()},
+    #     suo,
+    #     data["args"]["sample_length"] if "sample_length" in data["args"] else 25,
+    # )
 
 
 if __name__ == "__main__":

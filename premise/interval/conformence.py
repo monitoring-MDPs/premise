@@ -39,6 +39,10 @@ def test_monitor(
 
         last_risk = mon.step(obs_func(observations[-1]), compute_risk=True)
         risks[trace] = last_risk
+
+    if intermediate_results:
+        return risks, res
+
     return risks
 
 

@@ -8,6 +8,7 @@ from premise.system import (
     MCSystemUnderObservation,
     SystemUnderObservation,
     CarlaPreSampledSystemUnderObservation,
+    ACASSystemUnderObservation,
 )
 from premise.models import default_models
 
@@ -39,6 +40,12 @@ def build_suo_args_parser(parser: ArgumentParser):
         "--sim",
         type=str,
         help="Use the simulation model with the given name",
+    )
+    model_group.add_argument(
+        "-acas",
+        "--acas",
+        type=float,
+        help="Use the ACAS model with specified coarseness factor, e.g., 2 is twice as coarse as 1.",
     )
 
 
@@ -86,6 +93,10 @@ def build_suo(args: Namespace):
         suo: SystemUnderObservation = CarlaPreSampledSystemUnderObservation(args.sam)
     elif args.sim:
         suo: SystemUnderObservation = CarlaSimSystemUnderObservation(args.sim)
+    elif args.acas:
+        suo: SystemUnderObservation = ACASSystemUnderObservation(
+            args.acas, vars(args).get("horizon", 1)
+        )
     else:
         raise ValueError("No model specified")
     return suo

@@ -3,14 +3,14 @@ import math
 
 import numpy as np
 from PIL import Image, ImageDraw
-from stormvogel import pgc, ModelType
+from stormvogel import pgc, ModelType, Model
 
 from premise.sv_benchmarks.coarse import CoarseValue, CoarseGaussianValue
 
 NMAC = 150  # m (Near Mid Air Collision)
 
 RADIUS_MIN = NMAC  # meters
-RADIUS_MAX = 15000  # meters
+RADIUS_MAX = 1500  # old 15 000  # meters
 RADIUS_COARSE = 10  # 71
 
 BEARING_MIN = -math.pi  # radians
@@ -350,6 +350,8 @@ def acas_delta_builder(**kwargs):
         else:
             r, b = state.calc()
             radius = state.radius.copy_update(r)
+            if radius.at_min():
+                return [(1, state)]
 
             distr = []
             bs = state.bearing.distr(b)
@@ -379,7 +381,7 @@ def acas_delta_builder(**kwargs):
     return acas_delta
 
 
-def build_model(**kwargs):
+def build_acas_model(**kwargs) -> Model:
     init_state = ACAState(**kwargs)
     return pgc.build_pgc(
         acas_delta_builder(**kwargs),
@@ -388,4 +390,5 @@ def build_model(**kwargs):
         valuations=lambda s: s.valuations(),
         max_size=200000,
         modeltype=ModelType.DTMC,
+        safe=False,
     )
