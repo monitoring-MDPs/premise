@@ -4,8 +4,6 @@ import numpy as np
 import argparse
 
 from pypoman import compute_polytope_vertices
-from scipy.optimize import linprog
-from scipy.spatial import HalfspaceIntersection
 from stormpy import (
     Environment,
     MinMaxMethod,
@@ -38,6 +36,7 @@ from stormpy.pycarl import Interval
 from stormpy.pycarl.gmp import Interval as RationalInterval, Rational
 import stormpy as sp
 
+from premise.interval.policy_iteration import policy_iter_imc
 from premise.monitor import UnfoldingRiskAssessment, Monitor
 
 
@@ -421,29 +420,44 @@ def dict_to_interval_ipomdp(
 
 
 class UnfoldingIntervalRiskAssessment(UnfoldingRiskAssessment):
-    def __init__(self, stormpy_environment, unfolder, dump_model_to=None, maxmin="min"):
+    def __init__(
+        self,
+        stormpy_environment,
+        unfolder,
+        dump_model_to=None,
+        maxmin="min",
+        method="PI",
+    ):
         self._stormpy_env = stormpy_environment
         self._unfolder = unfolder
         self._mdp = None
         self._dump_model_to = dump_model_to
         self._current_step = 0
         self._prop = sp.parse_properties(f'P{maxmin}=? [F "_goal"]')[0]
+        self._method = method
 
     def get_risk(self, deadline=None):
         sp.reset_timeout()
         if deadline:
             sp.set_timeout(int(deadline / 1000))
         try:
-            if self._mdp.is_exact:
-                task = ExactCheckTask(self._prop.raw_formula, False)
-                result = check_exact_interval_mdp(self._mdp, task, self._stormpy_env)
-                risk = float(result.at(self._mdp.initial_states[0]))
+            if self._method == "PI":
+                imc = stormpy_imdp_to_imc(self._mdp)
+                result = policy_iter_imc(imc, self._prop, storm_env=self._stormpy_env)
+                risk = float(result.at(imc.initial_states[0]))
             else:
-                task = CheckTask(self._prop.raw_formula, False)
-                result = check_interval_mdp(self._mdp, task, self._stormpy_env)
-                risk = result.at(self._mdp.initial_states[0])
+                if self._mdp.is_exact:
+                    task = ExactCheckTask(self._prop.raw_formula, False)
+                    result = check_exact_interval_mdp(
+                        self._mdp, task, self._stormpy_env
+                    )
+                    risk = float(result.at(self._mdp.initial_states[0]))
+                else:
+                    task = CheckTask(self._prop.raw_formula, False)
+                    result = check_interval_mdp(self._mdp, task, self._stormpy_env)
+                    risk = result.at(self._mdp.initial_states[0])
         except RuntimeError:
-            print("What")
+            print("Timeout occurred in risk assesment")
             return False, 0
         sp.reset_timeout()
         return True, risk
@@ -492,6 +506,7 @@ def build_monitor_from_model(
     target="target",
     verbose=0,
     precision=1e-6,
+    method="PI",
 ):
     stormpy_environment = Environment()
     stormpy_environment.solver_environment.minmax_solver_environment.method = (
@@ -537,15 +552,30 @@ def build_monitor_from_model(
             for s, i in state_index_map.items():
                 print(f"{s}= {float(risks[i].upper())}")
 
-    unfolder = ObservationTraceUnfolderRationalInterval(
-        ipomdp,
-        risks,
-        expr_manager,
-        options,
-    )
+    # If method is PI we don't want to set the minmaxmethod, thus we remake it:
+    if method == "PI":
+        stormpy_environment = Environment()
+        stormpy_environment.solver_environment.minmax_solver_environment.precision = (
+            Rational(precision)
+        )
+
+    if ipomdp.is_exact:
+        unfolder = ObservationTraceUnfolderRationalInterval(
+            ipomdp,
+            risks,
+            expr_manager,
+            options,
+        )
+    else:
+        unfolder = ObservationTraceUnfolderInterval(
+            ipomdp,
+            risks,
+            expr_manager,
+            options,
+        )
 
     ura = UnfoldingIntervalRiskAssessment(
-        stormpy_environment, unfolder, dump_path, maxmin
+        stormpy_environment, unfolder, dump_path, maxmin, method
     )
 
     mon = Monitor(ura, None)

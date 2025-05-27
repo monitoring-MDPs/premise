@@ -115,7 +115,7 @@ def inspect_traces(traces, alarms, risks_dict, suo, sample_length):
                 print(f"{k} risk: {risks_dict[k][i]}")
 
 
-def main(stats_path="../../out/tmp/testing-a-dtmc-umse.npy"):
+def main(stats_path="../../out/tmp/testing-a-dtmc-exact.npy"):
     matplotlib.rcParams["figure.dpi"] = 300
 
     data = np.load(stats_path, allow_pickle=True)

@@ -37,6 +37,7 @@ class TargetDistanceStoppingCondition(RefinementStoppingCondition, ABC):
         horizon: int,
         amount: int,
         distance: Distance,
+        prefix_amount: int,
         use_exact: bool = False,
         precision: float = 1e-6,
         verbose: int = 0,
@@ -46,6 +47,7 @@ class TargetDistanceStoppingCondition(RefinementStoppingCondition, ABC):
         self.horizon = horizon
         self.amount = amount
         self.distance_func = distance
+        self.prefix_amount = prefix_amount
         self.use_exact = use_exact
         self.precision = precision
         self.verbose = verbose
@@ -82,31 +84,6 @@ class TargetDistanceStoppingCondition(RefinementStoppingCondition, ABC):
 
         if self.verbose > 0:
             print(f"Created all monitors, now testing them")
-
-        # if len(self.previous_risks) > 0:
-        #     monitored_risks_of_previous = test_monitor(
-        #         mon,
-        #         self.previous_risks.keys(),
-        #         obs_func=lambda x: observation_map[x],
-        #         skip_initial=True,
-        #         with_tqdm=False,
-        #     )
-        #
-        #     prev_dist, prev_all_dist = self.distance_func.distance(
-        #         self.previous_weights,
-        #         {s: float(r) for s, r in self.previous_risks.items()},
-        #         {s: float(r) for s, r in monitored_risks_of_previous.items()},
-        #         all_distances=True,
-        #     )
-        #
-        #     worst_trace = max(prev_all_dist, key=lambda x: x[1][1])
-        #     print(
-        #         f"Worst previous trace: {self.suo.trace_to_str(worst_trace[0])} with distance {worst_trace[1][1]} and probability {worst_trace[1][0]}"
-        #     )
-        #
-        #     print(
-        #         f"Distance was {self.distances[-1]}, now {prev_dist}, on the same samples."
-        #     )
 
         # Run premise on the learned model
         monitored_risks = test_monitor(
@@ -148,6 +125,15 @@ class TargetDistanceStoppingCondition(RefinementStoppingCondition, ABC):
         self.traces.append(target_all_dist_w_risk)
 
         return target_dist, target_all_dist, samples
+
+    def generate_prefixes(self, interresting_traces: list[Trace]):
+        prefixes = []
+        for t in interresting_traces:
+            for l in np.linspace(
+                0.0, float(len(prefixes)), self.prefix_amount, endpoint=True
+            ):
+                prefixes.append(t[: round(l)])
+        return prefixes
 
     def stats(self) -> dict[str, Any]:
         return {
@@ -225,8 +211,8 @@ class ThresholdStoppingCondition(TargetDistanceStoppingCondition):
             self.not_improved = 0
 
         # Otherwise, return the samples that are above the threshold
-        interresting_traces = [t for t, (_, d) in target_all_dist if d > self.threshold]
-        return ([t[:l] for t in interresting_traces for l in range(0, len(t))], samples)
+        interesting_traces = [t for t, (_, d) in target_all_dist if d > self.threshold]
+        return self.generate_prefixes(interesting_traces), samples
 
 
 class StabalizationStoppingCondition(TargetDistanceStoppingCondition):
@@ -275,8 +261,8 @@ class StabalizationStoppingCondition(TargetDistanceStoppingCondition):
             return None
 
         # Return samples with a distance above the full distance
-        interresting_traces = [s for s, (_, d) in target_all_dist if d > target_dist]
-        return [t[:l] for t in interresting_traces for l in range(0, len(t))], samples
+        interesting_traces = [s for s, (_, d) in target_all_dist if d > target_dist]
+        return self.generate_prefixes(interesting_traces), samples
 
 
 def refinement_learning(
@@ -412,6 +398,7 @@ def ref_main(args: argparse.Namespace):
             args.horizon,
             args.conformence_amount,
             distance,
+            args.prefix_amount,
             relative_deviation=args.stopping_deviation,
             patience=args.stopping_patience,
             verbose=args.verbose,
@@ -425,6 +412,7 @@ def ref_main(args: argparse.Namespace):
             args.horizon,
             args.conformence_amount,
             distance,
+            args.prefix_amount,
             threshold=args.stopping_threshold,
             patience=args.stopping_patience,
             verbose=args.verbose,
@@ -438,6 +426,7 @@ def ref_main(args: argparse.Namespace):
             args.horizon,
             args.conformence_amount,
             distance,
+            args.prefix_amount,
             sample_count=args.stopping_samples,
             refine_amount=args.refinement_amount,
             use_exact=args.exact,
@@ -498,6 +487,13 @@ def ref_args_parser():
         type=int,
         default=2,
         help="Amount of refinement samples to learn on per prefix",
+    )
+    learning_group.add_argument(
+        "-pa",
+        "--prefix-amount",
+        type=int,
+        default=10,
+        help="Amount of prefixes per trace. Should not be larger then the conformance length",
     )
     learning_group.add_argument(
         "-m", "--model-path", type=str, default=None, help="Path to store the model"

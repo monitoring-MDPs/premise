@@ -13,9 +13,9 @@ from premise.system import (
 from premise.models import default_models
 
 
-def build_suo_args_parser(parser: ArgumentParser):
+def build_suo_args_parser(parser: ArgumentParser, required: bool = True):
     group = parser.add_argument_group("System Under Observation")
-    model_group = group.add_mutually_exclusive_group(required=True)
+    model_group = group.add_mutually_exclusive_group(required=required)
     model_group.add_argument(
         "-mc", "--mc", type=str, help="Use the premise model with the given name"
     )
@@ -49,19 +49,21 @@ def build_suo_args_parser(parser: ArgumentParser):
     )
 
 
-def build_imc_loading_args_parser(parser: ArgumentParser, required: bool = True):
+def build_imc_loading_args_parser(
+    parser: ArgumentParser, required: bool = True, option_prefix=""
+):
     group = parser.add_argument_group("IMC loading")
     group.add_argument(
-        "-t",
-        "--trans_path",
+        f"-{option_prefix}t",
+        f"--{option_prefix}trans-path",
         required=required,
         type=str,
         default=None,
         help="Path to the transition dictionary",
     )
     group.add_argument(
-        "-i",
-        "--init_path",
+        f"-{option_prefix}i",
+        f"--{option_prefix}init-path",
         required=required,
         type=str,
         default=None,
