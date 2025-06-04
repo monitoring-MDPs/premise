@@ -2,6 +2,10 @@ import numpy as np
 import pandas as pd
 from typing import Any
 from sklearn.metrics import roc_curve, auc
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
 
 from premise.monitor import Monitor
 from sklearn.linear_model import LogisticRegression
@@ -16,6 +20,115 @@ from premise.interval.loss import distance_measures
 from premise.interval.interval import Samples, Trace, create_monitor
 from premise.interval.learningIMC import learn_IMC
 from premise.interval.conformence import test_monitor
+
+class TraceDataset(Dataset):
+    def __init__(self, traces, labels, vocab_size):
+        self.traces = traces
+        self.labels = labels
+        self.vocab_size = vocab_size
+
+    def __len__(self):
+        return len(self.traces)
+
+    def __getitem__(self, idx):
+        trace = self.traces[idx]
+        label = self.labels[idx]
+
+        # Convert trace to one-hot vectors
+        trace_tensor = torch.zeros(len(trace), self.vocab_size)
+        for i, s in enumerate(trace):
+            trace_tensor[i, s] = 1.0
+
+        return trace_tensor, torch.tensor(label, dtype=torch.float32)
+
+class TraceRNN(nn.Module):
+    def __init__(self, input_dim, hidden_dim):
+        super(TraceRNN, self).__init__()
+        self.rnn = nn.GRU(input_size=input_dim, hidden_size=hidden_dim, batch_first=True)
+        self.fc = nn.Linear(hidden_dim, 1)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        _, h_n = self.rnn(x)
+        out = self.fc(h_n.squeeze(0))
+        return self.sigmoid(out).squeeze(1)
+
+def train_model(model, dataloader, epochs=20, lr=0.001):
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    loss_fn = nn.BCELoss()
+
+    for epoch in range(epochs):
+        model.train()
+        total_loss = 0.0
+        for traces, labels in dataloader:
+            optimizer.zero_grad()
+            outputs = model(traces)
+            loss = loss_fn(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+        print(f"Epoch {epoch+1}/{epochs}, Loss: {total_loss / len(dataloader):.4f}")
+
+
+def training_data(train_samples, args): 
+
+    training_traces = []
+    training_trace = []
+
+    for x in train_samples:
+        training_trace = []
+        for s in x[:-args.horizon]:  # Exclude the horizon length
+            training_trace.append(s[1]) 
+        training_traces.append(training_trace)
+
+    labels = []
+
+    for x in train_samples:
+        if any(s[2] == True for s in x[-args.horizon:]):
+            labels.append(1)
+        else: 
+            labels.append(0)
+
+    
+    return training_traces, labels
+
+def testing_data(test_samples, args):
+
+    testing_traces = []
+    for x in test_samples:
+        testing_trace = []
+        for s in x[:-args.horizon]:  # Exclude the horizon length
+            testing_trace.append(s[1]) 
+        testing_traces.append(testing_trace)
+
+    return testing_traces, test_samples
+
+def predict_on_test(model, test_traces, test_samples,  obs_to_idx, threshold=0.5):
+    model.eval()
+    vocab_size = len(obs_to_idx)
+    predicted_probs = []
+
+    predicted_probs = {}
+
+    probabilities = []
+
+    with torch.no_grad():
+        for trace in test_traces:
+            mapped_trace = [obs_to_idx[o] for o in trace if o in obs_to_idx]
+    
+            trace_tensor = torch.zeros(len(mapped_trace), vocab_size)
+            for i, idx in enumerate(mapped_trace):
+                trace_tensor[i, idx] = 1.0
+
+            trace_tensor = trace_tensor.unsqueeze(0) 
+            prob = model(trace_tensor).item()
+            probabilities.append(prob)
+
+    for x in range(len(probabilities)): 
+        predicted_probs[test_samples[x]] = probabilities[x]
+
+
+    return predicted_probs
 
 
 #def learn_model_based(all_states, all_transitions, initial_states, train_samples, testing_samples): 
@@ -44,7 +157,6 @@ from premise.interval.conformence import test_monitor
 #
 #    return IMC_risks
 
-
 def learn_regression_model(train_samples, observations, testing_samples, args):
     X = []
     y = []
@@ -69,6 +181,8 @@ def learn_regression_model(train_samples, observations, testing_samples, args):
     num_steps = args.length
 
     column_names = [f"Step{s}_Obs{o}" for s in range(num_steps) for o in observations]
+    print(f"Observation Count: {len(observations)}")
+    print(f"Column Count: {len(column_names)}")
 
     binary_data = []
     for trace in X:
@@ -140,7 +254,7 @@ def test_regression_monitor(
 
 
 #def measure_distance(testing_samples, regression_risks, IMC_risks, distance, test_weights, suo, args):   
-def measure_distance(testing_samples, regression_risks, distance, test_weights, suo, args):   
+def measure_distance(testing_samples, regression_risks, nn_risks, distance, test_weights, suo, args):   
 
     target_risks = test_regression_monitor(
         suo.create_target_monitor(),
@@ -154,6 +268,14 @@ def measure_distance(testing_samples, regression_risks, distance, test_weights, 
         all_distances=True,
     )
 
+    target_dist_nn, target_all_dist_nn = distance.distance(
+        test_weights,
+        {s: float(r) for s, r in target_risks.items()},
+        {s: float(r) for s, r in nn_risks.items()},
+        all_distances=True,
+    )
+
+
     #target_dist_imc, target_all_dist_imc = distance.distance(
     #    test_weights,
     #    {s: float(r) for s, r in target_risks.items()},
@@ -162,11 +284,13 @@ def measure_distance(testing_samples, regression_risks, distance, test_weights, 
     #)
 
     print(f"Regression's distance to target risk: {target_dist_reg}")
+    print(f"Neural Network's distance to target risk: {nn_risks}")
+
     #print(f"IMC-based distance to target risk: {target_dist_imc}")
 
 
     #return target_risks, target_dist_reg, target_all_dist_reg, target_dist_imc, target_all_dist_imc
-    return target_risks, target_dist_reg, target_all_dist_reg
+    return target_risks, target_dist_reg, target_all_dist_reg, target_dist_nn, target_all_dist_nn
 
 def plot_roc_curve(alarms, risks, fname=None):
     alarm_values = list(alarms.values())
@@ -198,7 +322,7 @@ def plot_roc_curve(alarms, risks, fname=None):
     return auc_value
 
 #def monitoring_analysis(alarms, target_risks, regression_risks, IMC_risks): 
-def monitoring_analysis(alarms, target_risks, regression_risks): 
+def monitoring_analysis(alarms, target_risks, regression_risks, nn_risks): 
 
     error = 0 
     for x in alarms.keys(): 
@@ -210,14 +334,18 @@ def monitoring_analysis(alarms, target_risks, regression_risks):
     print("Regression monitor")
     auc_value_reg = plot_roc_curve(alarms, regression_risks)
 
+    print("Neural Network monitor")
+    auc_value_nn = plot_roc_curve(alarms, nn_risks)
+
     #print("IMC monitor")
     #auc_value_imc = plot_roc_curve(alarms, IMC_risks)
 
     print("Target monitor")
     auc_value_target = plot_roc_curve(alarms, target_risks)
 
+
     #return auc_value_reg, auc_value_imc, auc_value_target
-    return auc_value_reg, auc_value_target
+    return auc_value_reg, auc_value_nn, auc_value_target
 
 
 
@@ -240,6 +368,10 @@ def reg_main(args: argparse.Namespace):
     for x in all_states:
         if x[1] not in observations:
             observations.append(x[1])
+
+    all_observations = sorted({state[1] for state in all_states})  # Set for uniqueness
+    obs_to_idx = {obs: idx for idx, obs in enumerate(all_observations)}
+    vocab_size = len(obs_to_idx)
     
 
     samples_with_prob = suo.generate_random_traces_with_prob(
@@ -249,6 +381,16 @@ def reg_main(args: argparse.Namespace):
     total_prob = sum(p for _, p in samples_with_prob)
     test_weights = {s: float(p / total_prob) for s, p in samples_with_prob}
     testing_samples = [s[0] for s in samples_with_prob]
+
+    traces, labels = training_data(train_samples, args)
+
+    dataset = TraceDataset(traces, labels, vocab_size)
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+    model = TraceRNN(input_dim=vocab_size, hidden_dim=32)  
+    train_model(model, dataloader, epochs=20)
+
+    test_traces, test_samples = testing_data(testing_samples, args)
+    nn_risks = predict_on_test(model, test_traces, test_samples, obs_to_idx)
 
     distance = distance_measures[args.distance]()
 
@@ -260,17 +402,16 @@ def reg_main(args: argparse.Namespace):
     )
 
 
-
     #target_risks, target_dist_reg, target_all_dist_reg, target_dist_imc, target_all_dist_imc = measure_distance(
     #    testing_samples, regression_risks, IMC_risks, distance, test_weights, suo, args) 
 
-    target_risks, target_dist_reg, target_all_dist_reg = measure_distance(
-        testing_samples, regression_risks, distance, test_weights, suo, args) 
-
+    target_risks, target_dist_reg, target_all_dist_reg, target_dist_nn, target_all_dist_nn = measure_distance(
+        testing_samples, regression_risks, nn_risks, distance, test_weights, suo, args) 
+    
 
 
     #auc_value_reg, auc_value_imc, auc_value_target = monitoring_analysis(alarms, target_risks, regression_risks, IMC_risks)
-    auc_value_reg, auc_value_target = monitoring_analysis(alarms, target_risks, regression_risks)
+    auc_value_reg, auc_value_nn, auc_value_target = monitoring_analysis(alarms, target_risks, regression_risks, nn_risks)
 
 
 
@@ -293,7 +434,7 @@ def reg_main(args: argparse.Namespace):
         np.save(args.model_path, model)
     
     #return target_dist_reg, target_dist_imc, auc_value_reg, auc_value_imc, auc_value_target
-    return target_dist_reg, auc_value_reg, auc_value_target
+    return target_dist_reg, target_dist_nn, auc_value_reg, auc_value_nn, auc_value_target
 
 
 
@@ -349,20 +490,24 @@ if __name__ == "__main__":
 
     model_free_distance = []
     #model_based_distance = []
+    nn_distance = []
     model_free_AUC = []
     #model_based_AUC = []
+    nn_AUC = []
     target_AUC = []
 
-    for x in range (250, 10250, 250):
+    for x in range (250, 20250, 250):
         args.amount = x
         #target_dist_reg, target_dist_imc, auc_value_reg, auc_value_imc, auc_value_target  = reg_main(args)
-        target_dist_reg, auc_value_reg, auc_value_target  = reg_main(args)
+        target_dist_reg, target_dist_nn, auc_value_reg, auc_value_nn, auc_value_target = reg_main(args)
 
         model_free_distance.append(target_dist_reg)
         #model_based_distance.append(target_dist_imc)
+        nn_distance.append(target_dist_nn)
 
         model_free_AUC.append(auc_value_reg)
         #model_based_AUC.append(auc_value_imc)
+        nn_AUC.append(auc_value_nn)
         target_AUC.append(auc_value_target)
 
         args = parser.parse_args()
@@ -370,8 +515,10 @@ if __name__ == "__main__":
     
     print(model_free_distance)
     #print(model_based_distance)
+    print(nn_distance)
     print(target_AUC)
     print(model_free_AUC)
+    print(nn_AUC)
     #print(model_based_AUC)
 
 
