@@ -42,7 +42,7 @@ def plot_mult_distances(data_dict: dict, title, log=False):
     plt.show()
 
 
-def main(stats_path="../../out/stats/2025-05-27_11-51-44"):
+def main(stats_path="../../out/stats/2025-06-05_10-54-53"):
     path = Path(stats_path)
     stats_dicts: dict[tuple, dict] = {}
     if path.is_dir():

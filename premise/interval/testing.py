@@ -113,7 +113,8 @@ if __name__ == "__main__":
         "--dump", type=str, help="Path to the file to dump the model to"
     )
     parser.add_argument(
-        "-pr" "--print-results",
+        "-pr",
+        "--print-results",
         action="store_true",
         help="Print the results of the conformance checking",
     )
@@ -170,6 +171,13 @@ if __name__ == "__main__":
                     dump=None,
                     test_data_set=None,
                     verbose=args.verbose,
+                    print_results=args.print_results,
+                    trans_path=None,
+                    init_path=None,
+                    extra_trans_path=None,
+                    extra_init_path=None,
+                    regression_path=None,
+                    regression_observations=None,
                 )
 
             if "stopping_criteria" in data["args"]:
@@ -226,6 +234,26 @@ if __name__ == "__main__":
                 precision=args.precision,
             )
 
+        has_extra_imc = (
+            args.extra_trans_path is not None and args.extra_init_path is not None
+        )
+        if has_extra_imc:
+            interval, initial_interval = load_imc(args)
+            # Build the premise monitor on the learned model
+            extra_mon, extra_observation_map, extra_unfolder, extra_ipomdp = (
+                create_monitor(
+                    interval,
+                    initial_interval,
+                    "min",
+                    True,
+                    args.horizon,
+                    args.dump,
+                    args.verbose,
+                    use_exact=args.exact,
+                    precision=args.precision,
+                )
+            )
+
         # Load the regression model
         if args.regression_path and args.regression_observations:
             reg_model = np.load(args.regression_path, allow_pickle=True).item()
@@ -244,12 +272,12 @@ if __name__ == "__main__":
         if not args.no_target:
             target_monitor = suo.create_target_monitor()
 
-            model_def = default_models[args.mc]
-            model_def.risk_property = f'Pmax=? [F<={vars(args).get("horizon", 1)} "{model_def.target_label}" ]'
-            non_exact_suo: SystemUnderObservation = MCSystemUnderObservation(
-                model_def, args.mc, PremiseOptions(exact_arithmetic=False)
-            )
-            float_target_monitor = non_exact_suo.create_target_monitor()
+            # model_def = default_models[args.mc]
+            # model_def.risk_property = f'Pmax=? [F<={vars(args).get("horizon", 1)} "{model_def.target_label}" ]'
+            # non_exact_suo: SystemUnderObservation = MCSystemUnderObservation(
+            #     model_def, args.mc, PremiseOptions(exact_arithmetic=False)
+            # )
+            # float_target_monitor = non_exact_suo.create_target_monitor()
 
             if (
                 args.additive_uncertainty
@@ -286,8 +314,8 @@ if __name__ == "__main__":
 
         alarms: list[bool] = []
         imc_risks = []
+        extra_imc_risks = []
         target_risks = []
-        float_target_risks = []
         regression_risks = []
         sampling_risks = []
         uncertain_risks = {}
@@ -310,13 +338,13 @@ if __name__ == "__main__":
                 target_risk = target_risk[sub_trace]
                 target_risks.append(float(target_risk))
 
-                float_target_risk = test_monitor(
-                    float_target_monitor,
-                    [sub_trace],
-                    with_tqdm=False,
-                )
-                float_target_risk = float_target_risk[sub_trace]
-                float_target_risks.append(float(float_target_risk))
+                # float_target_risk = test_monitor(
+                #     float_target_monitor,
+                #     [sub_trace],
+                #     with_tqdm=False,
+                # )
+                # float_target_risk = float_target_risk[sub_trace]
+                # float_target_risks.append(float(float_target_risk))
 
             if uncertain_monitors is not None:
                 for au, au_mon in uncertain_monitors.items():
@@ -339,6 +367,17 @@ if __name__ == "__main__":
                 )[sub_trace]
 
                 imc_risks.append(risk)
+
+            if has_extra_imc:
+                risk = test_monitor(
+                    extra_mon,
+                    [sub_trace],
+                    obs_func=lambda x: extra_observation_map[x],
+                    skip_initial=True,
+                    with_tqdm=False,
+                )[sub_trace]
+
+                extra_imc_risks.append(risk)
 
             # Run regression model
             if reg_model:
@@ -367,9 +406,12 @@ if __name__ == "__main__":
             if has_imc:
                 stats["risks"]["imc_risks"] = imc_risks
 
+            if has_extra_imc:
+                stats["risks"]["extra_imc_risks"] = extra_imc_risks
+
             if not args.no_target:
                 stats["risks"]["target_risks"] = target_risks
-                stats["risks"]["float_target_risks"] = float_target_risks
+            #     stats["risks"]["float_target_risks"] = float_target_risks
 
             if reg_model:
                 stats["risks"]["regression_risks"] = regression_risks
@@ -392,67 +434,3 @@ if __name__ == "__main__":
 
             with open(filename, "wb") as f:
                 pickle.dump(stats, f)
-
-        if args.print_results:
-            print("Results:")
-            print(f"Loaded {len(traces)} samples.")
-            print(
-                f"Alarms: {np.sum(alarms)} / {len(alarms)} ({100*np.mean(alarms):.2f}%)"
-            )
-
-            if has_imc:
-                print(
-                    f"IMC Risks: min={np.min(imc_risks):.4f}, max={np.max(imc_risks):.4f}, mean={np.mean(imc_risks):.4f} "
-                    f"std={np.std(imc_risks):.4f}, var={np.var(imc_risks):.4f}, median={np.median(imc_risks):.4f}"
-                )
-
-            if not args.no_target:
-                print(
-                    f"Target risks: min={np.min(target_risks):.4f}, max={np.max(target_risks):.4f}, mean={np.mean(target_risks):.4f} "
-                    f"std={np.std(target_risks):.4f}, var={np.var(target_risks):.4f}, median={np.median(target_risks):.4f}"
-                )
-
-            if reg_model:
-                print(
-                    f"Regression risks: min={np.min(regression_risks):.4f}, max={np.max(regression_risks):.4f}, mean={np.mean(regression_risks):.4f} "
-                    f"std={np.std(regression_risks):.4f}, var={np.var(regression_risks):.4f}, median={np.median(regression_risks):.4f}"
-                )
-
-            if args.sampling_amount is not None:
-                print(
-                    f"Sampling risks: min={np.min(sampling_risks):.4f}, max={np.max(sampling_risks):.4f}, mean={np.mean(sampling_risks):.4f} "
-                    f"std={np.std(sampling_risks):.4f}, var={np.var(sampling_risks):.4f}, median={np.median(sampling_risks):.4f}"
-                )
-
-            # Print a trace with an alarm and without an alarm use the suo trace printer suo.trace_to_str(trace)
-            print("Alarmed traces:")
-            for i, trace in enumerate(traces):
-                if alarms[i]:
-                    print(f"Trace {i}: {suo.trace_to_str(trace[: args.sample_length])}")
-                    print(f"Horizon: {suo.trace_to_str(trace[args.sample_length:])}")
-                    if has_imc:
-                        print(f"IMC Risk: {imc_risks[i]}")
-                    if not args.no_target:
-                        print(f"Target risk: {target_risks[i]}")
-                    if reg_model:
-                        print(f"Regression risk: {regression_risks[i]}")
-                    if args.sampling_amount is not None:
-                        print(f"Sampling risk: {sampling_risks[i]}")
-
-                    break
-
-            print("Not alarmed traces:")
-            for i, trace in enumerate(traces):
-                if not alarms[i]:
-                    print(f"Trace {i}: {suo.trace_to_str(trace[: args.sample_length])}")
-                    print(f"Horizon: {suo.trace_to_str(trace[args.sample_length:])}")
-                    if has_imc:
-                        print(f"IMC Risk: {imc_risks[i]}")
-                    if not args.no_target:
-                        print(f"Target risk: {target_risks[i]}")
-                    if reg_model:
-                        print(f"Regression risk: {regression_risks[i]}")
-                    if args.sampling_amount is not None:
-                        print(f"Sampling risk: {sampling_risks[i]}")
-
-                    break

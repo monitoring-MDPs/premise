@@ -301,18 +301,17 @@ def refinement_learning(
         )
     )
 
-    if verbose > 0:
-        iteration = 0
+    iteration = 0
 
     samples_learned = []
     all_prefixes = []
 
     while True:
+        iteration += 1
         if verbose > 0:
             print(
                 f"-----------------------\nRefinement iteration {iteration} with {len(prefixes)} prefixes"
             )
-            iteration += 1
         if verbose > 1:
             print(f"Prefixes: {prefixes}")
 
@@ -358,7 +357,12 @@ def refinement_learning(
             )
 
         if intermediate_model_path is not None:
-            save_imc(initial_interval, interval, suo, intermediate_model_path)
+            save_imc(
+                initial_interval,
+                interval,
+                suo,
+                intermediate_model_path + str(iteration),
+            )
 
         res = refinement_stopping_condition.check(interval, initial_interval)
         if res is not None:
