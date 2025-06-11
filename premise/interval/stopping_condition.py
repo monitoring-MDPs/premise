@@ -179,7 +179,7 @@ class IntervalWidthCalculator(DistanceCalculator):
         )
 
         target_all_dist_w_risk = [
-            (t, (p, d, float(min_monitored_risks[t]), float(max_monitored_risks[t])))  # type: ignore
+            (t, (p, d, float(min_monitored_risks[t]), float(max_monitored_risks[t])))
             for t, (p, d) in target_all_dist
         ]
         self.traces.append(target_all_dist_w_risk)

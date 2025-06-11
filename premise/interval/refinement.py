@@ -1,6 +1,5 @@
-from abc import ABC
 import argparse
-from typing import Any, Optional
+from typing import Optional
 
 import numpy as np
 
@@ -38,6 +37,7 @@ def refinement_learning(
     i_nl: int = 10,
     i_nu: int = 20,
     intermediate_model_path: Optional[str] = None,
+    conditional_sampling_type: str = "obs",
     verbose: int = 0,
 ):
     all_states, all_transitions, initial_states = suo.get_states_and_transitions(
@@ -80,15 +80,27 @@ def refinement_learning(
         initial_samples = []
         samples = extra_samples
         for prefix in prefixes:
-            s = suo.generate_random_traces(
-                [s[1] for s in prefix],
-                learning_length,
-                amount,
-            )
+            if conditional_sampling_type == "obs":
+                s = suo.generate_random_traces(
+                    [s[1] for s in prefix],
+                    learning_length,
+                    amount,
+                )
+            elif conditional_sampling_type == "state":
+                s = suo.generate_random_traces(
+                    [],
+                    learning_length,
+                    amount,
+                    initial_state=prefix[-1] if len(prefix) > 0 else None,
+                )
+
             if len(prefix) == 0:
                 initial_samples += s
 
-            samples += [t[len(prefix) :] for t in s]
+            if conditional_sampling_type == "obs":
+                samples += [t[len(prefix) :] for t in s]
+            else:
+                samples += s
 
         samples_learned.append(len(samples))
 
@@ -223,6 +235,7 @@ def ref_main(args: argparse.Namespace):
         args.trans_lower_strength,
         args.trans_upper_strength,
         args.model_path,
+        args.conditional_sampling_type,
         args.verbose,
     )
 
@@ -268,6 +281,13 @@ def ref_args_parser():
         type=int,
         default=10,
         help="Amount of prefixes per trace. Should not be larger then the conformance length",
+    )
+    learning_group.add_argument(
+        "-cst",
+        "--conditional-sampling-type",
+        choices=["obs", "state"],
+        default="state",
+        help="Type of conditional sampling to use, 'obs' conditions on the trace, 'state' starts in the final state of the condition",
     )
     learning_group.add_argument(
         "-m", "--model-path", type=str, default=None, help="Path to store the model"

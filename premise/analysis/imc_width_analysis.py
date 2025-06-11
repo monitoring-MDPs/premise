@@ -6,9 +6,8 @@ from collections import defaultdict
 import io
 import imageio.v2 as imageio
 from matplotlib import pyplot as plt
-from mock import patch
 import numpy as np
-from IPython.display import display, Video
+from tqdm import tqdm
 
 from premise.interval.interval import analyse_interval_width, create_monitor
 from premise.interval.loading import load_imc
@@ -22,7 +21,7 @@ def parse_filename(filename):
     m = re.match(r"(.+?)(\d+)?-(interval|initial_interval)\.npy$", filename)
     if m:
         prefix = m.group(1)
-        iteration = int(m.group(2)) if m.group(2) else 0
+        iteration = int(m.group(2)) if m.group(2) else 100000000000
         typ = m.group(3)
         group = prefix
         return group, iteration, typ
@@ -75,7 +74,7 @@ def plot_widths(widths_dict, title=None, typ="errorbar"):
         plt.title(title)
 
 
-def main(path="../../out/models/2025-06-05_10-54-53", out_path="../../out/tmp/gifs"):
+def main(path="../../out/models/2025-06-11_13-55-16", out_path="../../out/tmp/gifs2"):
     out_path = Path(out_path)
     out_path.mkdir(exist_ok=True)
     path = Path(path)
@@ -104,7 +103,7 @@ def main(path="../../out/models/2025-06-05_10-54-53", out_path="../../out/tmp/gi
         print(f"Analysing {group}")
         all_widths[group] = {}
         frames = []
-        for iteration, (init_path, trans_path) in sorted(iters.items()):
+        for iteration, (init_path, trans_path) in tqdm(sorted(iters.items())):
             interval, init_interval = load_imc(
                 Namespace(init_path=str(init_path), trans_path=str(trans_path))
             )
@@ -127,8 +126,8 @@ def main(path="../../out/models/2025-06-05_10-54-53", out_path="../../out/tmp/gi
 
         # Save GIF for this group
         if frames:
-            gif_path = out_path / f"{group}_{plot_type}_widths.mp4"
-            imageio.mimwrite(gif_path, frames, fps=4)
+            gif_path = out_path / f"{group}_{plot_type}_widths.gif"
+            imageio.mimwrite(gif_path, frames, duration=100, loop=0)
             print(f"Saved GIF for {group} at {gif_path}")
             # display(Video(filename=str(gif_path)))
 

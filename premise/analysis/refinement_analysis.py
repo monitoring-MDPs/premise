@@ -1,5 +1,6 @@
 # %%
 from pathlib import Path
+import re
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -20,7 +21,7 @@ def plot_distances(distances, samples, title, threshold=None, log=False, fname=N
 
 def plot_mult_distances(data_dict: dict, title, log=False):
     plt.figure(figsize=(10, 6))
-    for key, data in sorted(data_dict.items()):
+    for key, data in sorted(data_dict.items(), reverse=True):
         line = plt.plot(data[1], data[0], marker="o", linestyle="-", label=key)
         if len(data[0]) >= 3 and key == "threshold":
             running_avg = [
@@ -42,7 +43,7 @@ def plot_mult_distances(data_dict: dict, title, log=False):
     plt.show()
 
 
-def main(stats_path="../../out/stats/2025-06-05_10-54-53"):
+def main(stats_path="../../out/stats/2025-06-11_13-55-16"):
     path = Path(stats_path)
     stats_dicts: dict[tuple, dict] = {}
     if path.is_dir():

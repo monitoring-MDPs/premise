@@ -118,7 +118,7 @@ def inspect_traces(traces, alarms, risks_dict, suo, sample_length):
                 print(f"{k} risk: {risks_dict[k][i]}")
 
 
-def main(stats_path="../../out/tmp/test3"):
+def main(stats_path="../../out/tmp/test4"):
     matplotlib.rcParams["figure.dpi"] = 300
     path = Path(stats_path)
     if path.is_dir():
@@ -150,7 +150,10 @@ def main(stats_path="../../out/tmp/test3"):
         )
         fig.subplots_adjust(hspace=0.5)
         for i, k in enumerate(alarm_dict.keys()):
-            ax = axs[i // num_cols, i % num_cols]
+            if num_rows == 1:
+                ax = axs[i % num_cols]
+            else:
+                ax = axs[i // num_cols, i % num_cols]
             plot_risk_histogram(
                 risks_dict[k],
                 alarm_dict[k],
@@ -161,20 +164,23 @@ def main(stats_path="../../out/tmp/test3"):
 
         # Plot all scatter plots in a grid dynamic on the number of keys
         plots = [(k1, k2) for k1, k2 in combinations(risks_dict.keys(), 2)]
-        num_cols = 3
+        num_cols = 2
         num_rows = int(np.ceil(len(plots) / num_cols))
         fig, axs = plt.subplots(
             num_rows, num_cols, figsize=(5 * num_cols, 5 * num_rows)
         )
         fig.subplots_adjust(hspace=0.5)
         for i, (key1, key2) in enumerate(plots):
-            ax = axs[i // num_cols, i % num_cols]
+            if num_rows == 1:
+                ax = axs[i % num_cols]
+            else:
+                ax = axs[i // num_cols, i % num_cols]
             ax.scatter(
                 risks_dict[key1], risks_dict[key2], c=alarms, cmap="coolwarm", alpha=0.5
             )
             ax.set_xlabel(key1)
             ax.set_ylabel(key2)
-            ax.set_title(f"Scatter plot of {key1} vs {key2}: {stat_path.name}")
+            ax.set_title(f"{key1} vs {key2}")
             ax.plot([0, 1], [0, 1], "r--")
             correlation = np.corrcoef(risks_dict[key1], risks_dict[key2])[0, 1]
             ax.annotate(

@@ -1,24 +1,19 @@
 import argparse
-from argparse import ArgumentError
 from multiprocessing.managers import Namespace
 from pathlib import Path
-from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import os
 import pickle
-from stormpy import AddUncertaintyExact, export_to_drn, Rational
+from stormpy import AddUncertaintyExact, Rational
 
-from premise.system import SystemUnderObservation, MCSystemUnderObservation
-from premise.monitor import PremiseOptions
-from premise.models import default_models
 from premise.interval.interval import (
     stormpy_imdp_to_ipomdp,
     stormpy_exact_pomdp_to_mdp,
 )
-from premise.interval.regression_model import prep_trace_for_regression
+from premise.interval.model_free.regression_model import prep_trace_for_regression
 from premise.interval.loading import (
     build_imc_loading_args_parser,
     build_suo,

@@ -1,6 +1,7 @@
 from abc import ABC
 import pickle
 from pathlib import Path
+import random
 from typing import Any, Optional
 
 import stormpy
@@ -208,6 +209,14 @@ class CoarseMCSystemUnderObservation(MCSystemUnderObservation):
         amount=1,
         initial_state: Optional[State] = None,
     ) -> Samples:
+        if initial_state is not None:
+            initial_stormpy_states = self.coarse_state_map[initial_state[0]]
+            initial_state = (
+                random.choice(initial_stormpy_states),
+                initial_state[1],
+                initial_state[2],
+            )
+
         fine_traces = super().generate_random_traces(
             observation_prefix, length, amount, initial_state
         )
@@ -224,6 +233,14 @@ class CoarseMCSystemUnderObservation(MCSystemUnderObservation):
         amount=1,
         initial_state: Optional[State] = None,
     ) -> list[tuple[Trace, Any]]:
+        if initial_state is not None:
+            initial_stormpy_states = self.coarse_state_map[initial_state[0]]
+            initial_state = (
+                random.choice(initial_stormpy_states),
+                initial_state[1],
+                initial_state[2],
+            )
+
         fine_traces = super().generate_random_traces_with_prob(
             observation_prefix, length, amount, initial_state
         )
