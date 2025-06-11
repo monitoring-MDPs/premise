@@ -1,7 +1,7 @@
 from abc import ABC
 import pickle
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import stormpy
 import stormpy.pomdp
@@ -34,6 +34,7 @@ class SystemUnderObservation(ABC):
         observation_prefix: list[Any],
         length: int,
         amount: int = 1,
+        initial_state: Optional[State] = None,
     ) -> Samples:
         raise NotImplementedError("This method should be overridden by subclasses")
 
@@ -42,6 +43,7 @@ class SystemUnderObservation(ABC):
         observation_prefix: list[Any],
         length: int,
         amount=1,
+        initial_state: Optional[State] = None,
     ) -> list[tuple[Trace, Any]]:
         raise NotImplementedError("This method should be overridden by subclasses")
 
@@ -80,21 +82,37 @@ class MCSystemUnderObservation(SystemUnderObservation):
         )
 
     def generate_random_traces(
-        self, observation_prefix: list[Any], length: int, amount=1
+        self,
+        observation_prefix: list[Any],
+        length: int,
+        amount=1,
+        initial_state: Optional[tuple[int, int, bool]] = None,
     ) -> Samples:
         self._sample_count += amount
         samples = [
-            self._ctr.generate_random_trace(observation_prefix, length)
+            self._ctr.generate_random_trace(
+                observation_prefix,
+                length,
+                initial_state[0] if initial_state is not None else None,
+            )
             for _ in range(amount)
         ]
         return [s[0] for s in samples]
 
     def generate_random_traces_with_prob(
-        self, observation_prefix: list[Any], length: int, amount=1
+        self,
+        observation_prefix: list[Any],
+        length: int,
+        amount=1,
+        initial_state: Optional[State] = None,
     ) -> list[tuple[Trace, Any]]:
         self._sample_count += amount
         return [
-            self._ctr.generate_random_trace(observation_prefix, length)
+            self._ctr.generate_random_trace(
+                observation_prefix,
+                length,
+                initial_state[0] if initial_state is not None else None,
+            )
             for _ in range(amount)
         ]
 
@@ -154,7 +172,7 @@ class ACASSystemUnderObservation(MCSystemUnderObservation):
                 }
             )
             filename = extensions.render_model_gif(
-                model,
+                self._sv_model,
                 lambda s: s.valuations["ACAState"].draw(),
                 filename=gif_path,
                 path=path,
@@ -184,9 +202,15 @@ class CoarseMCSystemUnderObservation(MCSystemUnderObservation):
         )
 
     def generate_random_traces(
-        self, observation_prefix: list[Any], length: int, amount=1
+        self,
+        observation_prefix: list[Any],
+        length: int,
+        amount=1,
+        initial_state: Optional[State] = None,
     ) -> Samples:
-        fine_traces = super().generate_random_traces(observation_prefix, length, amount)
+        fine_traces = super().generate_random_traces(
+            observation_prefix, length, amount, initial_state
+        )
         coarse_traces = [
             tuple((self.state_coarse_map[s], o, l) for s, o, l in t)
             for t in fine_traces
@@ -194,10 +218,14 @@ class CoarseMCSystemUnderObservation(MCSystemUnderObservation):
         return coarse_traces
 
     def generate_random_traces_with_prob(
-        self, observation_prefix: list[Any], length: int, amount=1
+        self,
+        observation_prefix: list[Any],
+        length: int,
+        amount=1,
+        initial_state: Optional[State] = None,
     ) -> list[tuple[Trace, Any]]:
         fine_traces = super().generate_random_traces_with_prob(
-            observation_prefix, length, amount
+            observation_prefix, length, amount, initial_state
         )
         coarse_traces = [
             (tuple((self.state_coarse_map[s], o, l) for s, o, l in t), p)

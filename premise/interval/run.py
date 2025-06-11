@@ -2,7 +2,7 @@ import signal
 import sys
 from typing import NoReturn
 
-from premise.interval.regression_model import reg_argsparser, reg_main
+from premise.interval.model_free.regression_model import reg_argsparser, reg_main
 from premise.interval.refinement import ref_args_parser, ref_main
 
 

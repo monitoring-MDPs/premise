@@ -4,8 +4,7 @@ from typing import Any, Optional
 
 import numpy as np
 
-from premise.interval.conformence import test_monitor
-from premise.interval.interval import Samples, Trace, create_monitor
+from premise.interval.interval import Samples, Trace
 from premise.interval.learning import (
     build_learning_params_args_parser,
     initial_interval_learning,
@@ -13,256 +12,16 @@ from premise.interval.learning import (
     premilinaries,
 )
 from premise.interval.loading import build_suo, build_suo_args_parser
-from premise.interval.loss import Distance, distance_measures
+from premise.interval.loss import distance_measures
 from premise.system import SystemUnderObservation
-
-
-class RefinementStoppingCondition(ABC):
-    def check(self, interval, initial_interval) -> None | tuple[Samples, Samples]:
-        raise NotImplementedError(
-            "RefinementStoppingCondition is an abstract class, please implement the check method"
-        )
-
-    def stats(self) -> dict[str, Any]:
-        raise NotImplementedError(
-            "RefinementStoppingCondition is an abstract class, please implement the stats method"
-        )
-
-
-class TargetDistanceStoppingCondition(RefinementStoppingCondition, ABC):
-    def __init__(
-        self,
-        suo: SystemUnderObservation,
-        length: int,
-        horizon: int,
-        amount: int,
-        distance: Distance,
-        prefix_amount: int,
-        use_exact: bool = False,
-        precision: float = 1e-6,
-        verbose: int = 0,
-    ):
-        self.suo = suo
-        self.length = length
-        self.horizon = horizon
-        self.amount = amount
-        self.distance_func = distance
-        self.prefix_amount = prefix_amount
-        self.use_exact = use_exact
-        self.precision = precision
-        self.verbose = verbose
-
-        self.distances = []
-        self.traces = []
-
-        self.target_monitor = suo.create_target_monitor()
-
-        self.previous_risks = {}
-        self.previous_weights = {}
-
-    def distance(
-        self, interval, initial_interval
-    ) -> tuple[float, list[tuple[Trace, tuple[float, float]]], Samples]:
-        # Generate samples with weights
-        samples_with_prob = self.suo.generate_random_traces_with_prob(
-            [], self.length, self.amount
-        )
-        total_prob = sum(p for _, p in samples_with_prob)
-        weights = {s: float(p / total_prob) for s, p in samples_with_prob}
-        samples = [s[0] for s in samples_with_prob]
-
-        # Build the premise monitor on the learned model
-        mon, observation_map, _, _ = create_monitor(
-            interval,
-            initial_interval,
-            "min",
-            True,
-            self.horizon,
-            use_exact=self.use_exact,
-            precision=self.precision,
-        )
-
-        if self.verbose > 0:
-            print(f"Created all monitors, now testing them")
-
-        # Run premise on the learned model
-        monitored_risks = test_monitor(
-            mon,
-            samples,
-            obs_func=lambda x: observation_map[x],
-            skip_initial=True,
-            with_tqdm=False,
-        )
-
-        # Run premise on the true model
-        target_risks = test_monitor(
-            self.target_monitor,
-            samples,
-            with_tqdm=False,
-        )
-
-        self.previous_risks = target_risks
-        self.previous_weights = weights
-
-        # Calculate the distance
-        target_dist, target_all_dist = self.distance_func.distance(
-            weights,
-            {s: float(r) for s, r in target_risks.items()},
-            {s: float(r) for s, r in monitored_risks.items()},
-            all_distances=True,
-        )
-
-        worst_trace = max(target_all_dist, key=lambda x: x[1][1])
-        print(
-            f"Worst trace: {self.suo.trace_to_str(worst_trace[0])} with distance {worst_trace[1][1]} and probability {worst_trace[1][0]}"
-        )
-
-        self.distances.append(target_dist)
-        target_all_dist_w_risk = [
-            (t, (p, d, float(monitored_risks[t]), float(target_risks[t])))
-            for t, (p, d) in target_all_dist
-        ]
-        self.traces.append(target_all_dist_w_risk)
-
-        return target_dist, target_all_dist, samples
-
-    def generate_prefixes(self, interresting_traces: list[Trace]):
-        prefixes = []
-        for t in interresting_traces:
-            for l in np.linspace(
-                0.0, float(len(prefixes)), self.prefix_amount, endpoint=True
-            ):
-                prefixes.append(t[: round(l)])
-        return prefixes
-
-    def stats(self) -> dict[str, Any]:
-        return {
-            "distances": self.distances,
-            "dist_traces": self.traces,
-        }
-
-
-class SampleCountStoppingCondition(TargetDistanceStoppingCondition):
-    def __init__(self, *args, sample_count: int, refine_amount: int, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.sample_count = sample_count
-        self.refine_amount = refine_amount
-
-    def check(self, interval, initial_interval) -> None | tuple[Samples, Samples]:
-        _, _, samples = self.distance(interval, initial_interval)
-        if self.suo.stats()["sample_count"] >= self.sample_count:
-            return None
-
-        if self.sample_count - self.suo.stats()["sample_count"] < len(samples):
-            return [], samples[: self.sample_count - self.suo.stats()["sample_count"]]
-
-        additional_samples = self.sample_count / 10 - len(samples)
-        print(f"{additional_samples=}")
-
-        if self.sample_count - self.suo.stats()[
-            "sample_count"
-        ] < additional_samples + len(samples):
-            additional_samples = (
-                self.sample_count - self.suo.stats()["sample_count"] - len(samples)
-            )
-            print(f"To many samples: {additional_samples=}")
-
-        return [tuple()] * (int(additional_samples / self.refine_amount)), samples
-
-
-class ThresholdStoppingCondition(TargetDistanceStoppingCondition):
-    def __init__(
-        self,
-        *args,
-        threshold: float,
-        patience: int,
-        **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
-        self.threshold = threshold
-        self.patience = patience
-
-        self.not_improved = 0
-
-    def check(self, interval, initial_interval) -> None | tuple[Samples, Samples]:
-        target_dist, target_all_dist, samples = self.distance(
-            interval, initial_interval
-        )
-
-        if self.verbose > 0:
-            print(f"Target distance: {target_dist} ? {self.threshold}")
-
-        # If the distance is below the threshold, stop refinement
-        if target_dist < self.threshold:
-            self.not_improved += 1
-
-            if self.verbose > 0:
-                print(
-                    f"Not improved for {self.not_improved} iterations, target distance: {target_dist:.4f} < {self.threshold:.4f}"
-                )
-
-            if self.not_improved >= self.patience:
-                if self.verbose > 0:
-                    print(
-                        f"Stopping refinement at distance {target_dist} < {self.threshold}"
-                    )
-                return None
-        else:
-            self.not_improved = 0
-
-        # Otherwise, return the samples that are above the threshold
-        interesting_traces = [t for t, (_, d) in target_all_dist if d > self.threshold]
-        return self.generate_prefixes(interesting_traces), samples
-
-
-class StabalizationStoppingCondition(TargetDistanceStoppingCondition):
-    def __init__(
-        self,
-        *args,
-        relative_deviation: float,
-        patience: int,
-        **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
-        self.relative_deviation = relative_deviation
-        self.patience = patience
-
-        self.not_improved = 0
-
-    def check(self, interval, initial_interval) -> None | tuple[Samples, Samples]:
-        target_dist, target_all_dist, samples = self.distance(
-            interval, initial_interval
-        )
-
-        mean_distance = np.mean(self.distances[-self.patience :])
-
-        if self.verbose > 0:
-            print(f"Target distance: {target_dist} ? {mean_distance}")
-
-        rel_improvement = (mean_distance - target_dist) / mean_distance
-        if rel_improvement < self.relative_deviation:
-            self.not_improved += 1
-
-            if self.verbose > 0:
-                print(
-                    f"Not improved for {self.not_improved} iterations, relative improvement: {rel_improvement:.4f}"
-                )
-        else:
-            self.not_improved = 0
-
-            if self.verbose > 0:
-                print(f"Improved by {rel_improvement:.4f} in this iteration")
-
-        if self.not_improved >= self.patience:
-            if self.verbose > 0:
-                print(
-                    f"Stopping refinement at distance {target_dist} after not improving for {self.not_improved} iterations"
-                )
-            return None
-
-        # Return samples with a distance above the full distance
-        interesting_traces = [s for s, (_, d) in target_all_dist if d > target_dist]
-        return self.generate_prefixes(interesting_traces), samples
+from premise.interval.stopping_condition import (
+    IntervalWidthCalculator,
+    RefinementStoppingCondition,
+    SampleCountStoppingCondition,
+    StabilizationStoppingCondition,
+    TargetDistanceCalculator,
+    ThresholdStoppingCondition,
+)
 
 
 def refinement_learning(
@@ -395,46 +154,57 @@ def ref_main(args: argparse.Namespace):
 
     distance = distance_measures[args.distance](args.distance_threshold)
 
-    if args.stopping_criteria == "stabilization":
-        ref_stop_cond = StabalizationStoppingCondition(
+    if args.distance_calculator == "target":
+        distance_calculator = TargetDistanceCalculator(
             suo,
-            args.conformence_length,
             args.horizon,
-            args.conformence_amount,
             distance,
+            args.exact,
+            args.precision,
+            args.verbose,
+        )
+    elif args.distance_calculator == "interval":
+        distance_calculator = IntervalWidthCalculator(
+            suo,
+            args.horizon,
+            distance,
+            args.exact,
+            args.precision,
+            args.verbose,
+        )
+
+    if args.stopping_criteria == "stabilization":
+        ref_stop_cond = StabilizationStoppingCondition(
+            suo,
+            distance_calculator,
+            args.stopping_deviation,
+            args.stopping_patience,
             args.prefix_amount,
-            relative_deviation=args.stopping_deviation,
-            patience=args.stopping_patience,
-            verbose=args.verbose,
-            use_exact=args.exact,
-            precision=args.precision,
+            args.verbose,
+            args.conformence_length,
+            args.conformence_amount,
         )
     elif args.stopping_criteria == "threshold":
         ref_stop_cond = ThresholdStoppingCondition(
             suo,
-            args.conformence_length,
-            args.horizon,
-            args.conformence_amount,
-            distance,
+            distance_calculator,
+            args.stopping_threshold,
+            args.stopping_patience,
             args.prefix_amount,
-            threshold=args.stopping_threshold,
-            patience=args.stopping_patience,
-            verbose=args.verbose,
-            use_exact=args.exact,
-            precision=args.precision,
+            args.verbose,
+            args.conformence_length,
+            args.conformence_amount,
         )
     elif args.stopping_criteria == "samples":
         ref_stop_cond = SampleCountStoppingCondition(
             suo,
-            args.conformence_length,
-            args.horizon,
-            args.conformence_amount,
-            distance,
+            distance_calculator,
+            args.stopping_samples,
+            args.refinement_amount,
             args.prefix_amount,
-            sample_count=args.stopping_samples,
-            refine_amount=args.refinement_amount,
-            use_exact=args.exact,
-            precision=args.precision,
+            args.verbose,
+            args.conformence_length,
+            args.conformence_amount,
         )
     else:
         raise ValueError(f"Unknown stopping criteria: {args.stopping_criteria}")
@@ -591,6 +361,12 @@ def ref_args_parser():
         "--stopping-samples",
         type=int,
         help="The amount of samples to stop refinement at",
+    )
+    conformence_group.add_argument(
+        "-dc",
+        "--distance-calculator",
+        choices=["target", "interval"],
+        default="interval",
     )
 
     parser.add_argument(

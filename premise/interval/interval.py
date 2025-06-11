@@ -582,6 +582,35 @@ def build_monitor_from_model(
     return mon, unfolder
 
 
+def analyse_interval_width(imc: SparseIntervalDtmc | SparseRationalIntervalDtmc):
+    widths = {}
+    queue = [(0, s) for s in imc.initial_states]
+    seen_states = set(imc.initial_states)
+
+    while len(queue) != 0:
+        depth, state_id = queue.pop()
+        state = imc.states[state_id]
+
+        if depth not in widths:
+            widths[depth] = []
+
+        for action in state.actions:
+            for trans in action.transitions:
+                widths[depth].append(
+                    (
+                        float(trans.value().diameter()),
+                        float(trans.value().center()),
+                        state_id,
+                        trans.column,
+                    )
+                )
+                if trans.column not in seen_states:
+                    queue.append((depth + 1, trans.column))
+                    seen_states.add(trans.column)
+
+    return widths
+
+
 def main(args):
     trans_dict = np.load(args.trans_path, allow_pickle=True)[()]
     init_dict = np.load(args.init_path, allow_pickle=True)[()]
@@ -594,6 +623,7 @@ def main(args):
         args.dump,
         args.verbose,
     )
+
     import os
 
     if args.verbose > 0:

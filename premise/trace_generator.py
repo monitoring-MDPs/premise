@@ -1,6 +1,6 @@
 import logging
 import random
-from typing import Any
+from typing import Any, Optional
 
 import stormpy.simulator
 from stormpy import Rational
@@ -28,8 +28,11 @@ class ConditionalTraceGenerator:
     def set_seed(self, new_seed: int) -> None:
         random.seed(new_seed)
 
-    def initialize(self) -> int:
-        self.current_state = self.model.initial_states[0]
+    def initialize(self, initial_state: Optional[int] = None) -> int:
+        if initial_state is not None:
+            self.current_state = initial_state
+        else:
+            self.current_state = self.model.initial_states[0]
         return self.model.get_observation(self.current_state)
 
     def step(self, action=None) -> tuple[int, Any]:
@@ -91,9 +94,12 @@ class ConditionalTraceGenerator:
         )  # TODO: this is a underestimate of the probability
 
     def generate_random_trace(
-        self, observation_prefix: list[int], length: int
+        self,
+        observation_prefix: list[int],
+        length: int,
+        initial_state: Optional[int] = None,
     ) -> tuple[Trace, Any]:
-        init_obs = self.initialize()
+        init_obs = self.initialize(initial_state)
         init_state = self.current_state
         has_label = self.model.labeling.has_state_label(self.target_label, init_state)
         if len(observation_prefix) > 0 and init_obs != observation_prefix[0]:

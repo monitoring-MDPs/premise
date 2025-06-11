@@ -1,5 +1,5 @@
 import argparse
-from typing import Any
+from typing import Any, Literal, overload
 import numpy as np
 import tqdm
 
@@ -13,6 +13,28 @@ from premise.interval.interval import Samples, Trace, create_monitor
 from premise.system import SystemUnderObservation
 from premise.monitor import Monitor
 from premise.interval.loss import distance_measures
+
+
+@overload
+def test_monitor(
+    mon: Monitor,
+    samples: Samples,
+    obs_func=lambda x: x,
+    skip_initial=False,
+    with_tqdm=True,
+    intermediate_results: Literal[False] = False,
+) -> dict[Trace, Any]: ...
+
+
+@overload
+def test_monitor(
+    mon: Monitor,
+    samples: Samples,
+    obs_func=lambda x: x,
+    skip_initial=False,
+    with_tqdm=True,
+    intermediate_results: Literal[True] = True,
+) -> tuple[dict[Trace, Any], list[Any]]: ...
 
 
 def test_monitor(
