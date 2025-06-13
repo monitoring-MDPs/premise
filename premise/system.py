@@ -76,6 +76,7 @@ class MCSystemUnderObservation(SystemUnderObservation):
         )
 
         self._sample_count = 0
+        self._transition_count = 0
 
     def get_states_and_transitions(self, all_transitions: bool = True, **kwargs):
         return build_state_and_transition_list(
@@ -90,6 +91,7 @@ class MCSystemUnderObservation(SystemUnderObservation):
         initial_state: Optional[tuple[int, int, bool]] = None,
     ) -> Samples:
         self._sample_count += amount
+        self._transition_count += length * amount
         samples = [
             self._ctr.generate_random_trace(
                 observation_prefix,
@@ -108,6 +110,7 @@ class MCSystemUnderObservation(SystemUnderObservation):
         initial_state: Optional[State] = None,
     ) -> list[tuple[Trace, Any]]:
         self._sample_count += amount
+        self._transition_count += length * amount
         return [
             self._ctr.generate_random_trace(
                 observation_prefix,
@@ -143,6 +146,7 @@ class MCSystemUnderObservation(SystemUnderObservation):
     def stats(self) -> dict[str, Any]:
         return {
             "sample_count": self._sample_count,
+            "transition_count": self._transition_count,
         }
 
 

@@ -23,27 +23,35 @@ def plot_mult_distances(data_dict: dict, title, log=False):
     plt.figure(figsize=(10, 6))
     for key, data in sorted(data_dict.items(), reverse=True):
         line = plt.plot(data[1], data[0], marker="o", linestyle="-", label=key)
-        if len(data[0]) >= 3 and key == "threshold":
-            running_avg = [
-                np.mean(data[0][max(0, i - (data[3] - 1)) : i + 1])
-                for i in range(len(data[0]))
+        if len(data) > 4 and data[4] and data[5]:
+            means = [np.average(d, weights=w) for d, w in zip(data[4], data[5])]
+            stds = [
+                np.sqrt(np.average((np.array(d) - m) ** 2, weights=w))
+                for d, w, m in zip(data[4], data[5], means)
             ]
-            plt.plot(data[1], running_avg, linestyle=":", color=line[0].get_color())
+            plt.fill_between(
+                data[1],
+                np.array(means) if log else np.array(means) - np.array(stds),
+                np.array(means) + np.array(stds),
+                color=line[0].get_color(),
+                alpha=0.2,
+            )
 
         if data[2] is not None:
             plt.axhline(y=data[2], color="r", linestyle="--", label="Threshold")
 
     plt.title(title)
-    plt.xlabel("Samples")
+    plt.xlabel("Transitions")
     plt.ylabel("Distance")
     if log:
         plt.yscale("log")
+    plt.ylim(bottom=0)
     plt.legend()
     plt.grid(True)
     plt.show()
 
 
-def main(stats_path="../../out/stats/2025-06-11_13-55-16"):
+def main(stats_path="../../out/stats/2025-06-12_15-26-01"):
     path = Path(stats_path)
     stats_dicts: dict[tuple, dict] = {}
     if path.is_dir():
@@ -81,10 +89,16 @@ def main(stats_path="../../out/stats/2025-06-11_13-55-16"):
         for key2, data in exp_dict.items():
             if "distances" in data:  # Refinement
                 distances = data["distances"]
-                samples = data["samples_learned"]
+                samples = data["transitions_learned"]
+                sample_distances = [
+                    [(x[1][1]) for x in dt] for dt in data["dist_traces"]
+                ]
+                sample_weights = [[(x[1][0]) for x in dt] for dt in data["dist_traces"]]
             else:  # Regression
                 distances = [data["target_dist"]]
                 samples = [data["args"]["amount"]]
+                sample_distances = []
+                sample_weights = []
 
             cum_sam = np.cumsum(samples)
             if (
@@ -97,7 +111,14 @@ def main(stats_path="../../out/stats/2025-06-11_13-55-16"):
                 threshold = None
                 patience = None
 
-            plot_data[key2] = (distances, cum_sam, threshold, patience)
+            plot_data[key2] = (
+                distances,
+                cum_sam,
+                threshold,
+                patience,
+                sample_distances,
+                sample_weights,
+            )
 
         plot_mult_distances(
             plot_data,
@@ -105,5 +126,7 @@ def main(stats_path="../../out/stats/2025-06-11_13-55-16"):
             log=True,
         )
 
+    return data
 
-main()
+
+data = main()

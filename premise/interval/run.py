@@ -69,12 +69,12 @@ if __name__ == "__main__":
         finally:
             signal.alarm(0)
 
-        samples = ref_stats["sample_count"]
+        transition_count = ref_stats["transition_count"]
 
-        print("Samples from refinement: ", samples)
+        print("Samples from refinement: ", transition_count)
 
         ref_args_2 = ref_parser.parse_args(args[1])
-        ref_args_2.stopping_samples = samples
+        ref_args_2.stopping_samples = transition_count
         ref_args_2.stopping_criteria = "samples"
         signal.alarm(timeout)
         try:
@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
         reg_parser = reg_argsparser()
         reg_args = reg_parser.parse_args(args[2])
-        reg_args.amount = samples
+        reg_args.amount = transition_count // reg_args.length
         signal.alarm(timeout)
         try:
             reg_main(reg_args)

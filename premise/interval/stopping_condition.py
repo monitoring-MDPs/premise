@@ -238,20 +238,23 @@ class SampleCountStoppingCondition(RefinementStoppingCondition):
         self,
         suo: SystemUnderObservation,
         distance_calculator: DistanceCalculator,
-        sample_count: int,
+        transition_count: int,
         refine_amount: int,
+        verbose: int,
+        length: int,
+        amount: int,
+        learning_length: int,
         prefix_amount: int = 10,
-        verbose: int = 0,
-        length: int = 0,
-        amount: int = 0,
     ):
         super().__init__(
             suo, distance_calculator, prefix_amount, verbose, length, amount
         )
-        self.sample_count = sample_count
+        self.transition_count = transition_count
         self.refine_amount = refine_amount
+        self.learning_length = learning_length
 
     def check(self, interval, initial_interval) -> None | tuple[Samples, Samples]:
+        pre_sampling_transition_count = self.suo.stats()["transition_count"]
         samples_with_prob = self._generate_traces()
         dist, dist_traces, samples = self.distance_calculator.distance(
             interval, initial_interval, samples_with_prob
@@ -259,24 +262,38 @@ class SampleCountStoppingCondition(RefinementStoppingCondition):
         self.traces.append(dist_traces)
         self.distances.append(dist)
 
-        if self.suo.stats()["sample_count"] >= self.sample_count:
+        if pre_sampling_transition_count >= self.transition_count:
+            if self.verbose > 0:
+                print(
+                    f"Pre-sampling transition count {pre_sampling_transition_count} >= target {self.transition_count}, stopping refinement."
+                )
             return None
 
-        if self.sample_count - self.suo.stats()["sample_count"] < len(samples):
-            return [], samples[: self.sample_count - self.suo.stats()["sample_count"]]
+        if self.suo.stats()["transition_count"] >= self.transition_count:
+            return (
+                [],
+                samples[
+                    : (self.transition_count - pre_sampling_transition_count)
+                    // self.learning_length
+                ],
+            )
 
-        additional_samples = self.sample_count / 10 - len(samples)
+        additional_samples = (
+            self.transition_count / self.learning_length / self.prefix_amount
+            - len(samples)
+        )
         print(f"{additional_samples=}")
 
-        if self.sample_count - self.suo.stats()[
-            "sample_count"
-        ] < additional_samples + len(samples):
+        if (
+            self.transition_count - self.suo.stats()["transition_count"]
+            < additional_samples * self.learning_length
+        ):
             additional_samples = (
-                self.sample_count - self.suo.stats()["sample_count"] - len(samples)
-            )
+                self.transition_count - self.suo.stats()["transition_count"]
+            ) / self.learning_length
             print(f"To many samples: {additional_samples=}")
 
-        return [tuple()] * (int(additional_samples / self.refine_amount)), samples
+        return [tuple()] * int(additional_samples / self.refine_amount), samples
 
 
 class ThresholdStoppingCondition(RefinementStoppingCondition):

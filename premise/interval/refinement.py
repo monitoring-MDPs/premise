@@ -62,7 +62,7 @@ def refinement_learning(
 
     iteration = 0
 
-    samples_learned = []
+    transitions_learned = []
     all_prefixes = []
 
     while True:
@@ -89,7 +89,7 @@ def refinement_learning(
             elif conditional_sampling_type == "state":
                 s = suo.generate_random_traces(
                     [],
-                    learning_length,
+                    learning_length - len(prefix),
                     amount,
                     initial_state=prefix[-1] if len(prefix) > 0 else None,
                 )
@@ -102,7 +102,7 @@ def refinement_learning(
             else:
                 samples += s
 
-        samples_learned.append(len(samples))
+        transitions_learned.append(sum(len(s) for s in samples))
 
         if len(initial_samples) > 0:
             initial_interval_learning(
@@ -124,7 +124,7 @@ def refinement_learning(
 
         if verbose > 0:
             print(
-                f"Finished learning with {len(samples)} additional samples (total: {suo.stats()['sample_count']})"
+                f"Finished learning with {transitions_learned[-1]} additional transitions (total: {suo.stats()['transition_count']})"
             )
 
         if intermediate_model_path is not None:
@@ -132,7 +132,7 @@ def refinement_learning(
                 initial_interval,
                 interval,
                 suo,
-                intermediate_model_path + str(iteration),
+                intermediate_model_path + "-" + str(iteration),
             )
 
         res = refinement_stopping_condition.check(interval, initial_interval)
@@ -141,7 +141,7 @@ def refinement_learning(
         else:
             break
 
-    stats = {"all_prefixes": all_prefixes, "samples_learned": samples_learned}
+    stats = {"all_prefixes": all_prefixes, "transitions_learned": transitions_learned}
 
     return interval, initial_interval, stats
 
@@ -213,10 +213,11 @@ def ref_main(args: argparse.Namespace):
             distance_calculator,
             args.stopping_samples,
             args.refinement_amount,
-            args.prefix_amount,
             args.verbose,
             args.conformence_length,
             args.conformence_amount,
+            args.sample_length,
+            args.prefix_amount,
         )
     else:
         raise ValueError(f"Unknown stopping criteria: {args.stopping_criteria}")

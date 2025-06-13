@@ -18,10 +18,10 @@ def parse_filename(filename):
     Extracts group prefix and iteration number from filename.
     Returns (group, iteration, type) where type is 'interval' or 'initial_interval'.
     """
-    m = re.match(r"(.+?)(\d+)?-(interval|initial_interval)\.npy$", filename)
+    m = re.match(r"(.+?)(\d+)-(interval|initial_interval)\.npy$", filename)
     if m:
         prefix = m.group(1)
-        iteration = int(m.group(2)) if m.group(2) else 100000000000
+        iteration = int(m.group(2))
         typ = m.group(3)
         group = prefix
         return group, iteration, typ
@@ -67,6 +67,7 @@ def plot_widths(widths_dict, title=None, typ="errorbar"):
     plt.xlim(0, bar_count)
 
     plt.xlabel("Transition index")
+
     plt.ylabel("Interval center with width error bars")
     # plt.legend()
     plt.tight_layout()
@@ -74,7 +75,7 @@ def plot_widths(widths_dict, title=None, typ="errorbar"):
         plt.title(title)
 
 
-def main(path="../../out/models/2025-06-11_13-55-16", out_path="../../out/tmp/gifs2"):
+def main(path="../../out/models/2025-06-12_10-31-03", out_path="../../out/tmp/gifs3"):
     out_path = Path(out_path)
     out_path.mkdir(exist_ok=True)
     path = Path(path)
