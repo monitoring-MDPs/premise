@@ -2,21 +2,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
-import numpy as np
-import pandas as pd
-from typing import Any
-from sklearn.metrics import roc_curve, auc
-from premise.monitor import Monitor
-from sklearn.linear_model import LogisticRegression
-import tqdm
 import argparse
-import matplotlib.pyplot as plt
-from sklearn import metrics
 from premise.interval.loading import build_suo, build_suo_args_parser
 from premise.interval.loss import distance_measures
-from premise.interval.interval import Samples, Trace, create_monitor
-from premise.interval.learningIMC import learn_IMC
-from premise.interval.conformence import test_monitor
+
 
 class TraceDataset(Dataset):
     def __init__(self, traces, labels, vocab_size):
@@ -38,10 +27,13 @@ class TraceDataset(Dataset):
 
         return trace_tensor, torch.tensor(label, dtype=torch.float32)
 
+
 class TraceRNN(nn.Module):
     def __init__(self, input_dim, hidden_dim):
         super(TraceRNN, self).__init__()
-        self.rnn = nn.GRU(input_size=input_dim, hidden_size=hidden_dim, batch_first=True)
+        self.rnn = nn.GRU(
+            input_size=input_dim, hidden_size=hidden_dim, batch_first=True
+        )
         self.fc = nn.Linear(hidden_dim, 1)
         self.sigmoid = nn.Sigmoid()
 
@@ -49,6 +41,7 @@ class TraceRNN(nn.Module):
         _, h_n = self.rnn(x)
         out = self.fc(h_n.squeeze(0))
         return self.sigmoid(out).squeeze(1)
+
 
 def train_model(model, dataloader, epochs=20, lr=0.001):
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -67,27 +60,27 @@ def train_model(model, dataloader, epochs=20, lr=0.001):
         print(f"Epoch {epoch+1}/{epochs}, Loss: {total_loss / len(dataloader):.4f}")
 
 
-def training_data(train_samples, args): 
+def training_data(train_samples, args):
 
     training_traces = []
     training_trace = []
 
     for x in train_samples:
         training_trace = []
-        for s in x[:-args.horizon]:  # Exclude the horizon length
-            training_trace.append(s[1]) 
+        for s in x[: -args.horizon]:  # Exclude the horizon length
+            training_trace.append(s[1])
         training_traces.append(training_trace)
 
     labels = []
 
     for x in train_samples:
-        if any(s[2] == True for s in x[-args.horizon:]):
+        if any(s[2] == True for s in x[-args.horizon :]):
             labels.append(1)
-        else: 
+        else:
             labels.append(0)
 
-    
     return training_traces, labels
+
 
 def testing_data(test_samples, args):
 
@@ -95,10 +88,11 @@ def testing_data(test_samples, args):
     for x in test_samples:
         testing_trace = []
         for s in x:  # Exclude the horizon length
-            testing_trace.append(s[1]) 
+            testing_trace.append(s[1])
         testing_traces.append(testing_trace)
 
     return testing_traces
+
 
 def predict_on_test(model, test_traces, obs_to_idx, threshold=0.5):
     model.eval()
@@ -108,12 +102,12 @@ def predict_on_test(model, test_traces, obs_to_idx, threshold=0.5):
     with torch.no_grad():
         for trace in test_traces:
             mapped_trace = [obs_to_idx[o] for o in trace if o in obs_to_idx]
-    
+
             trace_tensor = torch.zeros(len(mapped_trace), vocab_size)
             for i, idx in enumerate(mapped_trace):
                 trace_tensor[i, idx] = 1.0
 
-            trace_tensor = trace_tensor.unsqueeze(0) 
+            trace_tensor = trace_tensor.unsqueeze(0)
             prob = model(trace_tensor).item()
 
             predicted_probs.append(prob)
@@ -128,11 +122,11 @@ def reg_main(args: argparse.Namespace):
         [], args.length + args.horizon, args.amount
     )
 
-    test_samples = suo.generate_random_traces(
-        [], args.length, args.test_samples
-    )
-    
-    all_states, all_transitions, initial_states = suo.get_states_and_transitions() #all possible transitions
+    test_samples = suo.generate_random_traces([], args.length, args.test_samples)
+
+    all_states, all_transitions, initial_states = (
+        suo.get_states_and_transitions()
+    )  # all possible transitions
     all_observations = sorted({state[1] for state in all_states})  # Set for uniqueness
     obs_to_idx = {obs: idx for idx, obs in enumerate(all_observations)}
     vocab_size = len(obs_to_idx)
@@ -141,14 +135,13 @@ def reg_main(args: argparse.Namespace):
 
     dataset = TraceDataset(traces, labels, vocab_size)
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-    model = TraceRNN(input_dim=vocab_size, hidden_dim=32)  
+    model = TraceRNN(input_dim=vocab_size, hidden_dim=32)
     train_model(model, dataloader, epochs=20)
-
 
     test_traces = testing_data(test_samples, args)
     predicted_probs = predict_on_test(model, test_traces, obs_to_idx)
 
-    print(predicted_probs) 
+    print(predicted_probs)
 
     # Predict on the first trace
     model.eval()
@@ -173,9 +166,7 @@ def build_learning_args_parser(parser: argparse.ArgumentParser):
     group.add_argument(
         "-t", "--test_samples", type=int, default=5, help="Amount of test samples"
     )
-    group.add_argument(
-        "--model", type=bool, default=False, help="If a model exists"
-    )
+    group.add_argument("--model", type=bool, default=False, help="If a model exists")
     group.add_argument("--horizon", type=int, default=5, help="Length horizon")
 
 
@@ -204,6 +195,7 @@ def reg_argsparser():
     )
 
     return parser
+
 
 if __name__ == "__main__":
     parser = reg_argsparser()

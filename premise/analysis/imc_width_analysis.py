@@ -109,11 +109,9 @@ def main(path="../../out/models/2025-06-12_10-31-03", out_path="../../out/tmp/gi
                 Namespace(init_path=str(init_path), trans_path=str(trans_path))
             )
 
-            mon, observation_map, unfolder, ipomdp = create_monitor(
-                interval, init_interval, "min", "crash", 15
-            )
+            mon, mon_comps = create_monitor(interval, init_interval, "min", "crash", 15)
 
-            widths = analyse_interval_width(ipomdp)
+            widths = analyse_interval_width(mon_comps.ipomdp)
             all_widths[group][iteration] = widths
 
             plt.figure(figsize=(20, 6))

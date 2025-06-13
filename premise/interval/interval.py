@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from time import time
 from typing import Any
 import numpy as np
@@ -463,6 +464,18 @@ class UnfoldingIntervalRiskAssessment(UnfoldingRiskAssessment):
         return True, risk
 
 
+@dataclass
+class MonitorComponents:
+    monitor: Monitor
+    observation_map: dict[Any, int]
+    unfolder: (
+        ObservationTraceUnfolderInterval | ObservationTraceUnfolderRationalInterval
+    )
+    ipomdp: SparseIntervalPomdp | SparseRationalIntervalPomdp
+    risks: list[Interval | RationalInterval]
+    state_index_map: dict[State, int]
+
+
 def create_monitor(
     trans_dict,
     init_dict,
@@ -474,7 +487,8 @@ def create_monitor(
     use_exact=True,
     precision=1e-6,
 ) -> tuple[
-    Monitor, dict[Any, int], ObservationTraceUnfolderInterval, SparseIntervalPomdp
+    Monitor,
+    MonitorComponents,
 ]:
     ipomdp, observation_map, state_index_map = dict_to_interval_ipomdp(
         trans_dict, init_dict, target_label, use_exact
@@ -484,7 +498,7 @@ def create_monitor(
         with open("out/imc.dot", "w") as f:
             f.write(ipomdp.to_dot())
 
-    mon, unfolder = build_monitor_from_model(
+    mon, unfolder, risks = build_monitor_from_model(
         ipomdp,
         maxmin,
         horizon,
@@ -494,7 +508,9 @@ def create_monitor(
         precision=precision,
     )
 
-    return mon, observation_map, unfolder, ipomdp
+    return mon, MonitorComponents(
+        mon, observation_map, unfolder, ipomdp, risks, state_index_map
+    )
 
 
 def build_monitor_from_model(
@@ -579,7 +595,7 @@ def build_monitor_from_model(
     )
 
     mon = Monitor(ura, None)
-    return mon, unfolder
+    return mon, unfolder, risks
 
 
 def analyse_interval_width(imc: SparseIntervalDtmc | SparseRationalIntervalDtmc):
@@ -614,7 +630,7 @@ def analyse_interval_width(imc: SparseIntervalDtmc | SparseRationalIntervalDtmc)
 def main(args):
     trans_dict = np.load(args.trans_path, allow_pickle=True)[()]
     init_dict = np.load(args.init_path, allow_pickle=True)[()]
-    mon, observation_map, unfolder, ipomdp = create_monitor(
+    mon, mon_comps = create_monitor(
         trans_dict,
         init_dict,
         args.maxmin,
@@ -640,7 +656,7 @@ def main(args):
                 print(observations)
             last_risk = None
             for obs in observations:
-                last_risk = mon.step(observation_map[obs])
+                last_risk = mon.step(mon_comps.observation_map[obs])
                 if args.verbose > 0:
                     print(last_risk, end=" -> ")
 
@@ -660,10 +676,10 @@ def main(args):
                     print(mon.step(int(obs)), " -> ", end="")
                 print(f"done in {time() - t}s")
             else:
-                print(mon.step(int(hamming_lookup(observation_map, action))))
+                print(mon.step(int(hamming_lookup(mon_comps.observation_map, action))))
             print(
                 "Observations with id:\n"
-                + "\t".join([f"{k}: {v}" for k, v in observation_map.items()])
+                + "\t".join([f"{k}: {v}" for k, v in mon_comps.observation_map.items()])
             )
             action = input("Next Step (\\d*/r/speed) ")
 

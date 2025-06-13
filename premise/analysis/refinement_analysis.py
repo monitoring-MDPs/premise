@@ -21,21 +21,37 @@ def plot_distances(distances, samples, title, threshold=None, log=False, fname=N
 
 def plot_mult_distances(data_dict: dict, title, log=False):
     plt.figure(figsize=(10, 6))
+
+    run_keys = set(k[0] for k in data_dict.keys())
+    ls_map = {k: ["-", "-.", ":"][i % 4] for i, k in enumerate(run_keys)}
+    type_keys = set(k[1] for k in data_dict.keys())
+    col_map = {
+        k: plt.rcParams["axes.prop_cycle"].by_key()["color"][i % 10]
+        for i, k in enumerate(type_keys)
+    }
+
     for key, data in sorted(data_dict.items(), reverse=True):
-        line = plt.plot(data[1], data[0], marker="o", linestyle="-", label=key)
-        if len(data) > 4 and data[4] and data[5]:
-            means = [np.average(d, weights=w) for d, w in zip(data[4], data[5])]
-            stds = [
-                np.sqrt(np.average((np.array(d) - m) ** 2, weights=w))
-                for d, w, m in zip(data[4], data[5], means)
-            ]
-            plt.fill_between(
-                data[1],
-                np.array(means) if log else np.array(means) - np.array(stds),
-                np.array(means) + np.array(stds),
-                color=line[0].get_color(),
-                alpha=0.2,
-            )
+        line = plt.plot(
+            data[1],
+            data[0],
+            marker="o",
+            linestyle=ls_map[key[0]],
+            label=key,
+            color=col_map[key[1]],
+        )
+        # if len(data) > 4 and data[4] and data[5]:
+        #     means = [np.average(d, weights=w) for d, w in zip(data[4], data[5])]
+        #     stds = [
+        #         np.sqrt(np.average((np.array(d) - m) ** 2, weights=w))
+        #         for d, w, m in zip(data[4], data[5], means)
+        #     ]
+        #     plt.fill_between(
+        #         data[1],
+        #         np.array(means) if log else np.array(means) - np.array(stds),
+        #         np.array(means) + np.array(stds),
+        #         color=line[0].get_color(),
+        #         alpha=0.2,
+        #     )
 
         if data[2] is not None:
             plt.axhline(y=data[2], color="r", linestyle="--", label="Threshold")
@@ -51,38 +67,48 @@ def plot_mult_distances(data_dict: dict, title, log=False):
     plt.show()
 
 
-def main(stats_path="../../out/stats/2025-06-12_15-26-01"):
-    path = Path(stats_path)
+def main(
+    stats_paths=[
+        "../../out/stats/2025-06-12_15-26-01",
+        "../../out/stats/2025-06-13_13-53-47",
+    ]
+):
     stats_dicts: dict[tuple, dict] = {}
-    if path.is_dir():
-        paths = path.iterdir()
-    else:
-        paths = [path]
 
-    for stat_path in paths:
-        data = np.load(stat_path, allow_pickle=True).item()
-        key = (
-            data["args"]["mc"],
-            (
-                tuple(data["args"]["sys_vars"])
-                if data["args"]["sys_vars"] is not None
-                else None
-            ),
-            data["args"]["sam"],
-            data["args"]["sim"],
-            data["args"]["acas"],
-            data["args"]["distance"],
-        )
+    for stats_path in stats_paths:
+        path = Path(stats_path)
+        if path.is_dir():
+            paths = path.iterdir()
+        else:
+            paths = [path]
 
-        if key not in stats_dicts:
-            stats_dicts[key] = {}
+        for stat_path in paths:
+            data = np.load(stat_path, allow_pickle=True).item()
+            key = (
+                data["args"]["mc"],
+                (
+                    tuple(data["args"]["sys_vars"])
+                    if data["args"]["sys_vars"] is not None
+                    else None
+                ),
+                data["args"]["sam"],
+                data["args"]["sim"],
+                data["args"]["acas"],
+                data["args"]["distance"],
+            )
 
-        key2 = (
-            data["args"]["stopping_criteria"]
-            if "stopping_criteria" in data["args"]
-            else "regression"
-        )
-        stats_dicts[key][key2] = data
+            if key not in stats_dicts:
+                stats_dicts[key] = {}
+
+            key2 = (
+                path.stem,
+                (
+                    data["args"]["stopping_criteria"]
+                    if "stopping_criteria" in data["args"]
+                    else "regression"
+                ),
+            )
+            stats_dicts[key][key2] = data
 
     for key, exp_dict in stats_dicts.items():
         plot_data = {}
@@ -126,7 +152,5 @@ def main(stats_path="../../out/stats/2025-06-12_15-26-01"):
             log=True,
         )
 
-    return data
 
-
-data = main()
+main()

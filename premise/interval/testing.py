@@ -1,5 +1,4 @@
 import argparse
-from multiprocessing.managers import Namespace
 from pathlib import Path
 
 import numpy as np
@@ -125,7 +124,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    test_args: dict[tuple, Namespace] = {}
+    test_args: dict[tuple, argparse.Namespace] = {}
 
     if args.stats_folder is not None:
         stats_path = Path(args.stats_folder)
@@ -144,7 +143,7 @@ if __name__ == "__main__":
                 data["args"]["distance"],
             )
             if key not in test_args:
-                test_args[key] = Namespace(
+                test_args[key] = argparse.Namespace(
                     mc=data["args"]["mc"],
                     sys_vars=data["args"]["sys_vars"],
                     sam=data["args"]["sam"],
@@ -217,7 +216,7 @@ if __name__ == "__main__":
         if has_imc:
             interval, initial_interval = load_imc(args)
             # Build the premise monitor on the learned model
-            mon, observation_map, unfolder, ipomdp = create_monitor(
+            mon, mon_comps = create_monitor(
                 interval,
                 initial_interval,
                 "min",
@@ -235,18 +234,16 @@ if __name__ == "__main__":
         if has_extra_imc:
             interval, initial_interval = load_imc(args)
             # Build the premise monitor on the learned model
-            extra_mon, extra_observation_map, extra_unfolder, extra_ipomdp = (
-                create_monitor(
-                    interval,
-                    initial_interval,
-                    "min",
-                    True,
-                    args.horizon,
-                    args.dump,
-                    args.verbose,
-                    use_exact=args.exact,
-                    precision=args.precision,
-                )
+            extra_mon, extra_mon_comps = create_monitor(
+                interval,
+                initial_interval,
+                "min",
+                True,
+                args.horizon,
+                args.dump,
+                args.verbose,
+                use_exact=args.exact,
+                precision=args.precision,
             )
 
         # Load the regression model
@@ -356,7 +353,7 @@ if __name__ == "__main__":
                 risk = test_monitor(
                     mon,
                     [sub_trace],
-                    obs_func=lambda x: observation_map[x],
+                    obs_func=lambda x: mon_comps.observation_map[x],
                     skip_initial=True,
                     with_tqdm=False,
                 )[sub_trace]
@@ -367,7 +364,7 @@ if __name__ == "__main__":
                 risk = test_monitor(
                     extra_mon,
                     [sub_trace],
-                    obs_func=lambda x: extra_observation_map[x],
+                    obs_func=lambda x: extra_mon_comps.observation_map[x],
                     skip_initial=True,
                     with_tqdm=False,
                 )[sub_trace]

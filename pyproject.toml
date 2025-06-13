@@ -16,7 +16,6 @@ jupyter = "^1.1.1"
 scikit-learn = "^1.6.1"
 torch = "^2.7.0"
 torchvision = "^0.22.0"
-pypoman = "^1.2.0"
 imageio = {extras = ["ffmpeg"], version = "^2.37.0"}
 
 [tool.poetry.group.carla.dependencies]

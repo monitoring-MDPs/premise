@@ -1,5 +1,6 @@
 from abc import ABC
-from typing import Any
+from collections import defaultdict
+from typing import Any, Optional
 
 import numpy as np
 
@@ -10,6 +11,8 @@ from premise.system import SystemUnderObservation
 
 
 class DistanceCalculator(ABC):
+    trace_state_risk_widths: dict[Trace, float] = defaultdict(float)
+
     def distance(
         self, interval, initial_interval, samples_with_prob
     ) -> tuple[float, list[tuple[Trace, tuple[float, float]]], Samples]:
@@ -41,6 +44,7 @@ class TargetDistanceCalculator(DistanceCalculator):
 
         self.previous_risks = {}
         self.previous_weights = {}
+        self.trace_risk_widths = defaultdict(float)
 
     def distance(
         self, interval, initial_interval, samples_with_prob
@@ -50,7 +54,7 @@ class TargetDistanceCalculator(DistanceCalculator):
         samples = [s[0] for s in samples_with_prob]
 
         # Build the premise monitor on the learned model
-        mon, observation_map, _, _ = create_monitor(
+        mon, mon_comps = create_monitor(
             interval,
             initial_interval,
             "min",
@@ -67,7 +71,7 @@ class TargetDistanceCalculator(DistanceCalculator):
         monitored_risks = test_monitor(
             mon,
             samples,
-            obs_func=lambda x: observation_map[x],
+            obs_func=lambda x: mon_comps.observation_map[x],
             skip_initial=True,
             with_tqdm=False,
         )
@@ -120,6 +124,7 @@ class IntervalWidthCalculator(DistanceCalculator):
 
         self.previous_risks = {}
         self.previous_weights = {}
+        self.trace_state_risk_widths = {}
 
     def distance(
         self, interval, initial_interval, samples_with_prob
@@ -130,7 +135,7 @@ class IntervalWidthCalculator(DistanceCalculator):
         samples = [s[0] for s in samples_with_prob]
 
         # Build the premise monitor on the learned model
-        max_mon, max_observation_map, _, _ = create_monitor(
+        max_mon, max_mon_comps = create_monitor(
             interval,
             initial_interval,
             "min",
@@ -140,7 +145,7 @@ class IntervalWidthCalculator(DistanceCalculator):
             precision=self.precision,
         )
 
-        min_mon, min_observation_map, _, _ = create_monitor(
+        min_mon, min_mon_comps = create_monitor(
             interval,
             initial_interval,
             "max",
@@ -157,7 +162,7 @@ class IntervalWidthCalculator(DistanceCalculator):
         min_monitored_risks = test_monitor(
             min_mon,
             samples,
-            obs_func=lambda x: min_observation_map[x],
+            obs_func=lambda x: min_mon_comps.observation_map[x],
             skip_initial=True,
             with_tqdm=False,
         )
@@ -165,7 +170,7 @@ class IntervalWidthCalculator(DistanceCalculator):
         max_monitored_risks = test_monitor(
             max_mon,
             samples,
-            obs_func=lambda x: max_observation_map[x],
+            obs_func=lambda x: max_mon_comps.observation_map[x],
             skip_initial=True,
             with_tqdm=False,
         )
@@ -183,6 +188,13 @@ class IntervalWidthCalculator(DistanceCalculator):
             for t, (p, d) in target_all_dist
         ]
         self.traces.append(target_all_dist_w_risk)
+
+        # Risks are stored as point intervals, thus .upper() gives the risk of the state
+        self.trace_state_risk_widths = {
+            t: float(max_mon_comps.risks[max_mon_comps.state_index_map[t[-1]]].upper())
+            - float(min_mon_comps.risks[min_mon_comps.state_index_map[t[-1]]].upper())
+            for t in samples
+        }
 
         return target_dist, target_all_dist, samples
 
@@ -217,13 +229,21 @@ class RefinementStoppingCondition(ABC):
         )
         return samples_with_prob
 
-    def _generate_prefixes(self, interesting_traces: list[Trace]):
+    def _generate_prefixes(
+        self, interesting_traces: list[Trace], splits: Optional[list[float]] = None
+    ):
         prefixes = []
-        for t in interesting_traces:
-            for l in np.linspace(
-                0.0, float(len(prefixes)), self.prefix_amount, endpoint=True
-            ):
-                prefixes.append(t[: round(l)])
+        if splits is None:
+            for t in interesting_traces:
+                for l in np.linspace(
+                    0.0, float(len(prefixes)), self.prefix_amount, endpoint=True
+                ):
+                    prefixes.append(t[: round(l)])
+        else:
+            for t, split in zip(interesting_traces, splits):
+                prefixes += [()] * round(split * self.prefix_amount) + [t] * round(
+                    (1 - split) * self.prefix_amount
+                )
         return prefixes
 
     def stats(self) -> dict[str, Any]:
@@ -356,10 +376,18 @@ class ThresholdStoppingCondition(RefinementStoppingCondition):
 
         # Otherwise, return the samples that are above the threshold
         interesting_traces = [t for t, (_, d) in target_all_dist if d > self.threshold]
+        splits = [
+            (
+                0.0
+                if self.distance_calculator.trace_state_risk_widths[t] > self.threshold
+                else 1.0
+            )
+            for t in interesting_traces
+        ]
         self.previous_interesting_traces = [
             (t, w) for (t, w) in samples_with_prob if t in interesting_traces
         ]
-        return self._generate_prefixes(interesting_traces), samples
+        return self._generate_prefixes(interesting_traces, splits), samples
 
 
 class StabilizationStoppingCondition(RefinementStoppingCondition):

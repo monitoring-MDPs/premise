@@ -96,7 +96,7 @@ def main(args: argparse.Namespace):
     interval, initial_interval = load_imc(args)
 
     # Build the premise monitor on the learned model
-    mon, observation_map, unfolder, ipomdp = create_monitor(
+    mon, mon_comps = create_monitor(
         interval,
         initial_interval,
         "min",
@@ -118,7 +118,7 @@ def main(args: argparse.Namespace):
     monitored_risks = test_monitor(
         mon,
         samples,
-        obs_func=lambda x: observation_map[x],
+        obs_func=lambda x: mon_comps.observation_map[x],
         skip_initial=True,
     )
     # Run premise on the true model
