@@ -6,12 +6,13 @@ import numpy as np
 
 from premise.interval.conformence import test_monitor
 from premise.interval.loss import Distance
-from premise.interval.interval import Samples, Trace, create_monitor
+from premise.interval.interval import MonitorComponents, Samples, Trace, create_monitor
 from premise.system import SystemUnderObservation
 
 
 class DistanceCalculator(ABC):
     trace_state_risk_widths: dict[Trace, float] = defaultdict(float)
+    mon_comps: Optional[MonitorComponents] = None
 
     def distance(
         self, interval, initial_interval, samples_with_prob
@@ -63,6 +64,7 @@ class TargetDistanceCalculator(DistanceCalculator):
             use_exact=self.use_exact,
             precision=self.precision,
         )
+        self.mon_comps = mon_comps
 
         if self.verbose > 0:
             print(f"Created all monitors, now testing them")
@@ -154,6 +156,8 @@ class IntervalWidthCalculator(DistanceCalculator):
             use_exact=self.use_exact,
             precision=self.precision,
         )
+
+        self.mon_comps = max_mon_comps
 
         if self.verbose > 0:
             print(f"Created all monitors, now testing them")
@@ -289,15 +293,6 @@ class SampleCountStoppingCondition(RefinementStoppingCondition):
                 )
             return None
 
-        if self.suo.stats()["transition_count"] >= self.transition_count:
-            return (
-                [],
-                samples[
-                    : (self.transition_count - pre_sampling_transition_count)
-                    // self.learning_length
-                ],
-            )
-
         additional_samples = (
             self.transition_count / self.learning_length / self.prefix_amount
             - len(samples)
@@ -313,7 +308,9 @@ class SampleCountStoppingCondition(RefinementStoppingCondition):
             ) / self.learning_length
             print(f"To many samples: {additional_samples=}")
 
-        return [tuple()] * int(additional_samples / self.refine_amount), samples
+        return [tuple()] * int(
+            np.ceil(additional_samples / self.refine_amount)
+        ), samples
 
 
 class ThresholdStoppingCondition(RefinementStoppingCondition):
@@ -376,18 +373,18 @@ class ThresholdStoppingCondition(RefinementStoppingCondition):
 
         # Otherwise, return the samples that are above the threshold
         interesting_traces = [t for t, (_, d) in target_all_dist if d > self.threshold]
-        splits = [
-            (
-                0.0
-                if self.distance_calculator.trace_state_risk_widths[t] > self.threshold
-                else 1.0
-            )
-            for t in interesting_traces
-        ]
+        # splits = [
+        #     (
+        #         0.0
+        #         if self.distance_calculator.trace_state_risk_widths[t] > self.threshold
+        #         else 1.0
+        #     )
+        #     for t in interesting_traces
+        # ]
         self.previous_interesting_traces = [
             (t, w) for (t, w) in samples_with_prob if t in interesting_traces
         ]
-        return self._generate_prefixes(interesting_traces, splits), samples
+        return self._generate_prefixes(interesting_traces), samples
 
 
 class StabilizationStoppingCondition(RefinementStoppingCondition):

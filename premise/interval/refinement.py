@@ -1,4 +1,6 @@
 import argparse
+import re
+from tracemalloc import start
 from typing import Optional
 
 import numpy as np
@@ -21,6 +23,7 @@ from premise.interval.stopping_condition import (
     TargetDistanceCalculator,
     ThresholdStoppingCondition,
 )
+from premise.trace_generator import ConditionalIntervalTraceGenerator
 
 
 def refinement_learning(
@@ -87,11 +90,72 @@ def refinement_learning(
                     amount,
                 )
             elif conditional_sampling_type == "state":
-                s = suo.generate_random_traces(
-                    [],
-                    learning_length - len(prefix),
-                    amount,
-                    initial_state=prefix[-1] if len(prefix) > 0 else None,
+                if (
+                    refinement_stopping_condition.distance_calculator.mon_comps
+                    is not None
+                ):
+                    imc_ctr = ConditionalIntervalTraceGenerator(
+                        refinement_stopping_condition.distance_calculator.mon_comps.ipomdp,
+                        "target",
+                    )
+                else:
+                    imc_ctr = None
+                s = []
+                for i in range(amount):
+                    if (
+                        imc_ctr is None
+                        or refinement_stopping_condition.distance_calculator.mon_comps
+                        is None
+                        or len(prefix) == 0
+                    ):
+                        start_state = prefix[-1] if len(prefix) > 0 else None
+                    else:
+                        start_state_trace = imc_ctr.generate_random_trace(
+                            [0]
+                            + [
+                                refinement_stopping_condition.distance_calculator.mon_comps.observation_map[
+                                    s[1]
+                                ]
+                                for s in prefix
+                            ],
+                            len(prefix) + 1,
+                        )[0]
+                        # start_state_trace_remapped = tuple(
+                        #     next(
+                        #         (
+                        #             state
+                        #             for state, index in refinement_stopping_condition.distance_calculator.mon_comps.state_index_map.items()
+                        #             if index == s[0]
+                        #         )
+                        #     )
+                        #     for s in start_state_trace[1:]
+                        # )
+                        # print(
+                        #     f"Start state trace: {suo.trace_to_str(start_state_trace_remapped)} for prefix {suo.trace_to_str(prefix)}"
+                        # )
+                        # Reverse lookup start state in state_index_map to get a suo state back
+                        start_state = next(
+                            (
+                                state
+                                for state, index in refinement_stopping_condition.distance_calculator.mon_comps.state_index_map.items()
+                                if index == start_state_trace[-1][0]
+                            ),
+                            None,
+                        )
+
+                    # print(
+                    #     f"Using start state: {suo.trace_to_str((start_state,)) if start_state else None}"
+                    # )
+                    s.append(
+                        suo.generate_random_traces(
+                            [],
+                            learning_length - len(prefix),
+                            initial_state=start_state if len(prefix) > 0 else None,
+                        )[0]
+                    )
+            else:
+                raise ValueError(
+                    f"Unknown conditional sampling type: {conditional_sampling_type}"
                 )
 
             if len(prefix) == 0:

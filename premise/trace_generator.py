@@ -115,7 +115,7 @@ class ConditionalTraceGenerator:
     def _generate_random_trace_rec(
         self, observation_prefix: list[int], length: int
     ) -> tuple[list[tuple[int, int, bool]], Any] | None:
-        if length == 0:
+        if length <= 0:
             return ([], Rational(1.0))
         elif len(observation_prefix) == 0:
             step_obs, step_prob = self.step()
@@ -164,6 +164,73 @@ class ConditionalTraceGenerator:
                     break
             self.current_state = old_state
             return None
+
+
+class ConditionalIntervalTraceGenerator(ConditionalTraceGenerator):
+    def step(self, action=None) -> tuple[int, Any]:
+        state = self.model.states[self.current_state]
+        if action is None:
+            action = random.choice(list(state.actions)).id
+
+        probability = Rational(random.random())
+        total_prob = Rational(0.0)
+        for transition in state.actions[action].transitions:
+            total_prob += transition.value().center()
+            if total_prob > probability:
+                self.current_state = transition.column
+                break
+        else:
+            raise ValueError(
+                f"No transition found for action {action} in state {self.current_state}"
+            )
+
+        return (
+            self.model.get_observation(self.current_state),
+            transition.value().center(),
+        )
+
+    def conditional_step(
+        self, observation, ignore_states=None, action=None
+    ) -> tuple[int, Any]:
+        if ignore_states is None:
+            ignore_states = []
+
+        state = self.model.states[self.current_state]
+
+        # Build a dictionary of unnormalized probabilities for each possible next state with the given observation
+        conditional_state_probs = {}
+        for action in state.actions:
+            for transition in action.transitions:
+                if (
+                    transition.column not in ignore_states
+                    and self.model.get_observation(transition.column) == observation
+                ):
+                    if transition.column in conditional_state_probs:
+                        conditional_state_probs[
+                            transition.column
+                        ] += transition.value().center()
+                    else:
+                        conditional_state_probs[transition.column] = (
+                            transition.value().center()
+                        )
+
+        if len(conditional_state_probs) == 0:
+            raise ValueError(
+                f"No transition found for observation {observation} in state {self.current_state}"
+            )
+
+        probability = Rational(random.random()) * sum(conditional_state_probs.values())
+        total_prob = Rational(0.0)
+        for state_id, prob in conditional_state_probs.items():
+            total_prob += prob
+            if total_prob > probability:
+                self.current_state = state_id
+                break
+
+        return (
+            self.model.get_observation(self.current_state),
+            prob,
+        )  # TODO: this is a underestimate of the probability
 
 
 class SimulationTraceGenerator:

@@ -23,11 +23,11 @@ def plot_mult_distances(data_dict: dict, title, log=False):
     plt.figure(figsize=(10, 6))
 
     run_keys = set(k[0] for k in data_dict.keys())
-    ls_map = {k: ["-", "-.", ":"][i % 4] for i, k in enumerate(run_keys)}
     type_keys = set(k[1] for k in data_dict.keys())
+    ls_map = {k: ["-", "-.", ":"][i % 4] for i, k in enumerate(type_keys)}
     col_map = {
         k: plt.rcParams["axes.prop_cycle"].by_key()["color"][i % 10]
-        for i, k in enumerate(type_keys)
+        for i, k in enumerate(run_keys)
     }
 
     for key, data in sorted(data_dict.items(), reverse=True):
@@ -35,9 +35,9 @@ def plot_mult_distances(data_dict: dict, title, log=False):
             data[1],
             data[0],
             marker="o",
-            linestyle=ls_map[key[0]],
+            linestyle=ls_map[key[1]],
             label=key,
-            color=col_map[key[1]],
+            color=col_map[key[0]],
         )
         # if len(data) > 4 and data[4] and data[5]:
         #     means = [np.average(d, weights=w) for d, w in zip(data[4], data[5])]
@@ -71,6 +71,7 @@ def main(
     stats_paths=[
         "../../out/stats/2025-06-12_15-26-01",
         "../../out/stats/2025-06-13_13-53-47",
+        "../../out/stats/2025-06-13_15-53-58",
     ]
 ):
     stats_dicts: dict[tuple, dict] = {}
