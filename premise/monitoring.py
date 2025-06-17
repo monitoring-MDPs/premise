@@ -329,7 +329,7 @@ def run_monitor(
 
     logger.info("Parse MDP representation...")
     model, risk_assessment = models.build_model_and_risk(
-        models.ModelDescription(path, constants, risk_property), options
+        models.ModelDescription(path, constants, risk_property, ""), options
     )
 
     if use_forward_filtering:
@@ -409,5 +409,5 @@ def run_monitor(
                 trace_length,
                 stats_file,
                 deadline=promptness_deadline,
-                dump_file_path=unrolled_drn_file_prefix,
+                dump_file_path="../out/tmp/old_monitoring/airport",
             )

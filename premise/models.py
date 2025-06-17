@@ -14,7 +14,7 @@ class ModelDescription:
     prism_program_path: Path
     constants: str
     risk_property: str
-    target_label: str
+    target_label: str = ""
 
 
 default_models = {

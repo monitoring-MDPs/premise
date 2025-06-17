@@ -389,7 +389,7 @@ def ref_args_parser():
         "-d",
         "--distance",
         choices=distance_measures.keys(),
-        default="mae",
+        default="umse",
         help="Distance measure to use",
     )
     conformence_group.add_argument(
@@ -458,6 +458,14 @@ def ref_args_parser():
         "--dump-stats",
         type=str,
         help="Path to the file to dump stats to",
+    )
+
+    parser.add_argument(
+        "-ri",
+        "--run-id",
+        type=int,
+        default=0,
+        help="Run ID to use for the experiment. Used to distinguish between different runs in the same model path.",
     )
 
     parser.add_argument("--verbose", "-v", action="count", default=0)

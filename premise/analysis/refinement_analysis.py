@@ -30,50 +30,80 @@ def plot_mult_distances(data_dict: dict, title, log=False):
         for i, k in enumerate(run_keys)
     }
 
-    for key, data in sorted(data_dict.items(), reverse=True):
-        line = plt.plot(
-            data[1],
-            data[0],
-            marker="o",
+    for key, datas in sorted(data_dict.items(), reverse=True):
+        distances_data = [data[0] for data in datas]
+        transitions_data = [data[1] for data in datas]
+
+        # Find common x range for interpolation
+        min_x = max(min(transitions) for transitions in transitions_data)
+        max_x = min(max(transitions) for transitions in transitions_data)
+        x_values = np.linspace(min_x, max_x, 500)
+
+        # Interpolate all runs to common x values
+        interpolated_distances = []
+        for distances, transitions in zip(distances_data, transitions_data):
+            if log:
+                distances = np.log10(distances)
+            interpolated = np.interp(x_values, transitions, distances)
+            if log:
+                interpolated = np.power(10, interpolated)
+            interpolated_distances.append(interpolated)
+
+        # Calculate mean and std for interpolated y values
+        distances_array = np.array(interpolated_distances)
+        mean_distances = np.mean(distances_array, axis=0)
+        std_distances = np.std(distances_array, axis=0)
+        min_distances = np.min(distances_array, axis=0)
+        max_distances = np.max(distances_array, axis=0)
+
+        # Plot mean line
+        plt.plot(
+            x_values,
+            mean_distances,
             linestyle=ls_map[key[1]],
             label=key,
             color=col_map[key[0]],
         )
-        # if len(data) > 4 and data[4] and data[5]:
-        #     means = [np.average(d, weights=w) for d, w in zip(data[4], data[5])]
-        #     stds = [
-        #         np.sqrt(np.average((np.array(d) - m) ** 2, weights=w))
-        #         for d, w, m in zip(data[4], data[5], means)
-        #     ]
-        #     plt.fill_between(
-        #         data[1],
-        #         np.array(means) if log else np.array(means) - np.array(stds),
-        #         np.array(means) + np.array(stds),
-        #         color=line[0].get_color(),
-        #         alpha=0.2,
-        #     )
 
-        if data[2] is not None:
-            plt.axhline(y=data[2], color="r", linestyle="--", label="Threshold")
+        # Add shaded area for spread
+        # plt.fill_between(
+        #     x_values,
+        #     mean_distances - std_distances,
+        #     mean_distances + std_distances,
+        #     alpha=0.2,
+        #     color=col_map[key[0]],
+        # )
+        plt.fill_between(
+            x_values,
+            min_distances,
+            max_distances,
+            alpha=0.2,
+            color=col_map[key[0]],
+        )
+
+        # Add threshold line if available
+        if datas[0][2] is not None:
+            plt.axhline(
+                y=datas[0][2],
+                color=col_map[key[0]],
+                linestyle="--",
+                c="red",
+                label=f"Threshold",
+            )
 
     plt.title(title)
     plt.xlabel("Transitions")
     plt.ylabel("Distance")
     if log:
         plt.yscale("log")
-    plt.ylim(bottom=0)
+    else:
+        plt.ylim(bottom=0)
     plt.legend()
     plt.grid(True)
     plt.show()
 
 
-def main(
-    stats_paths=[
-        "../../out/stats/2025-06-12_15-26-01",
-        "../../out/stats/2025-06-13_13-53-47",
-        "../../out/stats/2025-06-13_15-53-58",
-    ]
-):
+def main(stats_paths=["../../out/stats/2025-06-17_15-07-13"]):
     stats_dicts: dict[tuple, dict] = {}
 
     for stats_path in stats_paths:
@@ -85,7 +115,7 @@ def main(
 
         for stat_path in paths:
             data = np.load(stat_path, allow_pickle=True).item()
-            key = (
+            model_key = (
                 data["args"]["mc"],
                 (
                     tuple(data["args"]["sys_vars"])
@@ -95,13 +125,13 @@ def main(
                 data["args"]["sam"],
                 data["args"]["sim"],
                 data["args"]["acas"],
-                data["args"]["distance"],
+                # data["args"]["distance"],
             )
 
-            if key not in stats_dicts:
-                stats_dicts[key] = {}
+            if model_key not in stats_dicts:
+                stats_dicts[model_key] = {}
 
-            key2 = (
+            learn_type_key = (
                 path.stem,
                 (
                     data["args"]["stopping_criteria"]
@@ -109,47 +139,59 @@ def main(
                     else "regression"
                 ),
             )
-            stats_dicts[key][key2] = data
 
-    for key, exp_dict in stats_dicts.items():
-        plot_data = {}
-        for key2, data in exp_dict.items():
-            if "distances" in data:  # Refinement
-                distances = data["distances"]
-                samples = data["transitions_learned"]
-                sample_distances = [
-                    [(x[1][1]) for x in dt] for dt in data["dist_traces"]
-                ]
-                sample_weights = [[(x[1][0]) for x in dt] for dt in data["dist_traces"]]
-            else:  # Regression
-                distances = [data["target_dist"]]
-                samples = [data["args"]["amount"]]
-                sample_distances = []
-                sample_weights = []
+            run_key = (data["args"]["run_id"] if "run_id" in data["args"] else 0,)
 
-            cum_sam = np.cumsum(samples)
-            if (
-                "stopping_criteria" in data["args"]
-                and data["args"]["stopping_criteria"] == "threshold"
-            ):
-                threshold = data["args"]["stopping_threshold"]
-                patience = data["args"]["stopping_patience"]
-            else:
-                threshold = None
-                patience = None
+            if learn_type_key not in stats_dicts[model_key]:
+                stats_dicts[model_key][learn_type_key] = {}
 
-            plot_data[key2] = (
-                distances,
-                cum_sam,
-                threshold,
-                patience,
-                sample_distances,
-                sample_weights,
-            )
+            stats_dicts[model_key][learn_type_key][run_key] = data
+
+    for model_key, exp_dict in stats_dicts.items():
+        plot_data: dict[tuple, list[tuple]] = {}
+        for learn_type_key, runs in exp_dict.items():
+            plot_data[learn_type_key] = []
+            for run_key, data in runs.items():
+                if "distances" in data:  # Refinement
+                    distances = data["distances"]
+                    samples = data["transitions_learned"]
+                    sample_distances = [
+                        [(x[1][1]) for x in dt] for dt in data["dist_traces"]
+                    ]
+                    sample_weights = [
+                        [(x[1][0]) for x in dt] for dt in data["dist_traces"]
+                    ]
+                else:  # Regression
+                    distances = [data["target_dist"]]
+                    samples = [data["args"]["amount"] * data["args"]["length"]]
+                    sample_distances = []
+                    sample_weights = []
+
+                cum_sam = np.cumsum(samples)
+                if (
+                    "stopping_criteria" in data["args"]
+                    and data["args"]["stopping_criteria"] == "threshold"
+                ):
+                    threshold = data["args"]["stopping_threshold"]
+                    patience = data["args"]["stopping_patience"]
+                else:
+                    threshold = None
+                    patience = None
+
+                plot_data[learn_type_key].append(
+                    (
+                        distances,
+                        cum_sam,
+                        threshold,
+                        patience,
+                        sample_distances,
+                        sample_weights,
+                    )
+                )
 
         plot_mult_distances(
             plot_data,
-            f"{key[0]} with possible sys vars {key[1]} and distance {key[-1]}",
+            f"{model_key[0]} with possible sys vars {model_key[1]} and distance {model_key[-1]}",
             log=True,
         )
 

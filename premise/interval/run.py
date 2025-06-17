@@ -1,7 +1,5 @@
-import signal
 import sys
-from typing import NoReturn
-
+from multiprocessing import Pool
 from premise.interval.model_free.regression_model import reg_argsparser, reg_main
 from premise.interval.refinement import ref_args_parser, ref_main
 
@@ -16,10 +14,19 @@ def split_args(args, delim):
     return res
 
 
-def timeout_handler(signum, frame) -> NoReturn:
-    print("Timeout occurred")
-    exit(2)
-    raise Exception("Timeout occurred")
+def run_with_timeout(func, args, timeout):
+    with Pool(processes=1) as pool:
+        async_result = pool.apply_async(func, args)
+        try:
+            result = async_result.get(timeout)
+        except Exception as e:
+            pool.terminate()
+            pool.join()
+            if isinstance(e, TimeoutError):
+                print("Timeout occurred")
+                raise TimeoutError("Timeout occurred")
+            raise
+        return result
 
 
 if __name__ == "__main__":
@@ -38,14 +45,10 @@ if __name__ == "__main__":
     if sys.argv[2] == "refinement":
         ref_parser = ref_args_parser()
         ref_args = ref_parser.parse_args(args[0])
-        signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(timeout)
         try:
-            ref_main(ref_args)
+            run_with_timeout(ref_main, (ref_args,), timeout)
         except TimeoutError:
             print("Refinement timed out.")
-        finally:
-            signal.alarm(0)
     elif sys.argv[2] == "comp_methods":
         if len(args) != 3:
             print(
@@ -57,40 +60,28 @@ if __name__ == "__main__":
         ref_parser = ref_args_parser()
 
         ref_args = ref_parser.parse_args(args[0])
-
-        signal.signal(signal.SIGALRM, timeout_handler)
         print("Starting timeout", timeout)
         try:
-            signal.alarm(timeout)
-            ref_stats = ref_main(ref_args)
+            ref_stats = run_with_timeout(ref_main, (ref_args,), timeout)
         except TimeoutError:
             print("Refinement timed out, stopping experiment.")
             exit(1)
-        finally:
-            signal.alarm(0)
 
         transition_count = ref_stats["transition_count"]
-
         print("Samples from refinement: ", transition_count)
 
         ref_args_2 = ref_parser.parse_args(args[1])
         ref_args_2.stopping_samples = transition_count
         ref_args_2.stopping_criteria = "samples"
-        signal.alarm(timeout)
         try:
-            ref_main(ref_args_2)
+            run_with_timeout(ref_main, (ref_args_2,), timeout)
         except TimeoutError:
             print("No-refinement timed out, continue to regression.")
-        finally:
-            signal.alarm(0)
 
         reg_parser = reg_argsparser()
         reg_args = reg_parser.parse_args(args[2])
         reg_args.amount = transition_count // reg_args.length
-        signal.alarm(timeout)
         try:
-            reg_main(reg_args)
+            run_with_timeout(reg_main, (reg_args,), timeout)
         except TimeoutError:
             print("Regression timed out.")
-        finally:
-            signal.alarm(0)

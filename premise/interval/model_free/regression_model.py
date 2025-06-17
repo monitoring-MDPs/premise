@@ -190,7 +190,7 @@ def reg_argsparser():
         "-d",
         "--distance",
         choices=distance_measures.keys(),
-        default="mae",
+        default="umse",
         help="Distance measure to use",
     )
     parser.add_argument(
@@ -204,6 +204,13 @@ def reg_argsparser():
     parser.add_argument("--dump-model", type=str, help="Path to dump the model to")
     parser.add_argument(
         "--dump-stats", type=str, help="Path to the file to dump stats to"
+    )
+    parser.add_argument(
+        "-ri",
+        "--run-id",
+        type=int,
+        default=0,
+        help="Run ID to use for the experiment. Used to distinguish between different runs in the same model path.",
     )
 
     return parser
