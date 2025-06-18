@@ -89,7 +89,7 @@ def refinement_learning(
                     learning_length,
                     amount,
                 )
-            elif conditional_sampling_type == "state":
+            elif conditional_sampling_type == "cond_state":
                 if (
                     refinement_stopping_condition.distance_calculator.mon_comps
                     is not None
@@ -120,20 +120,6 @@ def refinement_learning(
                             ],
                             len(prefix) + 1,
                         )[0]
-                        # start_state_trace_remapped = tuple(
-                        #     next(
-                        #         (
-                        #             state
-                        #             for state, index in refinement_stopping_condition.distance_calculator.mon_comps.state_index_map.items()
-                        #             if index == s[0]
-                        #         )
-                        #     )
-                        #     for s in start_state_trace[1:]
-                        # )
-                        # print(
-                        #     f"Start state trace: {suo.trace_to_str(start_state_trace_remapped)} for prefix {suo.trace_to_str(prefix)}"
-                        # )
-                        # Reverse lookup start state in state_index_map to get a suo state back
                         start_state = next(
                             (
                                 state
@@ -143,9 +129,6 @@ def refinement_learning(
                             None,
                         )
 
-                    # print(
-                    #     f"Using start state: {suo.trace_to_str((start_state,)) if start_state else None}"
-                    # )
                     s.append(
                         suo.generate_random_traces(
                             [],
@@ -153,6 +136,14 @@ def refinement_learning(
                             initial_state=start_state if len(prefix) > 0 else None,
                         )[0]
                     )
+            elif conditional_sampling_type == "state":
+                start_state = prefix[-1] if len(prefix) > 0 else None
+                s = suo.generate_random_traces(
+                    [],
+                    learning_length - len(prefix),
+                    initial_state=start_state if len(prefix) > 0 else None,
+                    amount=amount,
+                )
             else:
                 raise ValueError(
                     f"Unknown conditional sampling type: {conditional_sampling_type}"
@@ -350,7 +341,7 @@ def ref_args_parser():
     learning_group.add_argument(
         "-cst",
         "--conditional-sampling-type",
-        choices=["obs", "state"],
+        choices=["obs", "state", "cond_state"],
         default="state",
         help="Type of conditional sampling to use, 'obs' conditions on the trace, 'state' starts in the final state of the condition",
     )

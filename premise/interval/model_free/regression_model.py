@@ -36,7 +36,7 @@ def learn_regression_model(train_samples, observations, testing_samples, args):
 
     X = pd.DataFrame(binary_data, columns=column_names)
 
-    model = LogisticRegression()
+    model = LogisticRegression(n_jobs=1)
     model.fit(X, y)
 
     binary_test_data = []

@@ -66,20 +66,20 @@ def plot_mult_distances(data_dict: dict, title, log=False):
         )
 
         # Add shaded area for spread
-        # plt.fill_between(
-        #     x_values,
-        #     mean_distances - std_distances,
-        #     mean_distances + std_distances,
-        #     alpha=0.2,
-        #     color=col_map[key[0]],
-        # )
         plt.fill_between(
             x_values,
-            min_distances,
-            max_distances,
+            mean_distances - std_distances,
+            mean_distances + std_distances,
             alpha=0.2,
             color=col_map[key[0]],
         )
+        # plt.fill_between(
+        #     x_values,
+        #     min_distances,
+        #     max_distances,
+        #     alpha=0.2,
+        #     color=col_map[key[0]],
+        # )
 
         # Add threshold line if available
         if datas[0][2] is not None:
@@ -88,7 +88,6 @@ def plot_mult_distances(data_dict: dict, title, log=False):
                 color=col_map[key[0]],
                 linestyle="--",
                 c="red",
-                label=f"Threshold",
             )
 
     plt.title(title)
@@ -103,10 +102,16 @@ def plot_mult_distances(data_dict: dict, title, log=False):
     plt.show()
 
 
-def main(stats_paths=["../../out/stats/2025-06-17_15-07-13"]):
+def main(
+    stats_paths=[
+        ("../../out/stats/2025-06-17_15-07-13", "obs start state, 10 prefixes"),
+        ("../../out/stats/2025-06-18_09-54-18", "prefix start state, 10 prefixes"),
+        ("../../out/stats/2025-06-18_15-46-39", "prefix start state, splitting"),
+    ]
+):
     stats_dicts: dict[tuple, dict] = {}
 
-    for stats_path in stats_paths:
+    for stats_path, name in stats_paths:
         path = Path(stats_path)
         if path.is_dir():
             paths = path.iterdir()
@@ -132,7 +137,7 @@ def main(stats_paths=["../../out/stats/2025-06-17_15-07-13"]):
                 stats_dicts[model_key] = {}
 
             learn_type_key = (
-                path.stem,
+                name,
                 (
                     data["args"]["stopping_criteria"]
                     if "stopping_criteria" in data["args"]

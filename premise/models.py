@@ -32,7 +32,7 @@ default_models = {
     ),
     "airportA-7-50-30": ModelDescription(
         Path(__file__).parent / "examples/airportA-7.nm",
-        "DMAX=50,PMAX=30",
+        "DMAX=40,PMAX=20",
         'Pmax=? [F "crash"]',
         "crash",
     ),
@@ -44,7 +44,7 @@ default_models = {
     ),
     "airportB-7-50-30": ModelDescription(
         Path(__file__).parent / "examples/airportB-7.nm",
-        "DMAX=50,PMAX=30",
+        "DMAX=40,PMAX=20",
         'Pmax=? [F "crash"]',
         "crash",
     ),

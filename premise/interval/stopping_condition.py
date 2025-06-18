@@ -373,18 +373,18 @@ class ThresholdStoppingCondition(RefinementStoppingCondition):
 
         # Otherwise, return the samples that are above the threshold
         interesting_traces = [t for t, (_, d) in target_all_dist if d > self.threshold]
-        # splits = [
-        #     (
-        #         0.0
-        #         if self.distance_calculator.trace_state_risk_widths[t] > self.threshold
-        #         else 1.0
-        #     )
-        #     for t in interesting_traces
-        # ]
+        splits = [
+            (
+                0.0
+                if self.distance_calculator.trace_state_risk_widths[t] > self.threshold
+                else 1.0
+            )
+            for t in interesting_traces
+        ]
         self.previous_interesting_traces = [
             (t, w) for (t, w) in samples_with_prob if t in interesting_traces
         ]
-        return self._generate_prefixes(interesting_traces), samples
+        return self._generate_prefixes(interesting_traces, splits), samples
 
 
 class StabilizationStoppingCondition(RefinementStoppingCondition):
