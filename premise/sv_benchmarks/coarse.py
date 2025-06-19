@@ -9,15 +9,20 @@ class CoarseValue:
     min_bound: float
     max_bound: float
     coarseness: int
+    obs_coarseness: int
     loop: bool
     coarse_value: int
+    coarse_obs: int
     value: float
+    obs: float
 
     def __init__(
         self,
         min_bound: float,
         max_bound: float,
         coarseness: int,
+        obs_coarseness: int,
+        timestep: float,
         loop: bool = False,
         init_value: Optional[float] = None,
         coarse_value: Optional[int] = None,
@@ -28,39 +33,58 @@ class CoarseValue:
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.coarseness = coarseness
+        self.obs_coarseness = obs_coarseness
+        self.timestep = timestep
         self.loop = loop
         if init_value is not None:
             self.update(init_value)
         elif coarse_value is not None:
-            self.coarse_value = coarse_value
-            self.value = self.calc_value(coarse_value)
+            self.update_coarse(coarse_value)
         else:
             self.coarse_value = 0
+            self.coarse_obs = 0
             self.value = min_bound
+            self.obs = min_bound
 
     def update(self, new_value: float):
         self.coarse_value = self._calc_coarse(new_value)
         self.value = self.calc_value(self.coarse_value)
 
-    def _transform_to_coarse(self, value: float):
+        self.coarse_obs = self._calc_coarse(new_value, obs=True)
+        self.obs = self.calc_value(self.coarse_obs, obs=True)
+
+    def update_coarse(self, new_coarse_value: int):
+        if not (0 <= new_coarse_value < self.coarseness):
+            raise ValueError(
+                f"Coarse value {new_coarse_value} out of bounds [0, {self.coarseness})"
+            )
+        self.coarse_value = new_coarse_value
+        self.value = self.calc_value(new_coarse_value)
+
+        self.coarse_obs = self._calc_coarse(self.value, obs=True)
+        self.obs = self.calc_value(self.coarse_obs, obs=True)
+
+    def _transform_to_coarse(self, value: float, obs: bool = False) -> float:
         return (
             (value - self.min_bound)
             / (self.max_bound - self.min_bound)
-            * self.coarseness
+            * (self.obs_coarseness if obs else self.coarseness)
         )
 
-    def _calc_coarse(self, value: float):
+    def _calc_coarse(self, value: float, obs: bool = False):
         if not self.loop:
             value = min(max(value, self.min_bound), self.max_bound)
-        new_coarse = round(self._transform_to_coarse(value))
+        new_coarse = round(self._transform_to_coarse(value, obs=obs))
         if self.loop:
-            new_coarse %= self.coarseness
+            new_coarse %= self.obs_coarseness if obs else self.coarseness
 
         return new_coarse
 
-    def calc_value(self, coarse_value: int):
+    def calc_value(self, coarse_value: int, obs: bool = False):
         return (
-            coarse_value / self.coarseness * (self.max_bound - self.min_bound)
+            coarse_value
+            / (self.obs_coarseness if obs else self.coarseness)
+            * (self.max_bound - self.min_bound)
             + self.min_bound
         )
 
@@ -71,8 +95,7 @@ class CoarseValue:
 
     def copy_coarse(self, coarse_value) -> Self:
         new = copy(self)
-        new.coarse_value = coarse_value
-        new.value = self.calc_value(coarse_value)
+        new.update_coarse(coarse_value)
         return new
 
     def unif_distr(self) -> list[tuple[float, Self]]:
@@ -111,6 +134,8 @@ class CoarseGaussianValue(CoarseValue):
         min_bound: float,
         max_bound: float,
         coarseness: int,
+        obs_coarseness: int,
+        timestep: float,
         mean: float,
         std: float,
         min_prob: float,
@@ -118,7 +143,9 @@ class CoarseGaussianValue(CoarseValue):
         init_value: Optional[float] = None,
         coarse_value: Optional[int] = None,
     ):
-        super().__init__(min_bound, max_bound, coarseness, loop, init_value)
+        super().__init__(
+            min_bound, max_bound, coarseness, obs_coarseness, timestep, loop, init_value
+        )
         self.mean = mean
         self.std = std
         self.min_prob = min_prob
@@ -141,7 +168,10 @@ class CoarseGaussianValue(CoarseValue):
                 i,
                 coarse_value
                 + (self.mean / (self.max_bound - self.min_bound) * self.coarseness),
-                self.std / (self.max_bound - self.min_bound) * self.coarseness,
+                self.std
+                * self.timestep
+                / (self.max_bound - self.min_bound)
+                * self.coarseness,
             )
             if prob < self.min_prob:
                 continue

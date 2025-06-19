@@ -342,7 +342,7 @@ def ref_args_parser():
         "-cst",
         "--conditional-sampling-type",
         choices=["obs", "state", "cond_state"],
-        default="state",
+        default="cond_state",
         help="Type of conditional sampling to use, 'obs' conditions on the trace, 'state' starts in the final state of the condition",
     )
     learning_group.add_argument(

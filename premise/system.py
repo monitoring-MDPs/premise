@@ -154,10 +154,15 @@ class ACASSystemUnderObservation(MCSystemUnderObservation):
     def __init__(self, coarseness_factor: int, horizon: int):
         self._sv_model: Model = acas.build_acas_model(
             radius_coarse=int(acas.RADIUS_COARSE / coarseness_factor),
+            radius_obs=int(acas.RADIUS_OBS / coarseness_factor),
             bearing_coarse=int(acas.BEARING_COARSE / coarseness_factor),
+            bearing_obs=int(acas.BEARING_OBS / coarseness_factor),
             rel_heading_coarse=int(acas.REL_HEADING_COARSE / coarseness_factor),
+            rel_heading_obs=int(acas.REL_HEADING_OBS / coarseness_factor),
             ego_speed_coarse=int(acas.EGO_SPEED_COARSE / coarseness_factor),
+            ego_speed_obs=int(acas.EGO_SPEED_OBS / coarseness_factor),
             int_speed_coarse=int(acas.INT_SPEED_COARSE / coarseness_factor),
+            int_speed_obs=int(acas.INT_SPEED_OBS / coarseness_factor),
         )
         self._model = stormvogel_to_stormpy(self._sv_model)
         self._stormpy_to_storvogel_id = {
@@ -174,7 +179,8 @@ class ACASSystemUnderObservation(MCSystemUnderObservation):
                 {
                     i: self._sv_model.states[self._stormpy_to_storvogel_id[s]]
                     for i, (s, _, _) in enumerate(trace)
-                }
+                },
+                self._sv_model,
             )
             filename = extensions.render_model_gif(
                 self._sv_model,
