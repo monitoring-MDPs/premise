@@ -25,7 +25,7 @@ def run_with_timeout(func, args, timeout):
             if isinstance(e, TimeoutError):
                 print("Timeout occurred")
                 raise TimeoutError("Timeout occurred")
-            raise
+            raise e
         return result
 
 

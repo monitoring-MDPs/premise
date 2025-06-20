@@ -24,7 +24,7 @@ carla = {version = "^0.9.15", markers = "python_version <= '3.10'"}
 
 [tool.poetry.group.sv.dependencies]
 python = "~=3.11"
-stormvogel = { path="../stormvogel",  markers = "python_version >= '3.11'" }
+stormvogel = { path="../stormvogel",  markers = "python_version >= '3.11'", develop = true }
 
 [tool.poetry.group.dev.dependencies]
 pybind11-stubgen = "^2.5.1"

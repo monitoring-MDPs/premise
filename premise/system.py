@@ -1,4 +1,5 @@
 from abc import ABC
+from math import ceil
 import pickle
 from pathlib import Path
 import random
@@ -153,25 +154,30 @@ class MCSystemUnderObservation(SystemUnderObservation):
 class ACASSystemUnderObservation(MCSystemUnderObservation):
     def __init__(self, coarseness_factor: int, horizon: int):
         self._sv_model: Model = acas.build_acas_model(
-            radius_coarse=int(acas.RADIUS_COARSE / coarseness_factor),
-            radius_obs=int(acas.RADIUS_OBS / coarseness_factor),
-            bearing_coarse=int(acas.BEARING_COARSE / coarseness_factor),
-            bearing_obs=int(acas.BEARING_OBS / coarseness_factor),
-            rel_heading_coarse=int(acas.REL_HEADING_COARSE / coarseness_factor),
-            rel_heading_obs=int(acas.REL_HEADING_OBS / coarseness_factor),
-            ego_speed_coarse=int(acas.EGO_SPEED_COARSE / coarseness_factor),
-            ego_speed_obs=int(acas.EGO_SPEED_OBS / coarseness_factor),
-            int_speed_coarse=int(acas.INT_SPEED_COARSE / coarseness_factor),
-            int_speed_obs=int(acas.INT_SPEED_OBS / coarseness_factor),
+            radius_coarse=ceil(acas.RADIUS_COARSE * coarseness_factor),
+            radius_obs=ceil(acas.RADIUS_OBS * coarseness_factor),
+            bearing_coarse=ceil(acas.BEARING_COARSE * coarseness_factor),
+            bearing_obs=ceil(acas.BEARING_OBS * coarseness_factor),
+            rel_heading_coarse=ceil(acas.REL_HEADING_COARSE * coarseness_factor),
+            rel_heading_obs=ceil(acas.REL_HEADING_OBS * coarseness_factor),
+            ego_speed_coarse=ceil(acas.EGO_SPEED_COARSE * coarseness_factor),
+            ego_speed_obs=ceil(acas.EGO_SPEED_OBS * coarseness_factor),
+            int_speed_coarse=ceil(acas.INT_SPEED_COARSE * coarseness_factor),
+            int_speed_obs=ceil(acas.INT_SPEED_OBS * coarseness_factor),
         )
-        self._model = stormvogel_to_stormpy(self._sv_model)
+        self._model = stormvogel_to_stormpy(self._sv_model, exact=True)
         self._stormpy_to_storvogel_id = {
             v: k for k, v in self._sv_model.stormpy_id.items()
         }
         self._model_def = ModelDescription(Path(), "", "", "nmac")
-        prop = stormpy.parse_properties(f'P<{horizon}? [F "nmac"]')
-        self._risk = _analyse_model(self._model, prop[0].raw_formula).get_values()
+        prop = stormpy.parse_properties(f'Pmax=? [F<={horizon} "nmac"]')
+        self._risk = _analyse_model(self._model, prop[0]).get_values()
         self.model_name = f"ACAS_{coarseness_factor}"
+
+        self._ctr = ConditionalTraceGenerator(self._model, target_label="nmac")
+
+        self._sample_count = 0
+        self._transition_count = 0
 
     def trace_to_str(self, trace: Trace, gif_path=None) -> str:
         if gif_path is not None:

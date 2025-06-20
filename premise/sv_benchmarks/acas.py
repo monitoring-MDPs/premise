@@ -189,7 +189,7 @@ class ACAState(pgc.State):
             labels.append("nmac")
         if self.radius.at_max():
             labels.append("out of radius")
-        labels.append(str(self.valuations()))
+        # labels.append(str(self.valuations()))
         return labels
 
     def obs(self):

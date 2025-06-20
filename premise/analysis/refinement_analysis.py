@@ -107,7 +107,7 @@ def main(
         ("../../out/stats/2025-06-17_15-07-13", "obs start state, 10 prefixes"),
         ("../../out/stats/2025-06-18_09-54-18", "prefix start state, 10 prefixes"),
         ("../../out/stats/2025-06-18_15-46-39", "prefix start state, splitting"),
-        ("../../out/stats/2025-06-19_16-56-46", "obs start state, splitting"),
+        ("../../out/stats/2025-06-20_14-34-33", "obs start state, splitting"),
     ]
 ):
     stats_dicts: dict[tuple, dict] = {}
