@@ -4,9 +4,7 @@ import tqdm
 import time
 import stormpy as sp
 import stormpy.pomdp
-from logging import getLogger
-
-logger = getLogger(__name__)
+from premise.interval.utils import logger
 
 
 @dataclass

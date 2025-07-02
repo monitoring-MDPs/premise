@@ -1,4 +1,3 @@
-import logging
 import random
 from typing import Any, Optional
 
@@ -6,8 +5,7 @@ import stormpy.simulator
 from stormpy import Rational
 
 from premise.interval.interval import Trace
-
-logger = logging.getLogger(__name__)
+from premise.interval.utils import logger
 
 
 def make_simulation_wrapper(model, length=None):

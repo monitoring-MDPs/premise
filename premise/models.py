@@ -4,10 +4,8 @@ import json
 from time import time
 from typing import Any, Optional
 import stormpy as sp
-import logging
 from pathlib import Path
-
-logger = logging.getLogger(__name__)
+from premise.interval.utils import logger
 
 
 @dataclass
@@ -136,7 +134,7 @@ def build_model_and_risk(model_description: ModelDescription, options):
         prism_program, raw_formula, exact_arithmetic=options.exact_arithmetic
     )
     if options.verbose:
-        print(model)
+        logger.info(model)
     assert model.has_observation_valuations()
     logger.info("Compute risk per state")
     risk_assessment = _analyse_model(model, prop).get_values()
@@ -292,7 +290,7 @@ def build_noaction_model_and_risk(
     else:
         model = pre_build_model
 
-    print(f"Model built in {time() - t:.2f} seconds")
+    logger.info(f"Model built in {time() - t:.2f} seconds")
     t = time()
 
     if skip_risk:
@@ -300,7 +298,7 @@ def build_noaction_model_and_risk(
 
     risk_assessment = _analyse_model(model, prop).get_values()
 
-    print(f"Risk assessment computed in {time() - t:.2f} seconds")
+    logger.info(f"Risk assessment computed in {time() - t:.2f} seconds")
 
     return model, risk_assessment
 

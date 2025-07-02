@@ -1,10 +1,11 @@
 from dataclasses import dataclass
+import logging
 from time import time
 from typing import Any
 import numpy as np
 import argparse
 
-#from pypoman import compute_polytope_vertices
+# from pypoman import compute_polytope_vertices
 from stormpy import (
     Environment,
     MinMaxMethod,
@@ -39,6 +40,7 @@ import stormpy as sp
 
 from premise.interval.policy_iteration import policy_iter_imc
 from premise.monitor import UnfoldingRiskAssessment, Monitor
+from premise.interval.utils import logger
 
 
 State = tuple[Any, Any, bool]
@@ -139,99 +141,6 @@ def stormpy_imdp_to_ipomdp(mdp, observations, observation_valuations=None):
             components.state_valuations = mdp.state_valuations
 
         return SparseIntervalPomdp(components)
-
-
-def enumerate_imc_in_mdp(imc):
-    """
-    This does not work just yet!
-    """
-    if imc.is_exact:
-        builder = sp.storage.ExactSparseMatrixBuilder(0, 0, 0, False, True)
-    else:
-        builder = sp.storage.SparseMatrixBuilder(0, 0, 0, False, True)
-
-    current_row = 0
-    for i in range(len(imc.states)):
-        old_state = imc.states[i]
-
-        # Get transitions for state
-        transitions = []
-        for action in old_state.actions:
-            for transition in action.transitions:
-                transitions.append(
-                    (
-                        transition.column,
-                        transition.value().lower(),
-                        transition.value().upper(),
-                    )
-                )
-
-        if len(transitions) == 1:
-            points = [[1.0]]
-        else:
-            num_vars = len(transitions)
-            # Build the Linear system of inequalities to get vertices
-            A = np.zeros((num_vars * 2 + 1, num_vars))
-            b = np.zeros((num_vars * 2 + 1,))
-            for i, (_, l, u) in enumerate(transitions):
-                A[i * 2, i] = -1
-                b[i * 2] = float(l)
-                A[i * 2 + 1, i] = 1
-                b[i * 2 + 1] = -float(u)
-            A[-1, :].fill(1)
-            b[-1] = -1.0
-
-            # # Calculate interior point
-            # norm_vector = np.reshape(
-            #     np.linalg.norm(halfspaces[:, :-1], axis=1), (halfspaces.shape[0], 1)
-            # )
-            # c = np.zeros((halfspaces.shape[1],))
-            # c[-1] = -1
-            # A = np.hstack((halfspaces[:, :-1], norm_vector))
-            # b = -halfspaces[:, -1:]
-            # interrior_point = linprog(c, A_ub=A, b_ub=b, bounds=(None, None)).x[:-1]
-            #
-            # # Calculate vertices
-            # hs = HalfspaceIntersection(halfspaces, interrior_point)
-            #
-            # # Build new actions
-            # points = hs.intersections
-
-            points = compute_polytope_vertices(A, b)
-            print(transitions, points)
-
-        builder.new_row_group(current_row)
-        for probs in points:
-            if abs(sum(probs) - 1) > 0.0000001:
-                continue
-            new_trans = {}
-
-            for i, p in enumerate(probs):
-                new_trans[transitions[i][0]] = Rational(p) if imc.is_exact else p
-
-            for dest, p in sorted(new_trans.items()):
-                builder.add_next_value(current_row, dest, p)
-
-            current_row += 1
-
-    matrix = builder.build(overridden_column_count=len(imc.states))
-
-    # Build the labeling
-    labeling = StateLabeling(len(imc.states))
-    for label in imc.labeling.get_labels():
-        labeling.add_label(label)
-    labeling.add_label("horizon")
-
-    for i in range(len(imc.states)):
-        for label in imc.states[i].labels:
-            labeling.add_label_to_state(label, i)
-
-    if imc.is_exact:
-        components = SparseExactModelComponents(matrix, labeling)
-        return SparseExactMdp(components)
-    else:
-        components = SparseModelComponents(matrix, labeling)
-        return SparseMdp(components)
 
 
 def stormpy_product_unroll(i_mdp: SparseIntervalMdp, horizon):
@@ -458,7 +367,7 @@ class UnfoldingIntervalRiskAssessment(UnfoldingRiskAssessment):
                     result = check_interval_mdp(self._mdp, task, self._stormpy_env)
                     risk = result.at(self._mdp.initial_states[0])
         except RuntimeError:
-            print("Timeout occurred in risk assesment")
+            logger.warning("Timeout occurred in risk assessment")
             return False, 0
         sp.reset_timeout()
         return True, risk
@@ -494,7 +403,7 @@ def create_monitor(
         trans_dict, init_dict, target_label, use_exact
     )
     if verbose > 1:
-        print(ipomdp)
+        logger.info(str(ipomdp))
         with open("out/imc.dot", "w") as f:
             f.write(ipomdp.to_dot())
 
@@ -563,10 +472,10 @@ def build_monitor_from_model(
     if verbose > 0:
         if state_index_map is None:
             for s, r in enumerate(risks):
-                print(f"{s}= {float(r.upper())}")
+                logger.debug(f"{s}= {float(r.upper())}")
         else:
             for s, i in state_index_map.items():
-                print(f"{s}= {float(risks[i].upper())}")
+                logger.debug(f"{s}= {float(risks[i].upper())}")
 
     # If method is PI we don't want to set the minmaxmethod, thus we remake it:
     if method == "PI":
@@ -643,7 +552,7 @@ def main(args):
     import os
 
     if args.verbose > 0:
-        print(os.getpid())
+        logger.debug(os.getpid())
 
     if args.trace:
         traces = np.load(args.trace, allow_pickle=True)[()]

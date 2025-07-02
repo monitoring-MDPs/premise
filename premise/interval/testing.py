@@ -1,4 +1,5 @@
 import argparse
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -7,6 +8,8 @@ from tqdm import tqdm
 import os
 import pickle
 from stormpy import AddUncertaintyExact, Rational
+from premise.interval.utils import logger
+
 
 from premise.interval.interval import (
     stormpy_imdp_to_ipomdp,
@@ -222,7 +225,7 @@ if __name__ == "__main__":
                 )
 
         states, trans, initial = suo.get_states_and_transitions(False)
-        print(
+        logger.info(
             f"Testing on {key} with {len(states)} ({len(initial)} initial) and {len(trans)} transitions."
         )
 
@@ -309,7 +312,7 @@ if __name__ == "__main__":
                     )
                     uncertain_monitors[au] = au_mon
 
-        print("Ready for testing")
+        logger.info("Ready for testing")
 
         if args.test_data_set:
             traces: Samples = tuple(tuple(s) for s in np.load(args.test_data_set, allow_pickle=True).tolist())  # type: ignore

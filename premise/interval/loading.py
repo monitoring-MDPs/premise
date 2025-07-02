@@ -1,5 +1,6 @@
 from argparse import ArgumentParser, Namespace
 from ast import mod
+import logging
 
 import numpy as np
 
@@ -12,6 +13,7 @@ from premise.system import (
     ACASSystemUnderObservation,
 )
 from premise.models import default_models
+from premise.interval.utils import logger
 
 
 def build_suo_args_parser(parser: ArgumentParser, required: bool = True):
@@ -94,14 +96,16 @@ def build_suo(
             )
             if args.verbose > 1:
                 for s, c in suo.state_coarse_map.items():
-                    print(
+                    logger.info(
                         f"{suo._model.state_valuations.get_string(s)}: {c} [{float(suo.risk[s])}]"
                     )
         else:
             suo: SystemUnderObservation = MCSystemUnderObservation(model_def, args.mc)
             if args.verbose > 1:
                 for i, r in enumerate(suo.get_risk()):
-                    print(f"{suo._model.state_valuations.get_string(i)}: {float(r)}")
+                    logger.info(
+                        f"{suo._model.state_valuations.get_string(i)}: {float(r)}"
+                    )
     elif args.sam:
         suo: SystemUnderObservation = CarlaPreSampledSystemUnderObservation(args.sam)
     elif args.sim:
