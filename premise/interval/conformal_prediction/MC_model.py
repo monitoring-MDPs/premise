@@ -7,7 +7,7 @@ import pickle
 
 class mc_model():
 	
-    def __init__(self, horizon = 5):
+    def __init__(self, horizon):
         self.horizon = horizon
 
     def gen_trajectories(self, samples, horizon):
@@ -52,20 +52,25 @@ class mc_model():
 
 
 
-if __name__=='__main__':
-    samples  = np.load('/Users/skurka/premise/premise/analysis/test_sets/airportA-7-10-10_l25_ho15.npy', allow_pickle=True)
-    mc_model = mc_model()
-    horizon = 15
-    trajs = mc_model.gen_trajectories(samples,horizon)
-    noisy_measurments = mc_model.get_noisy_measurments(samples,horizon)
-    labels = mc_model.gen_labels(samples,horizon)
+#if __name__=='__main__':
+#    samples  = np.load('/workspaces/premise/premise/analysis/test_sets/SnL-10x10_l15_ho5_num200000.npy', allow_pickle=True)
+#   print(len(samples))
+
+
+#    mc_model = mc_model()
+#    
+#    trajs = mc_model.gen_trajectories(samples,horizon)
+#    noisy_measurments = mc_model.get_noisy_measurments(samples,horizon)
+#    labels = mc_model.gen_labels(samples,horizon)
 	
 		
-    print("Percentage of positive points: ", np.sum(labels)/len(samples))
-    dataset_dict = {"x": trajs, "y": noisy_measurments, "cat_labels": labels}
+#    print("Percentage of positive points: ", np.sum(labels)/len(samples))
+#    dataset_dict = {"x": trajs, "y": noisy_measurments, "cat_labels": labels}
 
+    #print(len(dataset_dict['x']))
+    #print(len(dataset_dict['x'][0]))
 
-    #filename = '/Users/skurka/premise/premise/interval/conformal_prediction/Datasets/mc_model_validation_set.pickle'
+    #filename = '/workspaces/premise/premise/interval/conformal_prediction/Datasets/SnL_big/SnL_model_validation_set_50.pickle'
     #with open(filename, 'wb') as handle:
     #    pickle.dump(dataset_dict, handle)
     #handle.close()

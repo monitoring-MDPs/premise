@@ -1,5 +1,7 @@
 import pickle
 import numpy as np
+from joblib import load
+
 
 class SeqDataset():
 
@@ -18,9 +20,12 @@ class SeqDataset():
 		
 	def load_train_data(self):
 
-		file = open(self.trainset_fn, 'rb')
-		data = pickle.load(file)
-		file.close()
+		#file = open(self.trainset_fn, 'rb')
+		#data = pickle.load(file)
+		#file.close()
+
+		#data = load(self.trainset_fn)  #ANTONINA
+		data = self.trainset_fn
 
 		self.Y_train = data["y"]
 		self.X_train = data["x"]
@@ -46,19 +51,21 @@ class SeqDataset():
 		
 		self.X_train_scaled_flat = np.reshape(self.X_train_scaled, (self.n_training_points, self.x_dim*self.traj_len))
 		self.Y_train_scaled_flat = np.reshape(self.Y_train_scaled, (self.n_training_points, self.y_dim*self.traj_len))
-
+ 
 		
 		self.T_train = np.zeros((self.n_training_points, 2))
 		for i in range(self.n_training_points):
 			self.T_train[i, int(labels[i])] = 1
 		self.L_train = labels
-
 		
 	def load_test_data(self):
 
-		file = open(self.testset_fn, 'rb')
-		data = pickle.load(file)
-		file.close()
+		#file = open(self.testset_fn, 'rb')
+		#data = pickle.load(file)
+		#file.close()
+
+		#data = load(self.testset_fn) #ANTONINA
+		data = self.testset_fn
 
 		X = data["x"]
 		Y = data["y"]
@@ -84,9 +91,12 @@ class SeqDataset():
 
 	def load_validation_data(self):
 
-		file = open(self.validset_fn, 'rb')
-		data = pickle.load(file)
-		file.close()
+		#file = open(self.validset_fn, 'rb')
+		#data = pickle.load(file)
+		#file.close()
+
+		#data = load(self.validset_fn) #ANTONINA
+		data = self.validset_fn
 
 		X = data["x"]
 		Y = data["y"]
@@ -111,9 +121,13 @@ class SeqDataset():
 
 	def load_calibration_data(self):
 
-		file = open(self.calibrset_fn, 'rb')
-		data = pickle.load(file)
-		file.close()
+		#file = open(self.calibrset_fn, 'rb')
+		#data = pickle.load(file)
+		#file.close()
+
+		#data = load(self.calibrset_fn)
+		data = self.calibrset_fn
+
 
 		X = data["x"]
 		Y = data["y"]

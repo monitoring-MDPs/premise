@@ -4,7 +4,8 @@ import torch.nn.functional as F
 
 class FF_SeqNSC(nn.Module):
 
-	def __init__(self, input_size = 2*32, hidden_size = 100, output_size = 2):
+	#def __init__(self, input_size = 2*32, hidden_size = 100, output_size = 2): #ANTONINA
+	def __init__(self, input_size = 2*25, hidden_size = 100, output_size = 2): #ANTONINA
 		super(FF_SeqNSC, self).__init__()
 		self.fc1 = nn.Linear(input_size, hidden_size)
 		self.fc2 = nn.Linear(hidden_size, hidden_size)
@@ -43,7 +44,9 @@ class FF_SeqNSC(nn.Module):
 
 class Conv_SeqNSC(nn.Module):
 
-	def __init__(self, x_dim = 2, traj_len = 32, output_size = 2, nb_filters = 128):
+	#def __init__(self, x_dim = 2, traj_len = 32, output_size = 2, nb_filters = 128): #ANTONINA 
+	#def __init__(self, x_dim = 2, traj_len = 25, output_size = 2, nb_filters = 128): 
+	def __init__(self, x_dim, traj_len, output_size = 2, nb_filters=128):
 		super(Conv_SeqNSC, self).__init__()
 		self.keep_prob = 0.8
 		self.nb_filters = nb_filters
@@ -74,7 +77,8 @@ class Conv_SeqNSC(nn.Module):
 			nn.Dropout(p=1 - self.keep_prob))
 		self.fc2 = nn.Linear(100, output_size, bias=True)
 		nn.init.xavier_uniform_(self.fc2.weight) # initialize parameters
-		self.layer6 = nn.Sequential(self.fc2, nn.ReLU())
+		#self.layer6 = nn.Sequential(self.fc2, nn.ReLU()) #ANTONINA
+		self.layer6 = nn.Sequential(self.fc2)
 		
 	def forward(self, x):
 		out = self.layer1(x)

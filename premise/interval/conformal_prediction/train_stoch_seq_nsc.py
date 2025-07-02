@@ -172,7 +172,9 @@ class Train_StochSeqNSC():
 				print("Epoch= {},\t loss = {:2.4f},\t accuracy = {}".format(epoch+1, tmp_loss[-1], tmp_acc[-1]))
 		
 			val_state_estim = self.seq_se(Yval_t)
+
 			val_label_hypothesis = self.seq_nsc(val_state_estim)
+
 			val_comb_loss_fnc = w*nsc_loss_fnc(val_label_hypothesis, Tval_t)+(1-w)*se_loss_fnc(val_state_estim, Xval_t)
 			
 			losses.append(np.mean(tmp_loss))
@@ -221,7 +223,11 @@ class Train_StochSeqNSC():
 		start_time = time.time()
 		
 		state_estimates = self.seq_se(Ytest)
+		print('STATE ESTIMATES') #ANTONINA
+		print(state_estimates) #ANTONINA
 		label_predictions = self.seq_nsc(state_estimates)
+		print('LABEL PREDICTIONS')
+		print(label_predictions)
 		end_time = time.time()-start_time
 		print("time to make {} predictions: ".format(self.seq_dataset.n_test_points), end_time,", per point time: ", end_time/self.seq_dataset.n_test_points)
 		

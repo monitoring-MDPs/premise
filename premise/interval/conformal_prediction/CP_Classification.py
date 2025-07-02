@@ -47,10 +47,10 @@ class ICP_Classification():
 		pred_probs = scipy.special.softmax(pred_lkh, axis=1)
 		n_points = len(y)
         
-		print('pred_probs')
-		print(pred_probs.shape)
-		print('y')
-		print(len(y))
+		#print('pred_probs')
+		#print(pred_probs.shape)
+		#print('y')
+		#print(len(y))
 
 
 		ncm = np.array([np.abs(1-pred_probs[i,int(y[i])]) for i in range(n_points)])
@@ -67,7 +67,9 @@ class ICP_Classification():
 		return: positive p-values, negative p-values
 		
 		'''
+	
 		pred_lkh = self.trained_model(x) # prob of going to pos class on x
+
 		if self.mondrian_flag:
 			alphas_pos = self.calibr_scores[(self.Yc == self.pos_label)]
 			alphas_neg = self.calibr_scores[(self.Yc == self.neg_label)]

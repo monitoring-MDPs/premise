@@ -102,6 +102,7 @@ class Train_SeqNSC():
 				
 				# Forward propagation: compute the output
 				hypothesis = self.seq_nsc(Xt)
+				
 
 				# Computation of the cost J
 				loss = loss_fnc(hypothesis, Tt) # <= compute the loss function
@@ -164,6 +165,7 @@ class Train_SeqNSC():
 
 		Ttest = Variable(LongTensor(self.seq_dataset.L_test))
 		test_preds = self.seq_nsc(Xtest)
+
 		test_accuracy = self.compute_accuracy(Ttest, test_preds)
 		print("Test accuracy: ", test_accuracy)
 

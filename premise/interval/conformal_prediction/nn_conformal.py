@@ -5,8 +5,7 @@ from CP_Classification import *
 from CP_Regression import *
 from SeqDataset import *
 import torch
-import pickle #ANTONINA
-from torch import FloatTensor #ANTONINA
+import pickle 
 from torch.autograd import Variable
 import utility_functions as utils
 import numpy as np
@@ -22,7 +21,7 @@ from MC_model import *
 import time
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_name", type=str, default="IP", help="Name of the model (first letters code).")
+parser.add_argument("--model_name", type=str, default="MC", help="Name of the model (first letters code).")
 parser.add_argument("--do_refinement", type=bool, default=True, help="Flag: refine of the rejection rule.")
 parser.add_argument("--nb_active_iterations", type=int, default=1, help="Number of active learning iterations.")
 parser.add_argument("--nb_epochs", type=int, default=200, help="Number of epochs.")
@@ -33,40 +32,62 @@ parser.add_argument("--lr_tuning", type=float, default=0.000001, help="Adam: lea
 parser.add_argument("--net_type", type=str, default="Conv", help="Type of the net: Conv or FF.")
 parser.add_argument("--nb_filters", type=int, default=128, help="Number of filters per conv layer.")
 parser.add_argument("--epsilon", type=float, default=0.05, help="CP significance level.")
-parser.add_argument("--split_rate", type=float, default=50/65, help="adam: learning rate")
+parser.add_argument("--split_rate", type=float, default=10/14, help="adam: learning rate")
 parser.add_argument("--pool_size_ref", type=int, default=25000, help="Size of the pool for the refinement step.")
 parser.add_argument("--pool_size", type=int, default=50000, help="Size of the pool for one active learning step.")
 parser.add_argument("--reinit_weights", type=bool, default=False, help="Flag: do reinitialize the weights in active learning steps.")
 parser.add_argument("--do_finetuning", type=bool, default=False, help="Flag: do fine-tuning of the two step process.")
 parser.add_argument("--nb_epochs_tuning", type=int, default=100, help="Number of epochs of fine-tuning.")
 parser.add_argument("--nb_epochs_active_tuning", type=int, default=200, help="Number of epochs of fine-tuning in active learning.")
+#parser.add_argument("--total_samples", type=int, help="Total number of samples used in learning")
+#parser.add_argument("--length", type=int, help="Path lenth, with horizon")
+#parser.add_argument("--horizon", type=int, help="Horizon length")
+#parset.add_arguemnt("--markov_chain, type=str, help="Markov Chain to learn")
 
 opt = parser.parse_args()
 print(opt)
 
-#ANTONINA 
-samples  = np.load('/workspaces/premise/premise/analysis/test_sets/airportA-7-10-10_l25_ho15.npy', allow_pickle=True)
+ref_samples = np.load('/workspaces/premise/premise/interval/conformal_prediction/Datasets/Airport_1/Airport_A_7_10_model_refinement_5K.npy', allow_pickle=True)
+active_samples = np.load('/workspaces/premise/premise/interval/conformal_prediction/Datasets/Airport_1/Airport_A_7_10_model_active_10K.npy', allow_pickle=True)
+samples_for_testing = np.load('/workspaces/premise/premise/interval/conformal_prediction/Datasets/Airport_1/Airport_A_7_10_model_final_test_1K.npy', allow_pickle=True)
+
 horizon = 15
 
 # Generate a instance of the class of the model corresponding to opt.model_name
-
-#models_dict = {"IP": InvertedPendulum(), "SN": SpikingNeuron(), "TWT": TripleWaterTank(), "CVDP": CoupledVanDerPol(), "LALO": LaubLoomis(), "HC": Helicopter()}
 models_dict = {"IP": InvertedPendulum(), "MC": mc_model()}
 
 model = models_dict[opt.model_name]
-model_name = opt.model_name #ANTONINA
+model_name = opt.model_name 
 
-#trainset_fn = "Datasets/"+opt.model_name+"_training_set_20K.pickle"
-#testset_fn = "Datasets/"+opt.model_name+"_test_set_10K.pickle"
-#validset_fn = "Datasets/"+opt.model_name+"_validation_set_50.pickle"
 
-#calibrset_fn = "Datasets/"+opt.model_name+"_calibration_set_15K.pickle"
-#calibrset_fn = "Datasets/"+opt.model_name+"_test_set_10K.pickle"
+#samples  = np.load('main_sample_path', allow_pickle=True)
 
-trainset_fn = '/workspaces/premise/premise/interval/conformal_prediction/Datasets/mc_model_training_set.pickle'
-testset_fn =  '/workspaces/premise/premise/interval/conformal_prediction/Datasets/mc_model_test_set.pickle'
-validset_fn = '/workspaces/premise/premise/interval/conformal_prediction/Datasets/mc_model_validation_set.pickle'
-calibrset_fn =  '/workspaces/premise/premise/interval/conformal_prediction/Datasets/mc_model_calibration_set.pickle'
+#trainset = samples[:round((opt.total_samples - 50)*20/41)]
+#calibrset = samples[round((opt.total_samples - 50)*20/41): round((opt.total_samples - 50)*26/41)]
+#testset = samples[round((opt.total_samples - 50)*26/41): round((opt.total_samples - 50)*26/41) + 10000]
+#validset = samples[round((opt.total_samples - 50)*26/41) + 10000: round((opt.total_samples - 50)*26/41) + 10050]
+
+
+#sets = {'trainset': trainset, 'calibrset': calibrset, 'testset': testset, 'validset': validset}
+#dicts = {}
+
+#for name, s in sets.items():
+#	paths = mc_model.gen_trajectories(s,horizon)
+#	noisy_measurments = mc_model.get_noisy_measurments(s,horizon)
+#	labels = mc_model.gen_labels(s,horizon)	
+#   dicts[f"{name}_fn"] = {'x': paths, 'y': noisy_measurments, 'z': labels}
+
+
+#dataset = SeqDataset(dicts['trainset_fn'], dicts['testset_fn'], dicts['validset_fn'])
+#dataset.load_data()
+#dataset.add_calibration_path(dicts['calibrset_fn'])
+#dataset.load_calibration_data()
+
+trainset_fn = '/workspaces/premise/premise/interval/conformal_prediction/Datasets/Airport_1/Airport_A_7_10_model_training_set_10K.pickle'
+testset_fn =  '/workspaces/premise/premise/interval/conformal_prediction/Datasets/Airport_1/Airport_A_7_10_model_test_set_2K.pickle'
+validset_fn = '/workspaces/premise/premise/interval/conformal_prediction/Datasets/Airport_1/Airport_A_7_10_model_validation_set_50.pickle'
+calibrset_fn =  '/workspaces/premise/premise/interval/conformal_prediction/Datasets/Airport_1/Airport_A_7_10_model_calibration_set_4K.pickle'
+
 
 dataset = SeqDataset(trainset_fn, testset_fn, validset_fn)
 dataset.load_data()
@@ -93,7 +114,6 @@ print("FINE TUNING TRAINING TIME: ", time.time()-start_time)
 
 comb_ponsc.generate_test_results()
 
-
 nsc_fnc = lambda inp: comb_ponsc.seq_nsc(Variable(FloatTensor(inp))).cpu().detach().numpy() # after fine-tuning
 se_fnc = lambda inp: comb_ponsc.seq_se(Variable(FloatTensor(inp))).cpu().detach().numpy() # after fine-tuning
 
@@ -107,10 +127,6 @@ state_cal = np.transpose(dataset.X_cal_scaled, (0,2,1))
 output_cal = dataset.L_cal
 output_test = dataset.L_test
 
-print("state_cal.shape:", state_cal.shape) #ANTONINA
-print("output_cal.shape:", output_cal.shape) #ANTONINA
-print("len(output_cal):", len(output_cal)) #ANTONINA
-print("output_cal[0]:", output_cal[0]) #ANTONINA
 
 # MEMO: the calibration set MUST come from the same distribution of the train set
 cp_class = ICP_Classification(Xc = state_cal, Yc = output_cal, trained_model = nsc_fnc, mondrian_flag = False)
@@ -184,10 +200,19 @@ print("FP Detection rate: ", fp_detection_rate, "FN Detection rate: ", fn_detect
 if opt.do_refinement:
 	print("----- REFINEMENT of the Rejection Rule...")
 	#unc_meas_ref, unc_states_ref, unc_outputs_ref = utils.Comb_PONSC_active_sample_query(pool_size = opt.pool_size_ref, model_class = model, conf_pred = cp_comb_class, trained_svc = query_fnc, se_fnc= se_fnc, dataset=dataset)
-	unc_meas_ref, unc_states_ref, unc_outputs_ref = utils.Comb_PONSC_active_sample_query(samples, horizon, model_class = model, conf_pred = cp_comb_class, trained_svc = query_fnc, se_fnc = se_fnc, dataset=dataset)
+	unc_meas_ref, unc_states_ref, unc_outputs_ref = utils.Comb_PONSC_active_sample_query(ref_samples, horizon, model_class = model, conf_pred = cp_comb_class, trained_svc = query_fnc, se_fnc = se_fnc, dataset=dataset)
+
+
+	#if len(unc_meas_ref) < round((opt.total_samples - 50)*5/41): 
+	#	print("Not enough samples for refinement step")
+	#else:
+	#	unc_meas_ref = unc_meas_ref[:round((opt.total_samples - 50)*5/41)]
+	#	unc_states_ref = unc_states_ref[:round((opt.total_samples - 50)*5/41)]
+	#	unc_outputs_ref = unc_outputs_ref[:round((opt.total_samples - 50)*5/41)]
 
 	n_ref_points = len(unc_meas_ref)
-	print("Nb of points to add: ", n_ref_points, "/", opt.pool_size_ref)
+	#print("Nb of points to add: ", n_ref_points, "/", opt.pool_size_ref)
+	print("Nb of points to add: ", n_ref_points)
 
 	meas_cal_ref = np.vstack((dataset.Y_cal_scaled, unc_meas_ref))
 	state_cal_ref = np.vstack((dataset.X_cal_scaled, unc_states_ref))
@@ -226,16 +251,22 @@ for k in range(opt.nb_active_iterations):
 	print("----- Active selection of additional (uncertain) points...")
 	start_active = time.time()
 	#unc_meas, unc_states, unc_outputs = utils.Comb_PONSC_active_sample_query(pool_size = opt.pool_size, model_class = model, conf_pred = curr_cp_comb_class, trained_svc = curr_query_fnc, se_fnc= curr_se_fnc, dataset=curr_dataset)
-	unc_meas, unc_states, unc_outputs = utils.Comb_PONSC_active_sample_query(samples, horizon, model_class = model, conf_pred = curr_cp_comb_class, trained_svc = curr_query_fnc, se_fnc = curr_se_fnc, dataset=curr_dataset)
+	unc_meas, unc_states, unc_outputs = utils.Comb_PONSC_active_sample_query(active_samples, horizon, model_class = model, conf_pred = curr_cp_comb_class, trained_svc = curr_query_fnc, se_fnc = curr_se_fnc, dataset=curr_dataset)
+
+	#if len(unc_meas) < round((opt.total_samples - 50)*10/41): 
+	#	print("Not enough samples for active learning step")
+	#else:
+	#	unc_meas = unc_meas[:round((opt.total_samples - 50)*10/41)]
+	#	unc_states = unc_states[:round((opt.total_samples - 50)*10/41)]
+	#	unc_outputs = unc_outputs[:round((opt.total_samples - 50)*10/41)]
+
 
 	print("XXX time to active query points for pool: ", time.time()-start_active)
 	
 	n_active_points = len(unc_outputs)
-	print("Nb of points to add: ", n_active_points, "/", opt.pool_size)
+	#print("Nb of points to add: ", n_active_points, "/", opt.pool_size)
+	print("Nb of points to add: ", n_active_points)
 
-	print("unc_meas_ref.shape:", unc_meas_ref.shape)
-	print("unc_states_ref.shape:", unc_states_ref.shape)
-	print("unc_outputs_ref.shape:", unc_outputs_ref.shape)
 
 	#n_retrain = int(np.round(opt.nb_active_points*opt.split_rate))
 	n_retrain = int(np.round(n_active_points*opt.split_rate)) #ANTONINA
@@ -344,7 +375,6 @@ for k in range(opt.nb_active_iterations):
 
 	print("ACTIVE FP Detection rate: ", active_fp_detection_rate, "FN Detection rate: ", active_fn_detection_rate)
 
-
 	curr_cp_comb_class = active_cp_comb_class
 	curr_query_fnc = active_query_fnc
 	curr_dataset = active_dataset
@@ -358,77 +388,143 @@ handle.close()
 
 
 
+def infer_on_new_batch(new_noisy): 
 
+	new_noisy_scaled = -1+2*(new_noisy - dataset.MIN[1])/(dataset.MAX[1]-dataset.MIN[1])
+	Y1 = np.transpose(new_noisy_scaled, (0,2,1))
+	Y1t = Variable(FloatTensor(Y1))
+	state_estim = active_comb_ponsc.seq_se(Y1t)
+	label_hypothesis = active_comb_ponsc.seq_nsc(state_estim)
+	print(label_hypothesis[:3])
+	
+	if label_hypothesis.shape[1] == 2:
+		pred_label = label_hypothesis.data.max(dim=1)[1]
+	else:
+		pred_label = label_hypothesis.data.round()
+	
+	alt_pred_label = (label_hypothesis[:, 1] > 0.05).long()
+	
+	pool_conf_cred = cp_comb_class.compute_confidence_credibility(np.transpose(new_noisy_scaled,(0,2,1)))
+	keep_mask = utils.apply_svc_query_strategy(active_query_fnc, pool_conf_cred)
 
-#ANTONINA: 
-def infer_on_new_batch(new_noisy):
-    """
-    new_noisy: NumPy array of shape (N_new, T, 1), dtype float32,
-               containing your new batch of noisy measurements.
-
-    This function will:
-      - reshape to (N_new, 1, T) before passing into the SE→NSC networks, and
-      - reshape to (N_new, 1, T) before passing into cp_comb_class.compute_confidence_credibility.
-    """
-
-    comb_ponsc.seq_se.eval()
-    comb_ponsc.seq_nsc.eval()
-
-    # === STEP 1: run SE→NSC to get raw logits/probabilities ===
-    # new_noisy originally has shape (N_new, T, 1).
-    # We need (N_new, 1, T) for Conv1d’s “channels=1”.
-    with torch.no_grad():
-        # 1a) Convert to torch and permute (N_new, T, 1) → (N_new, 1, T)
-        meas_tensor = torch.FloatTensor(new_noisy).permute(0, 2, 1)
-        #       now meas_tensor.shape == (N_new, 1, T)
-
-        est_states = comb_ponsc.seq_se(Variable(meas_tensor))
-        #       est_states.shape == (N_new, channels’, new_length)  (whatever your SE outputs)
-        logits = comb_ponsc.seq_nsc(est_states)
-        #       logits.shape == (N_new, 2)
-
-        probs = torch.softmax(logits, dim=1).cpu().numpy()
-        #       probs.shape == (N_new, 2)
-
-    # === STEP 2: compute (confidence, credibility) via conformal classifier ===
-    # Again, cp_comb_class was trained on inputs of shape (N, 1, T).
-    # So we must transpose new_noisy from (N_new, T, 1) → (N_new, 1, T) before calling it.
-    meas_for_cp = np.transpose(new_noisy, (0, 2, 1))  
-    #      now meas_for_cp.shape == (N_new, 1, T)
-
-    conf_cred = cp_comb_class.compute_confidence_credibility(meas_for_cp)  # → (N_new, 2)
-
-    # === STEP 3: apply rejection rule (query_fnc) ===
-    keep_mask = utils.apply_svc_query_strategy(query_fnc, conf_cred)  # → (N_new,)
-
-    # === STEP 4: final predicted labels ===
-    predicted_labels = np.argmax(probs, axis=1)  # (N_new,)
-
-    # === STEP 5: print results ===
-    print("\nInference on new batch:\n")
-    for i in range(new_noisy.shape[0]):
-        lbl = int(predicted_labels[i])
-        rejected = (keep_mask[i] == 0)
-        c_val, cr_val = conf_cred[i, 0], conf_cred[i, 1]
-        print(
-            f" Sample {i:2d} → label={lbl}   "
-            f"rejected={rejected}   "
-            f"(confidence, credibility)=({c_val:.3f}, {cr_val:.3f})"
-        )
-    print()
-
+	return state_estim, pred_label, alt_pred_label, keep_mask
 
 model_inst = mc_model()
 
-samples_for_testing = np.load(
-    '/Users/skurka/premise/premise/analysis/test_sets/airportA-7-10-10_l25_ho15.npy',
-    allow_pickle=True
-)
+samples_for_testing = np.load('/workspaces/premise/premise/interval/conformal_prediction/Datasets/Airport_2/Airport_A_7_10_model_final_test_1K.npy', allow_pickle=True)
 horizon = 15
 
+states = model_inst.gen_trajectories(samples_for_testing, horizon)
 noisy_measurements = model_inst.get_noisy_measurments(samples_for_testing, horizon)
-labels             = model_inst.gen_labels(samples_for_testing, horizon)
+labels = model_inst.gen_labels(samples_for_testing, horizon)
 
-infer_on_new_batch(noisy_measurements[:50])
-print(labels[:50])
+state_estim, pred_label, alt_pred_label,  keep_mask = infer_on_new_batch(noisy_measurements)
+
+for i in range(3): 
+	print('----------------------------------------------')
+	print('Predicted states vs True states')
+	for x in range(25): 
+		print(f'Step {x}')
+		print((state_estim[i][0][x] + 1)*50)
+		print(states[i][x])
+		
+	print('Predicted label vs True label')
+	print(pred_label[i])
+	print(alt_pred_label[i])
+	print(labels[i])
+	if keep_mask[i] == 1: 
+		print('Not Rejected')
+	if keep_mask[i] == -1:
+		print('Rejected')
+
+
+false_negative = 0 
+false_positive = 0
+true_negative = 0
+true_positive = 0
+
+rejected_positive = 0 
+rejected_negative = 0 
+
+print(keep_mask)
+print(pred_label)
+print(alt_pred_label)
+print(labels)
+
+for i in range(len(keep_mask)): 
+	if labels[i] == 0. and alt_pred_label[i] == 0: 
+		if keep_mask[i] == 1: 
+			true_negative += 1
+		
+	if labels[i] == 1. and alt_pred_label[i] == 1: 
+		if keep_mask[i] == 1: 
+			true_positive += 1
+	
+	if labels[i] == 1. and alt_pred_label[i] == 0:
+		if keep_mask[i] == 1:
+			false_negative +=1 
+	
+	if labels[i] == 0. and alt_pred_label[i] == 1:
+		if keep_mask[i] == 1:
+			false_positive +=1
+
+	if keep_mask[i] == -1:
+		if labels[i] == 0.: 
+			rejected_negative +=1 
+		if labels[i] == 1.: 
+			rejected_positive +=1 
+
+print("Negative detected")
+print(true_negative)			
+
+print("Positive detected")
+print(true_positive)
+
+print("False negative")
+print(false_negative)
+
+print("False positive")
+print(false_positive)
+
+print("Rejected negatives")
+print(rejected_negative)
+
+print("Rejected positves")
+print(rejected_positive)
+
+		
+# 5372 / 50000
+# 2450 / 25000
+	
+
+#Negative detected
+#458
+#Positive detected
+#0
+#False negative
+#87
+#False positive
+#0
+#Rejected negatives
+#367
+#Rejected positves
+#88
+
+
+# 9331 / 50000
+# 4950 / 25000
+
+#Negative detected
+#555
+#Positive detected
+#0
+#False negative
+#87
+#False positive
+#0
+#Rejected negatives
+#270
+#Rejected positves
+#88
+
 

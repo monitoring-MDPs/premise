@@ -30,7 +30,7 @@ def train_svc_query_strategy(kernel_type, unc_input, error_labels):
 def apply_svc_query_strategy(trained_svc, unc_input):
 	return trained_svc.predict(unc_input)
 
-def PONSC_active_sample_query(samples,horizon, model_class, conf_pred, trained_svc, dataset):
+def PONSC_active_sample_query(samples, horizon, model_class, conf_pred, trained_svc, dataset):
 	# For PO NSC
 
 	# Generate a pool of random inputs (remember to scale them)
@@ -56,18 +56,18 @@ def PONSC_active_sample_query(samples,horizon, model_class, conf_pred, trained_s
 	return unc_inputs_scaled, unc_labels # return the noisy measurements and the labels
 
 
-def Comb_PONSC_active_sample_query(samples,horizon, model_class, conf_pred, trained_svc, se_fnc, dataset):
+def Comb_PONSC_active_sample_query(samples, horizon, model_class, conf_pred, trained_svc, se_fnc, dataset):
 	# For Combined PO NSC
-	print("samples.shape:", samples.shape)
+	#print("samples.shape:", samples.shape)
 
 	# Generate a pool of random inputs (remember to scale them)
 	pool_of_trajs = model_class.gen_trajectories(samples,horizon)
-	print("pool_of_trajs.shape:", pool_of_trajs.shape)
+	#print("pool_of_trajs.shape:", pool_of_trajs.shape)
 
 	pool_of_trajs_scaled = -1+2*(pool_of_trajs-dataset.MIN[0])/(dataset.MAX[0]-dataset.MIN[0])
 
 	pool_of_meas = model_class.get_noisy_measurments(samples,horizon)
-	print("pool_of_meas.shape:", pool_of_meas.shape)
+	#print("pool_of_meas.shape:", pool_of_meas.shape)
 
 	pool_of_meas_scaled = -1+2*(pool_of_meas-dataset.MIN[1])/(dataset.MAX[1]-dataset.MIN[1])
 
@@ -79,24 +79,23 @@ def Comb_PONSC_active_sample_query(samples,horizon, model_class, conf_pred, trai
 	for i in range(n_batches):
 		pool_conf_cred[i*BS:(i+1)*BS] = conf_pred.compute_confidence_credibility(np.transpose(pool_of_meas_scaled[i*BS:(i+1)*BS],(0,2,1)))
 
+	#print(f"pool_conf_cred: {pool_conf_cred}")
+	#print("pool_conf_cred shape:", pool_conf_cred.shape)
+	#print("NaN count:", np.isnan(pool_conf_cred).sum())
+	
 	pool_pred_errors = apply_svc_query_strategy(trained_svc, pool_conf_cred)
 
 	selected_indices = np.where((1 - pool_pred_errors).astype(bool))[0] #ANTONINA
 	unc_trajs = pool_of_trajs[selected_indices] #ANTONINA
 
 	#unc_trajs = pool_of_trajs[(1-pool_pred_errors).astype(bool)]
-	print("unc_trajs.shape:", unc_trajs.shape)
+	#print("unc_trajs.shape:", unc_trajs.shape)
 
 	unc_trajs_scaled = pool_of_trajs_scaled[(1-pool_pred_errors).astype(bool)]
 	unc_meas_scaled = pool_of_meas_scaled[(1-pool_pred_errors).astype(bool)]
 			
 	unc_labels = model_class.gen_labels(samples,horizon)
 	unc_labels = unc_labels[selected_indices] #ANTONINA
-
-	print("unc_trajs.shape:", unc_trajs.shape)
-	print("unc_trajs_scaled.shape:", unc_trajs_scaled.shape)
-	print("unc_meas_scaled.shape:", unc_meas_scaled.shape)
-	print("unc_labels.shape:", unc_labels.shape)
 
 	return unc_meas_scaled, unc_trajs_scaled, unc_labels
 

@@ -4,7 +4,7 @@ from typing import Any
 import numpy as np
 import argparse
 
-from pypoman import compute_polytope_vertices
+#from pypoman import compute_polytope_vertices
 from stormpy import (
     Environment,
     MinMaxMethod,
