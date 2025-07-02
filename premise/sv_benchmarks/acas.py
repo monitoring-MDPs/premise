@@ -1,12 +1,19 @@
 # %%
 import math
+import random
 from typing import Callable, Optional
 
+from networkx import radius
 import numpy as np
 from PIL import Image, ImageDraw
 from stormvogel import pgc, ModelType, Model
 
-from premise.sv_benchmarks.coarse import CoarseValue, CoarseGaussianValue
+from premise.sv_benchmarks.coarse import (
+    CoarseValue,
+    CoarseGaussianValue,
+    NonCoarseGaussianValue,
+    NonCoarseValue,
+)
 
 NMAC = 150  # m (Near Mid Air Collision)
 
@@ -45,22 +52,22 @@ MIN_PROB_VAL = 0.01
 
 
 class ACAState(pgc.State):
-    radius: CoarseValue
-    bearing: CoarseGaussianValue
-    rel_heading: CoarseGaussianValue
-    ego_speed: CoarseGaussianValue
-    int_speed: CoarseGaussianValue
+    radius: CoarseValue | NonCoarseValue
+    bearing: CoarseGaussianValue | NonCoarseGaussianValue
+    rel_heading: CoarseGaussianValue | NonCoarseGaussianValue
+    ego_speed: CoarseGaussianValue | NonCoarseGaussianValue
+    int_speed: CoarseGaussianValue | NonCoarseGaussianValue
     nmac: float
     timestep: int
     init: bool
 
     def __init__(
         self,
-        radius: Optional[CoarseValue] = None,
-        bearing: Optional[CoarseGaussianValue] = None,
-        rel_heading: Optional[CoarseGaussianValue] = None,
-        ego_speed: Optional[CoarseGaussianValue] = None,
-        int_speed: Optional[CoarseGaussianValue] = None,
+        radius: Optional[CoarseValue | NonCoarseValue] = None,
+        bearing: Optional[CoarseGaussianValue | NonCoarseGaussianValue] = None,
+        rel_heading: Optional[CoarseGaussianValue | NonCoarseGaussianValue] = None,
+        ego_speed: Optional[CoarseGaussianValue | NonCoarseGaussianValue] = None,
+        int_speed: Optional[CoarseGaussianValue | NonCoarseGaussianValue] = None,
         radius_min=RADIUS_MIN,
         radius_max=RADIUS_MAX,
         radius_coarse=RADIUS_COARSE,
@@ -88,6 +95,7 @@ class ACAState(pgc.State):
         min_prob_val=MIN_PROB_VAL,
         timestep=TIMESTEP,
         nmac=NMAC,
+        coarse: bool = True,
     ):
         self.nmac = nmac
         self.timestep = timestep
@@ -103,15 +111,18 @@ class ACAState(pgc.State):
         else:
             self.init = False
 
+        CV = CoarseValue if coarse else NonCoarseValue
+        CGV = CoarseGaussianValue if coarse else NonCoarseGaussianValue
+
         if radius is None:
-            self.radius = CoarseValue(
+            self.radius = CV(
                 radius_min, radius_max, radius_coarse, radius_obs, timestep
             )
         else:
             self.radius = radius
 
         if bearing is None:
-            self.bearing = CoarseGaussianValue(
+            self.bearing = CGV(
                 bearing_min,
                 bearing_max,
                 bearing_coarse,
@@ -126,7 +137,7 @@ class ACAState(pgc.State):
             self.bearing = bearing
 
         if rel_heading is None:
-            self.rel_heading = CoarseGaussianValue(
+            self.rel_heading = CGV(
                 rel_heading_min,
                 rel_heading_max,
                 rel_heading_coarse,
@@ -140,7 +151,7 @@ class ACAState(pgc.State):
             self.rel_heading = rel_heading
 
         if ego_speed is None:
-            self.ego_speed = CoarseGaussianValue(
+            self.ego_speed = CGV(
                 ego_speed_min,
                 ego_speed_max,
                 ego_speed_coarse,
@@ -154,7 +165,7 @@ class ACAState(pgc.State):
             self.ego_speed = ego_speed
 
         if int_speed is None:
-            self.int_speed = CoarseGaussianValue(
+            self.int_speed = CGV(
                 int_speed_min,
                 int_speed_max,
                 int_speed_coarse,
@@ -179,6 +190,40 @@ class ACAState(pgc.State):
         r_new = np.hypot(x, y)
         bearing_new = np.arctan2(y, x)
         return r_new, bearing_new
+
+    def step(self) -> None:
+        if self.init:
+            # Choose random initial state
+            distr = []
+
+            rs = self.radius.unif_distr()
+            bs = self.bearing.unif_distr()
+            rhs = self.rel_heading.unif_distr()
+            ess = self.ego_speed.unif_distr()
+            iss = self.int_speed.unif_distr()
+            self.radius = np.random.choice(
+                np.array([r for (_, r) in rs]), p=[p for (p, _) in rs]
+            )
+            self.bearing = np.random.choice(
+                np.array([b for (_, b) in bs]), p=[p for (p, _) in bs]
+            )
+            self.rel_heading = np.random.choice(
+                np.array([rh for (_, rh) in rhs]), p=[p for (p, _) in rhs]
+            )
+            self.ego_speed = np.random.choice(
+                np.array([es for (_, es) in ess]), p=[p for (p, _) in ess]
+            )
+            self.int_speed = np.random.choice(
+                np.array([is_ for (_, is_) in iss]), p=[p for (p, _) in iss]
+            )
+            self.init = False
+        else:
+            r_new, b_new = self.calc()
+            self.radius.update(r_new)
+            self.bearing.update(b_new)
+            self.rel_heading.update(self.rel_heading.value)
+            self.ego_speed.update(self.ego_speed.value)
+            self.int_speed.update(self.int_speed.value)
 
     def labels(self):
         labels = []

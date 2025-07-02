@@ -2,13 +2,20 @@ FROM lukovdm/stormpy:premise
 
 RUN apt-get update && apt-get install texlive-latex-recommended texlive-latex-extra parallel -y 
 
-RUN mkdir /opt/premise
-WORKDIR /opt/premise
-
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-COPY requirements.txt ./
+RUN mkdir /opt/stormvogel
+WORKDIR /opt/stormvogel
+
+COPY stormvogel .
+
+RUN pip install .
+
+RUN mkdir /opt/premise
+WORKDIR /opt/premise
+
+COPY premise/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ENV CARLA_ENV=/opt/carla-venv
@@ -21,6 +28,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # ENV PATH=$OLD_PATH
 
-COPY . .
+COPY premise .
 
 RUN python setup.py install

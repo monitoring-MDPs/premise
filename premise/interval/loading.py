@@ -1,4 +1,5 @@
 from argparse import ArgumentParser, Namespace
+from ast import mod
 
 import numpy as np
 
@@ -71,12 +72,22 @@ def build_imc_loading_args_parser(
     )
 
 
-def build_suo(args: Namespace):
+def build_suo(
+    args: Namespace,
+) -> tuple[
+    SystemUnderObservation,
+    int | None,
+    int | None,
+]:
+    horizon = None
+    initial_amount = None
+
     if args.mc:
         model_def = default_models[args.mc]
-        model_def.risk_property = (
-            f'Pmax=? [F<={vars(args).get("horizon", 1)} "{model_def.target_label}" ]'
-        )
+        model_def.risk_property = f'Pmax=? [F<={vars(args).get("horizon", 1) or model_def.horizon} "{model_def.target_label}" ]'
+        horizon = model_def.horizon
+        initial_amount = model_def.initial_amount
+
         if args.sys_vars is not None:
             suo: SystemUnderObservation = CoarseMCSystemUnderObservation(
                 model_def, args.mc, args.sys_vars
@@ -101,7 +112,7 @@ def build_suo(args: Namespace):
         )
     else:
         raise ValueError("No model specified")
-    return suo
+    return suo, initial_amount, horizon
 
 
 def load_imc(args: Namespace):

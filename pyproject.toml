@@ -6,7 +6,7 @@ authors = []
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.11"
 tqdm = "^4.67.0"
 stormpy = { path = "../stormpy-premise"}
 black = "^24.10.0"

@@ -116,7 +116,23 @@ def predict_on_test(model, test_traces, obs_to_idx, threshold=0.5):
 
 
 def reg_main(args: argparse.Namespace):
-    suo = build_suo(args)
+    suo, initial_amount, horizon = build_suo(args)
+
+    if args.length is None:
+        if initial_amount is not None:
+            args.length = initial_amount
+        else:
+            raise ValueError(
+                "Either length must be specified or initial_amount must be provided by the model."
+            )
+
+    if args.horizon is None:
+        if horizon is not None:
+            args.horizon = horizon
+        else:
+            raise ValueError(
+                "Either horizon must be specified or it must be provided by the model."
+            )
 
     train_samples = suo.generate_random_traces(
         [], args.length + args.horizon, args.amount
@@ -161,13 +177,13 @@ def build_learning_args_parser(parser: argparse.ArgumentParser):
         "-a", "--amount", type=int, default=1000, help="Amount of samples to generate"
     )
     group.add_argument(
-        "-l", "--length", type=int, default=15, help="Length of the samples to generate"
+        "-l", "--length", type=int, help="Length of the samples to generate"
     )
     group.add_argument(
         "-t", "--test_samples", type=int, default=5, help="Amount of test samples"
     )
     group.add_argument("--model", type=bool, default=False, help="If a model exists")
-    group.add_argument("--horizon", type=int, default=5, help="Length horizon")
+    group.add_argument("--horizon", type=int, help="Length horizon")
 
 
 def reg_argsparser():
@@ -201,4 +217,3 @@ if __name__ == "__main__":
     parser = reg_argsparser()
     args = parser.parse_args()
     reg_main(args)
-    suo = build_suo(args)

@@ -131,7 +131,7 @@ if __name__ == "__main__":
         for stats_file in stats_path.iterdir():
             data = np.load(stats_file, allow_pickle=True).item()
             key = (
-                data["args"]["mc"],
+                data["args"]["mc"] or "acas-" + str(data["args"]["acas"]),
                 (
                     tuple(data["args"]["sys_vars"])
                     if data["args"]["sys_vars"] is not None
@@ -195,7 +195,7 @@ if __name__ == "__main__":
 
     else:
         key = (
-            args.mc,
+            args.mc or "acas-" + str(args.acas),
             (tuple(args.sys_vars) if args.sys_vars is not None else None),
             args.sam,
             args.sim,
@@ -205,7 +205,21 @@ if __name__ == "__main__":
         test_args[key] = args
 
     for key, args in test_args.items():
-        suo = build_suo(args)
+        suo, initial_amount, horizon = build_suo(args)
+        if args.horizon is None:
+            if horizon is not None:
+                args.horizon = horizon
+            else:
+                raise ValueError(
+                    "Either horizon must be specified or it must be provided by the model."
+                )
+        if args.sample_length is None:
+            if initial_amount is not None:
+                args.sample_length = initial_amount
+            else:
+                raise ValueError(
+                    "Either sample_length must be specified or initial_amount must be provided by the model."
+                )
 
         states, trans, initial = suo.get_states_and_transitions(False)
         print(

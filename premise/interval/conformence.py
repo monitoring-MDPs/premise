@@ -89,7 +89,13 @@ def random_sample_monitor_test(
 
 
 def main(args: argparse.Namespace):
-    suo = build_suo(args)
+    suo, ia, horizon = build_suo(args)
+
+    if args.horizon is None:
+        args.horizon = horizon
+
+    if args.sample_length is None and ia is not None and args.horizon is not None:
+        args.sample_length = ia + args.horizon
 
     distance = distance_measures[args.distance](args.distance_threshold)
 
@@ -211,7 +217,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "-l",
         "--sample_length",
-        required=True,
         type=int,
         help="Length of the samples to generate",
     )
@@ -229,9 +234,7 @@ if __name__ == "__main__":
         default=500,
         help="Amount of extensions to generate for a sample",
     )
-    parser.add_argument(
-        "-ho", "--horizon", required=True, type=int, help="The horizon to monitor on"
-    )
+    parser.add_argument("-ho", "--horizon", type=int, help="The horizon to monitor on")
     parser.add_argument(
         "--dump-stats", type=str, help="Path to the file to dump stats to"
     )

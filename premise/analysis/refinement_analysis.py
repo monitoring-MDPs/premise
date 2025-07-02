@@ -107,7 +107,7 @@ def main(
         ("../../out/stats/2025-06-17_15-07-13", "obs start state, 10 prefixes"),
         ("../../out/stats/2025-06-18_09-54-18", "prefix start state, 10 prefixes"),
         ("../../out/stats/2025-06-18_15-46-39", "prefix start state, splitting"),
-        ("../../out/stats/2025-06-20_14-34-33", "obs start state, splitting"),
+        ("../../out/stats/2025-06-23_11-19-27", "obs start state, splitting"),
     ]
 ):
     stats_dicts: dict[tuple, dict] = {}
@@ -197,7 +197,7 @@ def main(
 
         plot_mult_distances(
             plot_data,
-            f"{model_key[0]} with possible sys vars {model_key[1]} and distance {model_key[-1]}",
+            f"{model_key[0] or model_key[3]} with possible sys vars {model_key[1]}",
             log=True,
         )
 

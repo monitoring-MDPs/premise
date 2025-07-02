@@ -118,7 +118,7 @@ def inspect_traces(traces, alarms, risks_dict, suo, sample_length):
                 print(f"{k} risk: {risks_dict[k][i]}")
 
 
-def main(stats_path="../../out/tmp/test4"):
+def main(stats_path="../../out/tmp/test06-23"):
     matplotlib.rcParams["figure.dpi"] = 300
     path = Path(stats_path)
     if path.is_dir():

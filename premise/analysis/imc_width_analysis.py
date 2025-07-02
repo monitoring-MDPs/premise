@@ -75,7 +75,7 @@ def plot_widths(widths_dict, title=None, typ="errorbar"):
         plt.title(title)
 
 
-def main(path="../../out/models/2025-06-12_10-31-03", out_path="../../out/tmp/gifs3"):
+def main(path="../../out/models/2025-06-23_11-19-27", out_path="../../out/tmp/gifs4"):
     out_path = Path(out_path)
     out_path.mkdir(exist_ok=True)
     path = Path(path)
