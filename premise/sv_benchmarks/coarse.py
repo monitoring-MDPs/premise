@@ -187,6 +187,25 @@ class CoarseGaussianValue(CoarseValue):
         return f"CoarseGaussianValue({self.coarse_value}, {self.min_bound}, {self.max_bound}, {self.coarseness}, {self.mean}, {self.std}, {self.min_prob})"
 
 
+class NonCoarseValue(CoarseValue):
+    def update(self, new_value: float):
+        self.coarse_value = self._calc_coarse(new_value)
+        self.value = new_value
+
+        self.coarse_obs = self._calc_coarse(new_value, obs=True)
+        self.obs = self.calc_value(self.coarse_obs, obs=True)
+
+
+class NonCoarseGaussianValue(CoarseGaussianValue):
+    def update(self, new_value: float):
+        new_value = normal(new_value + self.mean, self.std)
+        self.coarse_value = self._calc_coarse(new_value)
+        self.value = new_value
+
+        self.coarse_obs = self._calc_coarse(new_value, obs=True)
+        self.obs = self.calc_value(self.coarse_obs, obs=True)
+
+
 @cache
 def calc_prob(val: int, mean, std):
     return norm.cdf(val + 0.5, mean, std) - norm.cdf(val - 0.5, mean, std)

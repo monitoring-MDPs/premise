@@ -1,10 +1,10 @@
 import argparse
-import re
-from tracemalloc import start
+import logging
 from typing import Optional
 
 import numpy as np
 
+from premise.interval.utils import setup_logging
 from premise.interval.interval import Samples, Trace
 from premise.interval.learning import (
     build_learning_params_args_parser,
@@ -24,6 +24,7 @@ from premise.interval.stopping_condition import (
     ThresholdStoppingCondition,
 )
 from premise.trace_generator import ConditionalIntervalTraceGenerator
+from premise.interval.utils import logger
 
 
 def refinement_learning(
@@ -71,11 +72,11 @@ def refinement_learning(
     while True:
         iteration += 1
         if verbose > 0:
-            print(
+            logger.info(
                 f"-----------------------\nRefinement iteration {iteration} with {len(prefixes)} prefixes"
             )
         if verbose > 1:
-            print(f"Prefixes: {prefixes}")
+            logger.info(f"Prefixes: {prefixes}")
 
         all_prefixes.append(prefixes)
 
@@ -178,7 +179,7 @@ def refinement_learning(
         )
 
         if verbose > 0:
-            print(
+            logger.info(
                 f"Finished learning with {transitions_learned[-1]} additional transitions (total: {suo.stats()['transition_count']})"
             )
 
@@ -214,10 +215,30 @@ def save_imc(
 
 
 def ref_main(args: argparse.Namespace):
-    if args.conformence_length is None:
-        args.conformence_length = args.sample_length
+    setup_logging()
 
-    suo = build_suo(args)
+    suo, initial_amount, horizon = build_suo(args)
+    if args.sample_length is None:
+        if initial_amount is not None and horizon is not None:
+            args.sample_length = initial_amount + horizon
+        else:
+            raise ValueError(
+                "Either sample_length must be specified or initial_amount and horizon must be provided by the model."
+            )
+    if args.horizon is None:
+        if horizon is not None:
+            args.horizon = horizon
+        else:
+            raise ValueError(
+                "Either horizon must be specified or it must be provided by the model."
+            )
+    if args.conformence_length is None:
+        if initial_amount is not None:
+            args.conformence_length = initial_amount
+        else:
+            raise ValueError(
+                "Either conformence_length must be specified or initial_amount must be provided by the model."
+            )
 
     distance = distance_measures[args.distance](args.distance_threshold)
 
@@ -313,7 +334,6 @@ def ref_args_parser():
     learning_group.add_argument(
         "-ll",
         "--sample-length",
-        required=True,
         type=int,
         help="Length of the samples to generate for learning",
     )
@@ -366,8 +386,15 @@ def ref_args_parser():
     conformence_group.add_argument(
         "-e",
         "--exact",
+        default=True,
         action="store_true",
         help="Use exact conformance checking",
+    )
+    conformence_group.add_argument(
+        "--no-exact",
+        dest="exact",
+        action="store_false",
+        help="Do not use exact conformance checking",
     )
     conformence_group.add_argument(
         "-p",
@@ -404,11 +431,12 @@ def ref_args_parser():
         help="Length of the samples to generate for conformance checking. Defaults to the sample length",
     )
     conformence_group.add_argument(
-        "-ho", "--horizon", required=True, type=int, help="The horizon to monitor on"
+        "-ho", "--horizon", type=int, help="The horizon to monitor on"
     )
     conformence_group.add_argument(
         "-sc",
         "--stopping-criteria",
+        default="threshold",
         choices=["threshold", "stabilization", "samples"],
     )
     conformence_group.add_argument(

@@ -1,7 +1,10 @@
+import logging
 import sys
 from multiprocessing import Pool
+from premise.interval.utils import setup_logging
 from premise.interval.model_free.regression_model import reg_argsparser, reg_main
 from premise.interval.refinement import ref_args_parser, ref_main
+from premise.interval.utils import logger
 
 
 def split_args(args, delim):
@@ -23,7 +26,7 @@ def run_with_timeout(func, args, timeout):
             pool.terminate()
             pool.join()
             if isinstance(e, TimeoutError):
-                print("Timeout occurred")
+                logger.warning("Timeout occurred")
                 raise TimeoutError("Timeout occurred")
             raise e
         return result
@@ -31,6 +34,10 @@ def run_with_timeout(func, args, timeout):
 
 if __name__ == "__main__":
     args = split_args(sys.argv[3:], "::")
+
+    setup_logging()
+
+    logger.info(f"Running with args: {args}")
 
     # Calculate timeout
     if sys.argv[1][-1] == "h":
@@ -40,35 +47,33 @@ if __name__ == "__main__":
     elif sys.argv[1][-1] == "s":
         timeout = int(sys.argv[1][:-1])
 
-    print("Timeout: ", timeout)
-
     if sys.argv[2] == "refinement":
         ref_parser = ref_args_parser()
         ref_args = ref_parser.parse_args(args[0])
         try:
             run_with_timeout(ref_main, (ref_args,), timeout)
         except TimeoutError:
-            print("Refinement timed out.")
+            logger.warning("Refinement timed out.")
     elif sys.argv[2] == "comp_methods":
         if len(args) != 3:
             print(
                 "Usage: python run.py comp_methods <args refinement> <> <args no refinement without -ss and -sc> <> <args regression>",
                 args,
                 sys.argv,
+                file=sys.stderr,
             )
             sys.exit(1)
         ref_parser = ref_args_parser()
 
         ref_args = ref_parser.parse_args(args[0])
-        print("Starting timeout", timeout)
         try:
             ref_stats = run_with_timeout(ref_main, (ref_args,), timeout)
         except TimeoutError:
-            print("Refinement timed out, stopping experiment.")
+            logger.warning("Refinement timed out, stopping experiment.")
             exit(1)
 
         transition_count = ref_stats["transition_count"]
-        print("Samples from refinement: ", transition_count)
+        logger.info(f"Samples from refinement: {transition_count}")
 
         ref_args_2 = ref_parser.parse_args(args[1])
         ref_args_2.stopping_samples = transition_count
@@ -76,7 +81,7 @@ if __name__ == "__main__":
         try:
             run_with_timeout(ref_main, (ref_args_2,), timeout)
         except TimeoutError:
-            print("No-refinement timed out, continue to regression.")
+            logger.warning("No-refinement timed out, continue to regression.")
 
         reg_parser = reg_argsparser()
         reg_args = reg_parser.parse_args(args[2])
@@ -84,4 +89,4 @@ if __name__ == "__main__":
         try:
             run_with_timeout(reg_main, (reg_args,), timeout)
         except TimeoutError:
-            print("Regression timed out.")
+            logger.warning("Regression timed out.")

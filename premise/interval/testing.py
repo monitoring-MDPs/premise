@@ -1,4 +1,5 @@
 import argparse
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -7,6 +8,8 @@ from tqdm import tqdm
 import os
 import pickle
 from stormpy import AddUncertaintyExact, Rational
+from premise.interval.utils import logger
+
 
 from premise.interval.interval import (
     stormpy_imdp_to_ipomdp,
@@ -131,7 +134,7 @@ if __name__ == "__main__":
         for stats_file in stats_path.iterdir():
             data = np.load(stats_file, allow_pickle=True).item()
             key = (
-                data["args"]["mc"],
+                data["args"]["mc"] or "acas-" + str(data["args"]["acas"]),
                 (
                     tuple(data["args"]["sys_vars"])
                     if data["args"]["sys_vars"] is not None
@@ -195,7 +198,7 @@ if __name__ == "__main__":
 
     else:
         key = (
-            args.mc,
+            args.mc or "acas-" + str(args.acas),
             (tuple(args.sys_vars) if args.sys_vars is not None else None),
             args.sam,
             args.sim,
@@ -205,10 +208,24 @@ if __name__ == "__main__":
         test_args[key] = args
 
     for key, args in test_args.items():
-        suo = build_suo(args)
+        suo, initial_amount, horizon = build_suo(args)
+        if args.horizon is None:
+            if horizon is not None:
+                args.horizon = horizon
+            else:
+                raise ValueError(
+                    "Either horizon must be specified or it must be provided by the model."
+                )
+        if args.sample_length is None:
+            if initial_amount is not None:
+                args.sample_length = initial_amount
+            else:
+                raise ValueError(
+                    "Either sample_length must be specified or initial_amount must be provided by the model."
+                )
 
         states, trans, initial = suo.get_states_and_transitions(False)
-        print(
+        logger.info(
             f"Testing on {key} with {len(states)} ({len(initial)} initial) and {len(trans)} transitions."
         )
 
@@ -295,7 +312,7 @@ if __name__ == "__main__":
                     )
                     uncertain_monitors[au] = au_mon
 
-        print("Ready for testing")
+        logger.info("Ready for testing")
 
         if args.test_data_set:
             traces: Samples = tuple(tuple(s) for s in np.load(args.test_data_set, allow_pickle=True).tolist())  # type: ignore

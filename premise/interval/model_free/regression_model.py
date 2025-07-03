@@ -1,8 +1,6 @@
 import numpy as np
 import pandas as pd
 from typing import Any
-from premise.interval.conformence import random_sample_monitor_test
-from premise.monitor import Monitor
 from sklearn.linear_model import LogisticRegression
 from premise.interval.interval import Samples, Trace
 import tqdm
@@ -11,6 +9,9 @@ import argparse
 from premise.interval.loading import build_suo, build_suo_args_parser
 from premise.interval.interval import Samples
 from premise.interval.loss import distance_measures
+from premise.interval.utils import setup_logging
+from premise.interval.conformence import random_sample_monitor_test
+from premise.monitor import Monitor
 
 
 def prep_trace_for_regression(trace, observations):
@@ -103,7 +104,25 @@ def regression_distance(
 
 
 def reg_main(args: argparse.Namespace):
-    suo = build_suo(args)
+    setup_logging()
+
+    suo, initial_amount, horizon = build_suo(args)
+
+    if args.length is None:
+        if initial_amount is not None:
+            args.length = initial_amount
+        else:
+            raise ValueError(
+                "Either length must be specified or initial_amount must be provided by the model."
+            )
+
+    if args.horizon is None:
+        if horizon is not None:
+            args.horizon = horizon
+        else:
+            raise ValueError(
+                "Either horizon must be specified or it must be provided by the model."
+            )
 
     train_samples = suo.generate_random_traces(
         [], args.length + args.horizon, args.amount

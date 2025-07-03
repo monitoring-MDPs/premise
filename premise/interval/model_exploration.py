@@ -4,6 +4,7 @@ import os
 
 from premise.interval.loading import build_suo, build_suo_args_parser
 
+
 def build_learning_args_parser(parser: argparse.ArgumentParser):
     group = parser.add_argument_group("Learning Parameters")
     group.add_argument(
@@ -74,11 +75,11 @@ build_suo_args_parser(parser)
 build_learning_args_parser(parser)
 build_learning_params_args_parser(parser)
 parser.add_argument(
-        "-v",
-        "--verbose",
-        action="count",
-        default=0,
-        help="Increase verbosity level (can be used multiple times)",
+    "-v",
+    "--verbose",
+    action="count",
+    default=0,
+    help="Increase verbosity level (can be used multiple times)",
 )
 
 args = parser.parse_args()
@@ -86,6 +87,7 @@ args = parser.parse_args()
 suo = build_suo(args)
 
 all_states, all_transitions, initial_states = suo.get_states_and_transitions(
-        all_transitions=not args.existing_transitions)
+    all_transitions=not args.existing_transitions
+)
 
 print(len(all_states))

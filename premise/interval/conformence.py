@@ -1,4 +1,5 @@
 import argparse
+import logging
 from typing import Any, Literal, overload
 import numpy as np
 import tqdm
@@ -13,6 +14,7 @@ from premise.interval.interval import Samples, Trace, create_monitor
 from premise.system import SystemUnderObservation
 from premise.monitor import Monitor
 from premise.interval.loss import distance_measures
+from premise.interval.utils import logger
 
 
 @overload
@@ -89,7 +91,13 @@ def random_sample_monitor_test(
 
 
 def main(args: argparse.Namespace):
-    suo = build_suo(args)
+    suo, ia, horizon = build_suo(args)
+
+    if args.horizon is None:
+        args.horizon = horizon
+
+    if args.sample_length is None and ia is not None and args.horizon is not None:
+        args.sample_length = ia + args.horizon
 
     distance = distance_measures[args.distance](args.distance_threshold)
 
@@ -112,7 +120,7 @@ def main(args: argparse.Namespace):
     weights = {s: float(p / total_prob) for s, p in samples_with_prob}
     samples = [s[0] for s in samples_with_prob]
 
-    print("Ready for conformance checking")
+    logger.info("Ready for conformance checking")
 
     # Run premise on the learned model
     monitored_risks = test_monitor(
@@ -169,21 +177,21 @@ def main(args: argparse.Namespace):
         )
 
     # Print statistics
-    print("Results:")
-    print(f"Distance to sampling: {sample_dist}")
-    print(f"Distance to target: {target_dist}")
+    logger.info("Results:")
+    logger.info(f"Distance to sampling: {sample_dist}")
+    logger.info(f"Distance to target: {target_dist}")
 
     sorted_distances = sorted(target_all_dist, key=lambda x: x[1][1])
-    print("Best traces:")
+    logger.info("Best traces:")
     for [trace, prob] in sorted_distances[: args.print_number_traces]:
-        print(
+        logger.info(
             f"Trace with prob {prob[0]} and distance {prob[1]} "
             f"(mon={monitored_risks[trace]}, target={float(target_risks[trace])}, true={float(true_risks[trace[-1][0]])}): "
             f"\n{suo.trace_to_str(trace)}"
         )
-    print("Worst traces:")
+    logger.info("Worst traces:")
     for [trace, prob] in sorted_distances[-args.print_number_traces :]:
-        print(
+        logger.info(
             f"Trace with prob {prob[0]} and distance {prob[1]} "
             f"(mon={monitored_risks[trace]}, target={float(target_risks[trace])}, true={float(true_risks[trace[-1][0]])}): "
             f"\n{suo.trace_to_str(trace)}"
@@ -211,7 +219,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "-l",
         "--sample_length",
-        required=True,
         type=int,
         help="Length of the samples to generate",
     )
@@ -229,9 +236,7 @@ if __name__ == "__main__":
         default=500,
         help="Amount of extensions to generate for a sample",
     )
-    parser.add_argument(
-        "-ho", "--horizon", required=True, type=int, help="The horizon to monitor on"
-    )
+    parser.add_argument("-ho", "--horizon", type=int, help="The horizon to monitor on")
     parser.add_argument(
         "--dump-stats", type=str, help="Path to the file to dump stats to"
     )

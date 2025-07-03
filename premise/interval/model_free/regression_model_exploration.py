@@ -360,7 +360,23 @@ def monitoring_analysis(alarms, target_risks, regression_risks, nn_risks):
 def reg_main(args: argparse.Namespace):
     print(f"Learned on {args.amount} samples")
 
-    suo = build_suo(args)
+    suo, initial_amount, horizon = build_suo(args)
+
+    if args.length is None:
+        if initial_amount is not None:
+            args.length = initial_amount
+        else:
+            raise ValueError(
+                "Either length must be specified or initial_amount must be provided by the model."
+            )
+
+    if args.horizon is None:
+        if horizon is not None:
+            args.horizon = horizon
+        else:
+            raise ValueError(
+                "Either horizon must be specified or it must be provided by the model."
+            )
 
     train_samples = suo.generate_random_traces(
         [], args.length + args.horizon, args.amount

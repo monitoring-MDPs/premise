@@ -1,5 +1,6 @@
 from abc import ABC
 from collections import defaultdict
+import logging
 from typing import Any, Optional
 
 import numpy as np
@@ -8,6 +9,7 @@ from premise.interval.conformence import test_monitor
 from premise.interval.loss import Distance
 from premise.interval.interval import MonitorComponents, Samples, Trace, create_monitor
 from premise.system import SystemUnderObservation
+from premise.interval.utils import logger
 
 
 class DistanceCalculator(ABC):
@@ -67,7 +69,7 @@ class TargetDistanceCalculator(DistanceCalculator):
         self.mon_comps = mon_comps
 
         if self.verbose > 0:
-            print(f"Created all monitors, now testing them")
+            logger.info(f"Created all monitors, now testing them")
 
         # Run premise on the learned model
         monitored_risks = test_monitor(
@@ -160,7 +162,7 @@ class IntervalWidthCalculator(DistanceCalculator):
         self.mon_comps = max_mon_comps
 
         if self.verbose > 0:
-            print(f"Created all monitors, now testing them")
+            logger.info(f"Created all monitors, now testing them")
 
         # Run premise on the learned model
         min_monitored_risks = test_monitor(
@@ -288,7 +290,7 @@ class SampleCountStoppingCondition(RefinementStoppingCondition):
 
         if pre_sampling_transition_count >= self.transition_count:
             if self.verbose > 0:
-                print(
+                logger.info(
                     f"Pre-sampling transition count {pre_sampling_transition_count} >= target {self.transition_count}, stopping refinement."
                 )
             return None
@@ -297,7 +299,6 @@ class SampleCountStoppingCondition(RefinementStoppingCondition):
             self.transition_count / self.learning_length / self.prefix_amount
             - len(samples)
         )
-        print(f"{additional_samples=}")
 
         if (
             self.transition_count - self.suo.stats()["transition_count"]
@@ -306,7 +307,6 @@ class SampleCountStoppingCondition(RefinementStoppingCondition):
             additional_samples = (
                 self.transition_count - self.suo.stats()["transition_count"]
             ) / self.learning_length
-            print(f"To many samples: {additional_samples=}")
 
         return [tuple()] * int(
             np.ceil(additional_samples / self.refine_amount)
@@ -351,20 +351,20 @@ class ThresholdStoppingCondition(RefinementStoppingCondition):
         self.distances.append(target_dist)
 
         if self.verbose > 0:
-            print(f"Target distance: {target_dist} ? {self.threshold}")
+            logger.info(f"Target distance: {target_dist} ? {self.threshold}")
 
         # If the distance is below the threshold, stop refinement
         if target_dist < self.threshold:
             self.not_improved += 1
 
             if self.verbose > 0:
-                print(
+                logger.info(
                     f"Not improved for {self.not_improved} iterations, target distance: {target_dist:.4f} < {self.threshold:.4f}"
                 )
 
             if self.not_improved >= self.patience:
                 if self.verbose > 0:
-                    print(
+                    logger.info(
                         f"Stopping refinement at distance {target_dist} < {self.threshold}"
                     )
                 return None
@@ -426,25 +426,25 @@ class StabilizationStoppingCondition(RefinementStoppingCondition):
         mean_distance = np.mean(self.distances[-self.patience :])
 
         if self.verbose > 0:
-            print(f"Target distance: {target_dist} ? {mean_distance}")
+            logger.info(f"Target distance: {target_dist} ? {mean_distance}")
 
         rel_improvement = (mean_distance - target_dist) / mean_distance
         if rel_improvement < self.relative_deviation:
             self.not_improved += 1
 
             if self.verbose > 0:
-                print(
+                logger.info(
                     f"Not improved for {self.not_improved} iterations, relative improvement: {rel_improvement:.4f}"
                 )
         else:
             self.not_improved = 0
 
             if self.verbose > 0:
-                print(f"Improved by {rel_improvement:.4f} in this iteration")
+                logger.info(f"Improved by {rel_improvement:.4f} in this iteration")
 
         if self.not_improved >= self.patience:
             if self.verbose > 0:
-                print(
+                logger.info(
                     f"Stopping refinement at distance {target_dist} after not improving for {self.not_improved} iterations"
                 )
             return None

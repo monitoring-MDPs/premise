@@ -1,4 +1,6 @@
 from argparse import ArgumentParser, Namespace
+from ast import mod
+import logging
 
 import numpy as np
 
@@ -11,6 +13,7 @@ from premise.system import (
     ACASSystemUnderObservation,
 )
 from premise.models import default_models
+from premise.interval.utils import logger
 
 
 def build_suo_args_parser(parser: ArgumentParser, required: bool = True):
@@ -71,26 +74,38 @@ def build_imc_loading_args_parser(
     )
 
 
-def build_suo(args: Namespace):
+def build_suo(
+    args: Namespace,
+) -> tuple[
+    SystemUnderObservation,
+    int | None,
+    int | None,
+]:
+    horizon = None
+    initial_amount = None
+
     if args.mc:
         model_def = default_models[args.mc]
-        model_def.risk_property = (
-            f'Pmax=? [F<={vars(args).get("horizon", 1)} "{model_def.target_label}" ]'
-        )
+        model_def.risk_property = f'Pmax=? [F<={vars(args).get("horizon", 1) or model_def.horizon} "{model_def.target_label}" ]'
+        horizon = model_def.horizon
+        initial_amount = model_def.initial_amount
+
         if args.sys_vars is not None:
             suo: SystemUnderObservation = CoarseMCSystemUnderObservation(
                 model_def, args.mc, args.sys_vars
             )
             if args.verbose > 1:
                 for s, c in suo.state_coarse_map.items():
-                    print(
+                    logger.info(
                         f"{suo._model.state_valuations.get_string(s)}: {c} [{float(suo.risk[s])}]"
                     )
         else:
             suo: SystemUnderObservation = MCSystemUnderObservation(model_def, args.mc)
             if args.verbose > 1:
                 for i, r in enumerate(suo.get_risk()):
-                    print(f"{suo._model.state_valuations.get_string(i)}: {float(r)}")
+                    logger.info(
+                        f"{suo._model.state_valuations.get_string(i)}: {float(r)}"
+                    )
     elif args.sam:
         suo: SystemUnderObservation = CarlaPreSampledSystemUnderObservation(args.sam)
     elif args.sim:
@@ -101,7 +116,7 @@ def build_suo(args: Namespace):
         )
     else:
         raise ValueError("No model specified")
-    return suo
+    return suo, initial_amount, horizon
 
 
 def load_imc(args: Namespace):

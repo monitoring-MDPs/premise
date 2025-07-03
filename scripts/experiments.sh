@@ -14,4 +14,4 @@ while read -r cmd; do
     for i in $(seq 1 $n); do
         echo "$cmd" | sed "s/run_id/${i}/g"
     done
-done | parallel --verbose --results out/logs/$now/{#}_{}/ --ungroup --eta --no-run-if-empty --joblog out/logs/$now/joblog.tsv --jobs 22
+done | shuf | parallel --verbose --results out/logs/$now/{#}_{}/ --ungroup --eta --no-run-if-empty --joblog out/logs/$now/joblog.tsv --jobs 22

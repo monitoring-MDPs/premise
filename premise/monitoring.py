@@ -1,6 +1,5 @@
 from collections.abc import Iterable
 import csv
-import logging
 import os
 import os.path
 import time
@@ -15,7 +14,7 @@ import monitor
 import trace_generator
 import traces
 
-logger = logging.getLogger(__name__)
+from premise.interval.utils import logger
 
 
 def filtering(
