@@ -185,13 +185,13 @@ def build_learning_args_parser(parser: argparse.ArgumentParser):
         "-a", "--amount", type=int, default=100, help="Amount of samples to generate"
     )
     group.add_argument(
-        "-l", "--length", type=int, default=20, help="Length of the samples to generate"
+        "-l", "--length", type=int, help="Length of the samples to generate"
     )
     group.add_argument(
         "-t", "--test_samples", type=int, default=50, help="Amount of test samples"
     )
     group.add_argument("--model", type=bool, default=False, help="If a model exists")
-    group.add_argument("--horizon", type=int, default=20, help="Length horizon")
+    group.add_argument("--horizon", type=int, help="Length horizon")
 
 
 def reg_argsparser():

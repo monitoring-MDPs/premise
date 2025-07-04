@@ -47,11 +47,6 @@ class ICP_Classification():
 		pred_probs = scipy.special.softmax(pred_lkh, axis=1)
 		n_points = len(y)
         
-		#print('pred_probs')
-		#print(pred_probs.shape)
-		#print('y')
-		#print(len(y))
-
 
 		ncm = np.array([np.abs(1-pred_probs[i,int(y[i])]) for i in range(n_points)])
 		if sorting:

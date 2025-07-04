@@ -1,5 +1,5 @@
-from SeqNSC import *
-from SeqSE import *
+from premise.interval.conformal_prediction.SeqNSC import *
+from premise.interval.conformal_prediction.SeqSE import *
 import numpy as np
 import os
 import pickle
@@ -223,20 +223,16 @@ class Train_StochSeqNSC():
 		start_time = time.time()
 		
 		state_estimates = self.seq_se(Ytest)
-		print('STATE ESTIMATES') #ANTONINA
-		print(state_estimates) #ANTONINA
 		label_predictions = self.seq_nsc(state_estimates)
-		print('LABEL PREDICTIONS')
-		print(label_predictions)
 		end_time = time.time()-start_time
-		print("time to make {} predictions: ".format(self.seq_dataset.n_test_points), end_time,", per point time: ", end_time/self.seq_dataset.n_test_points)
+		print("Time to make {} predictions: ".format(self.seq_dataset.n_test_points), end_time,", per point time: ", end_time/self.seq_dataset.n_test_points)
 		
 		test_accuracy = self.compute_accuracy(Ttest, label_predictions)
 		
 		print("Combined Test Accuracy: ", test_accuracy)
 
-		os.makedirs(self.results_path, exist_ok=True)
-		f = open(self.results_path+"/results_{}epochs.txt".format(self.n_epochs), "w")
-		f.write("Test accuracy = ")
-		f.write(str(test_accuracy))
-		f.close()
+		#os.makedirs(self.results_path, exist_ok=True)
+		#f = open(self.results_path+"/results_{}epochs.txt".format(self.n_epochs), "w")
+		#f.write("Test accuracy = ")
+		#f.write(str(test_accuracy))
+		#f.close()

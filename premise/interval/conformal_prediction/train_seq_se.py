@@ -1,4 +1,4 @@
-from SeqSE import *
+from premise.interval.conformal_prediction.SeqSE import *
 import numpy as np
 import os
 import pickle

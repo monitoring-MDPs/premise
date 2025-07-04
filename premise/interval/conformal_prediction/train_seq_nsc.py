@@ -1,4 +1,4 @@
-from SeqNSC import *
+from premise.interval.conformal_prediction.SeqNSC import *
 import numpy as np
 import os
 import pickle
@@ -169,8 +169,8 @@ class Train_SeqNSC():
 		test_accuracy = self.compute_accuracy(Ttest, test_preds)
 		print("Test accuracy: ", test_accuracy)
 
-		os.makedirs(self.results_path, exist_ok=True)
-		f = open(self.results_path+"/results.txt", "w")
-		f.write("Test accuracy = ")
-		f.write(str(test_accuracy))
-		f.close()
+		#os.makedirs(self.results_path, exist_ok=True)
+		#f = open(self.results_path+"/results.txt", "w")
+		#f.write("Test accuracy = ")
+		#f.write(str(test_accuracy))
+		#f.close()
