@@ -130,7 +130,7 @@ def learn_conformal_precition_model(args, model, suo, dataset, initial_amount, h
 
     if args.do_refinement:
         print("----- REFINEMENT of the Rejection Rule...")
-        ref_samples = round((args.samples - 50)*5/41)
+        ref_samples = round((args.amount - 50)*5/41)
 
         #unc_meas_ref, unc_states_ref, unc_outputs_ref = utils.Comb_PONSC_active_sample_query(pool_size = opt.pool_size_ref, model_class = model, conf_pred = cp_comb_class, trained_svc = query_fnc, se_fnc= se_fnc, dataset=dataset)
         #unc_meas_ref, unc_states_ref, unc_outputs_ref = utils.Comb_PONSC_active_sample_query(ref_samples, horizon, model_class = model, conf_pred = cp_comb_class, trained_svc = query_fnc, se_fnc = se_fnc, dataset=dataset)
@@ -188,7 +188,7 @@ def learn_conformal_precition_model(args, model, suo, dataset, initial_amount, h
         start_active = time.time()
         #unc_meas, unc_states, unc_outputs = utils.Comb_PONSC_active_sample_query(pool_size = opt.pool_size, model_class = model, conf_pred = curr_cp_comb_class, trained_svc = curr_query_fnc, se_fnc= curr_se_fnc, dataset=curr_dataset)
         #unc_meas, unc_states, unc_outputs = utils.Comb_PONSC_active_sample_query(active_samples, horizon, model_class = model, conf_pred = curr_cp_comb_class, trained_svc = curr_query_fnc, se_fnc = curr_se_fnc, dataset=curr_dataset)
-        active_samples = round((args.samples - 50)*10/41)
+        active_samples = round((args.amount - 50)*10/41)
         unc_meas, unc_states, unc_outputs = utils.Comb_PONSC_active_sample_query(suo, active_samples, (initial_amount + horizon), horizon, model_class=model, conf_pred = cp_comb_class, trained_svc = query_fnc, se_fnc = se_fnc, dataset=dataset)
 
         if len(unc_meas) < round(active_samples): 
@@ -325,12 +325,12 @@ def conformal_prediction_main(args: argparse.Namespace):
     model = mc_model(horizon)
 
     trainset = []
-    for x in range(round((args.samples - 50)*20/41)):
+    for x in range(round((args.amount - 50)*20/41)):
             path = suo.generate_random_traces([], (initial_amount+horizon))[0]
             trainset.append(tuple(path))
             
     calibrset = []
-    for x in range(round((args.samples - 50)*6/41)):
+    for x in range(round((args.amount - 50)*6/41)):
             path = tuple(suo.generate_random_traces([], (initial_amount+horizon))[0])
             calibrset.append(path)
 
@@ -354,10 +354,6 @@ def conformal_prediction_main(args: argparse.Namespace):
         labels = model.gen_labels(s,horizon)	
         dicts[f"{name}_fn"] = {'x': paths, 'y': noisy_measurments, 'cat_labels': labels}
 
-    
-    print(horizon)
-    print(len(dicts['trainset_fn']['y'][0]))
-
 
     dataset = SeqDataset(dicts['trainset_fn'], dicts['testset_fn'], dicts['validset_fn'])
     dataset.load_data()
@@ -380,21 +376,17 @@ def conformal_prediction_main(args: argparse.Namespace):
     torch.save(active_comb_ponsc.seq_nsc, nn_filename)
 
     nn_filename = os.path.join(args.dump_model, "cp_classification.pt")
-    #torch.save(active_cp_comb_class, nn_filename)
+  
     torch.save(active_cp_comb_class, nn_filename, pickle_module=dill)
 
     sample_count = n_ref_points + n_active_points + len(trainset) + len(calibrset) + len(validset)
 
     dataset_stats = {'dataset.MIN[1]': dataset.MIN[1], 'dataset.MAX[1]': dataset.MAX[1], 'learned_on': sample_count, 'length_with_horizon': (initial_amount + horizon), 'horizon': horizon} 
 
-    #stats_filename = os.path.join(args.dump_stats, "conformal_stats.pickle")
+    stats_filename = os.path.join(args.dump_stats, "conformal_stats.pickle")
 
-    #with open(stats_filename, 'wb') as handle:
-    #    pickle.dump(dataset_stats, handle)
-
-    np.save(args.dump_stats, dataset_stats)
-
-
+    with open(stats_filename, 'wb') as handle:
+        pickle.dump(dataset_stats, handle)
 
 def build_learning_parser(parser: argparse.ArgumentParser):
     group = parser.add_argument_group("Learning Parameters")
@@ -418,10 +410,13 @@ def build_learning_parser(parser: argparse.ArgumentParser):
     group.add_argument("--nb_epochs_tuning", type=int, default=100, help="Number of epochs of fine-tuning.")
     group.add_argument("--nb_epochs_active_tuning", type=int, default=200, help="Number of epochs of fine-tuning in active learning.")
 
-    group.add_argument("-s", "--samples", type=int, help="Total number of samples used in learning")
+    group.add_argument("-a", "--amount", type=int, help="Total number of samples used in learning")
     #group.add_argument("-l", "--sample_length", type=int, help="Path lenth, with horizon")
     #group.add_argument("-ho", "--horizon", type=int, help="Horizon length")
     group.add_argument("--no-target", action="store_true", help="Do not use the target monitor" )
+
+    group.add_argument("-m", "--dump_model", type=str, help="Path to dump the model to",
+    )
 
 
 def conformal_prediction_argsparser():
@@ -436,8 +431,7 @@ def conformal_prediction_argsparser():
         default=0,
         help="Increase verbosity level (can be used multiple times)",
     )
-    parser.add_argument("--dump_model", type=str, help="Path to dump the model to",
-    )
+    
     parser.add_argument("--dump_stats", type=str, help="Path to dump the model to",
     )
 
@@ -457,5 +451,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     conformal_prediction_main(args)
 
+    
 
-#python -m premise.interval.conformal_prediction.conformal_prediction --mc airportA-7-10-10 -s 10000 --no-target --dump_model /workspaces/premise/premise/interval/conformal_prediction/test_results --dump_stats /workspaces/premise/premise/interval/conformal_prediction/test_results
+#python -m premise.interval.conformal_prediction.conformal_prediction --mc airportA-7-10-10 -a 500 --no-target --dump_model /workspaces/premise/premise/interval/conformal_prediction/test_results --dump_stats /workspaces/premise/premise/interval/conformal_prediction/test_results

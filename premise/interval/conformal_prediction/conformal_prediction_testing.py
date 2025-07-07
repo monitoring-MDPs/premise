@@ -25,6 +25,9 @@ def infer_on_new_batch(new_noisy, state_estimator, error_estimator, rej_classifi
     Y1 = np.transpose(new_noisy_scaled, (0,2,1))
     Y1t = Variable(FloatTensor(Y1))
 
+    print(Y1t.shape)
+
+
     state_estimator.eval()    
     state_estim = state_estimator(Y1t)
     error_estimator.eval()
@@ -60,8 +63,11 @@ def conformal_testing_main(args: argparse.Namespace, se_path, error_path, rej_pa
             path = suo.generate_random_traces([], args.length)[0]
             evaluation_samples.append(tuple(path))
 
-    noisy_measurements = model.get_noisy_measurments(evaluation_samples, horizon)
-    labels = model.gen_labels(evaluation_samples, horizon)
+
+    traces = suo.generate_random_traces([], args.length, args.testing_samples)
+
+    noisy_measurements = model.get_noisy_measurments(traces, horizon)
+    labels = model.gen_labels(traces, horizon)
 
     state_estimator = torch.load(se_path, weights_only=False)
     error_estimator = torch.load(error_path, weights_only=False)
@@ -167,4 +173,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     conformal_testing_main(args, args.se_path, args.error_path, args.rej_path, args.stats_path, args.cp_classification_path)
 
-#python -m premise.interval.conformal_prediction.conformal_prediction_testing --mc airportA-7-10-10 --testing_samples 10 --length 40 -ho 15 --no-target --se_path /workspaces/premise/premise/interval/conformal_prediction/test_results/conformal_state_estimator.pt --error_path /workspaces/premise/premise/interval/conformal_prediction/test_results/conformal_error_estimator.pt --rej_path /workspaces/premise/premise/interval/conformal_prediction/test_results/conformal_rej.pickle --cp_classification_path /workspaces/premise/premise/interval/conformal_prediction/test_results/cp_classification.pt --stats_path /workspaces/premise/premise/interval/conformal_prediction/test_results/conformal_stats.pickle
+#python -m premise.interval.conformal_prediction.conformal_prediction_testing --mc airportA-7-10-10 --testing_samples 500 --length 40 -ho 20 --no-target --se_path /workspaces/premise/premise/interval/conformal_prediction/test_results/conformal_state_estimator.pt --error_path /workspaces/premise/premise/interval/conformal_prediction/test_results/conformal_error_estimator.pt --rej_path /workspaces/premise/premise/interval/conformal_prediction/test_results/conformal_rej.pickle --cp_classification_path /workspaces/premise/premise/interval/conformal_prediction/test_results/cp_classification.pt --stats_path /workspaces/premise/premise/interval/conformal_prediction/test_results/conformal_stats.pickle

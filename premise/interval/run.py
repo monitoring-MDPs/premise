@@ -5,6 +5,8 @@ from premise.interval.utils import setup_logging
 from premise.interval.model_free.regression_model import reg_argsparser, reg_main
 from premise.interval.refinement import ref_args_parser, ref_main
 from premise.interval.utils import logger
+from premise.interval.conformal_prediction.conformal_prediction import conformal_prediction_argsparser, conformal_prediction_main
+from premise.models import default_models
 
 
 def split_args(args, delim):
@@ -55,7 +57,7 @@ if __name__ == "__main__":
         except TimeoutError:
             logger.warning("Refinement timed out.")
     elif sys.argv[2] == "comp_methods":
-        if len(args) != 3:
+        if len(args) != 4: #ANTONINA
             print(
                 "Usage: python run.py comp_methods <args refinement> <> <args no refinement without -ss and -sc> <> <args regression>",
                 args,
@@ -73,6 +75,8 @@ if __name__ == "__main__":
             exit(1)
 
         transition_count = ref_stats["transition_count"]
+        #length = ref_stats["sample_length"]
+
         logger.info(f"Samples from refinement: {transition_count}")
 
         ref_args_2 = ref_parser.parse_args(args[1])
@@ -83,10 +87,30 @@ if __name__ == "__main__":
         except TimeoutError:
             logger.warning("No-refinement timed out, continue to regression.")
 
+        #REGRESSION
         reg_parser = reg_argsparser()
         reg_args = reg_parser.parse_args(args[2])
-        reg_args.amount = transition_count // reg_args.length
+
+        model_def = default_models[ref_args.mc]
+        horizon = model_def.horizon
+        initial_amount = model_def.initial_amount
+
+        reg_args.amount = transition_count // (horizon + initial_amount)
+
         try:
             run_with_timeout(reg_main, (reg_args,), timeout)
         except TimeoutError:
             logger.warning("Regression timed out.")
+
+        #CONFORMAL PREDICTION
+        conformal_parser = conformal_prediction_argsparser()
+        conformal_args = conformal_parser.parse_args(args[3])
+        conformal_args.amount = transition_count // (horizon + initial_amount)
+
+        try:
+            run_with_timeout(conformal_prediction_main, (conformal_args,), timeout) 
+        except TimeoutError:
+            logger.warning("Conformal Prediction timed out.")
+
+
+

@@ -24,7 +24,7 @@ if __name__ == "__main__":
         help="Length of the samples to generate",
     )
     parser.add_argument(
-        "-s", "--samples", type=int, default=10000, help="Amount of samples to test on"
+        "-s", "--samples", type=int, default=1, help="Amount of samples to test on"
     )
     parser.add_argument(
         "-ho", "--horizon", required=True, type=int, help="The horizon to monitor on"
@@ -53,15 +53,20 @@ if __name__ == "__main__":
                 "Either horizon must be specified or it must be provided by the model."
             )
 
+    all_states, all_transitions, initial_states = suo.get_states_and_transitions()
+    print(len(all_states))
+    print(len(all_transitions))
+
     traces = []
 
     for x in trange(args.samples):
 
         trace = tuple(
-            suo.generate_random_traces([], args.sample_length + args.horizon)[0]
+            #suo.generate_random_traces([], args.sample_length + args.horizon)[0]
+            suo.generate_random_traces([], args.sample_length + args.horizon)
         )
         traces.append(trace)
-        print(len(traces))
+        print(traces)
 
     if args.dump:
         # Construct the full path with the desired filename format
@@ -78,6 +83,8 @@ if __name__ == "__main__":
 
         with open(filename, "wb") as f:
             pickle.dump(traces, f)
+
+    
 
 
 # python -m premise.interval.test_case_generation -mc SnL-10x10 -l 15 -ho 5 --no-target --dump premise/analysis/test_sets/

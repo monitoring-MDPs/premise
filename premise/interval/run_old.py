@@ -5,7 +5,6 @@ from premise.interval.utils import setup_logging
 from premise.interval.model_free.regression_model import reg_argsparser, reg_main
 from premise.interval.refinement import ref_args_parser, ref_main
 from premise.interval.utils import logger
-from premise.interval.conformal_prediction.conformal_prediction import conformal_prediction_argsparser, conformal_prediction_main
 
 
 def split_args(args, delim):
@@ -56,7 +55,7 @@ if __name__ == "__main__":
         except TimeoutError:
             logger.warning("Refinement timed out.")
     elif sys.argv[2] == "comp_methods":
-        if len(args) != 4: #ANTONINA
+        if len(args) != 3:
             print(
                 "Usage: python run.py comp_methods <args refinement> <> <args no refinement without -ss and -sc> <> <args regression>",
                 args,
@@ -74,8 +73,6 @@ if __name__ == "__main__":
             exit(1)
 
         transition_count = ref_stats["transition_count"]
-        length = ref_stats["sample_length"]
-
         logger.info(f"Samples from refinement: {transition_count}")
 
         ref_args_2 = ref_parser.parse_args(args[1])
@@ -93,15 +90,3 @@ if __name__ == "__main__":
             run_with_timeout(reg_main, (reg_args,), timeout)
         except TimeoutError:
             logger.warning("Regression timed out.")
-
-        conformal_parser = conformal_prediction_argsparser() #ANTONINA
-        conformal_args = conformal_parser.parse_args()
-        conformal_args.samples = transition_count // reg_args.length
-        
-        try:
-            run_with_timeout(conformal_prediction_main, (conformal_args,), timeout) 
-        except TimeoutError:
-            logger.warning("Conformal Prediction timed out.")
-
-
-

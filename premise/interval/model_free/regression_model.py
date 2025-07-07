@@ -33,8 +33,9 @@ def learn_regression_model(train_samples, observations, testing_samples, args):
         row = prep_trace_for_regression(sub_trace, observations)
         binary_data.append(row)
 
-        y.append(1 if any(x[2] == 1 for x in sub_trace) else 0)
-
+        #y.append(1 if any(x[2] == True for x in sub_trace) else 0)
+        y.append(1 if any(x[2] == True for x in trace[num_steps:]) else 0)
+        
     X = pd.DataFrame(binary_data, columns=column_names)
 
     model = LogisticRegression(n_jobs=1)

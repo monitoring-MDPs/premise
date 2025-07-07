@@ -47,6 +47,7 @@ class Conv_SeqNSC(nn.Module):
 	#def __init__(self, x_dim = 2, traj_len = 32, output_size = 2, nb_filters = 128): #ANTONINA 
 	#def __init__(self, x_dim = 2, traj_len = 25, output_size = 2, nb_filters = 128): 
 	def __init__(self, x_dim, traj_len, output_size = 2, nb_filters=128):
+
 		super(Conv_SeqNSC, self).__init__()
 		self.keep_prob = 0.8
 		self.nb_filters = nb_filters
@@ -81,6 +82,7 @@ class Conv_SeqNSC(nn.Module):
 		self.layer6 = nn.Sequential(self.fc2)
 		
 	def forward(self, x):
+
 		out = self.layer1(x)
 		out = self.layer2(out)
 		out = self.layer3(out)
