@@ -399,9 +399,12 @@ def create_monitor(
     Monitor,
     MonitorComponents,
 ]:
+    logger.info("Staring create monitor")
     ipomdp, observation_map, state_index_map = dict_to_interval_ipomdp(
         trans_dict, init_dict, target_label, use_exact
     )
+
+    logger.info("Created IPOMDP")
     if verbose > 1:
         logger.info(str(ipomdp))
         with open("out/imc.dot", "w") as f:
@@ -416,6 +419,7 @@ def create_monitor(
         verbose=verbose,
         precision=precision,
     )
+    logger.info("Built monitor from model")
 
     return mon, MonitorComponents(
         mon, observation_map, unfolder, ipomdp, risks, state_index_map
@@ -454,7 +458,9 @@ def build_monitor_from_model(
         task = CheckTask(prop[0].raw_formula, False)
 
     imdp = stormpy_ipomdp_to_imdp(ipomdp)
+    logger.info("Converted IPOMDP to IMDP")
     imdp = stormpy_product_unroll(imdp, horizon)
+    logger.info("Unrolled IMDP to horizon")
 
     if ipomdp.is_exact:
         result = check_exact_interval_mdp(imdp, task, stormpy_environment)
@@ -476,6 +482,8 @@ def build_monitor_from_model(
         else:
             for s, i in state_index_map.items():
                 logger.debug(f"{s}= {float(risks[i].upper())}")
+
+    logger.info("Found risks for all states")
 
     # If method is PI we don't want to set the minmaxmethod, thus we remake it:
     if method == "PI":
@@ -499,11 +507,18 @@ def build_monitor_from_model(
             options,
         )
 
+    logger.info("Created unfolder")
+
     ura = UnfoldingIntervalRiskAssessment(
         stormpy_environment, unfolder, dump_path, maxmin, method
     )
 
+    logger.info("Created UnfoldingRiskAssessment")
+
     mon = Monitor(ura, None)
+
+    logger.info("Created monitor")
+
     return mon, unfolder, risks
 
 

@@ -28,6 +28,7 @@ stormvogel = { path="../stormvogel",  markers = "python_version >= '3.11'", deve
 
 [tool.poetry.group.dev.dependencies]
 pybind11-stubgen = "^2.5.1"
+memray = "^1.17.2"
 
 [build-system]
 requires = ["poetry-core"]

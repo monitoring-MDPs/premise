@@ -64,6 +64,8 @@ def refinement_learning(
         )
     )
 
+    logger.info("Pre learning steps done")
+
     iteration = 0
 
     transitions_learned = []
@@ -217,6 +219,8 @@ def save_imc(
 def ref_main(args: argparse.Namespace):
     setup_logging()
 
+    logger.info("Starting refinement learning")
+
     suo, initial_amount, horizon = build_suo(args)
     if args.sample_length is None:
         if initial_amount is not None and horizon is not None:
@@ -282,6 +286,7 @@ def ref_main(args: argparse.Namespace):
             args.verbose,
             args.conformence_length,
             args.conformence_amount,
+            args.use_splitting,
         )
     elif args.stopping_criteria == "samples":
         ref_stop_cond = SampleCountStoppingCondition(
@@ -297,6 +302,8 @@ def ref_main(args: argparse.Namespace):
         )
     else:
         raise ValueError(f"Unknown stopping criteria: {args.stopping_criteria}")
+
+    logger.info("Build all components for refinement learning")
 
     interval, initial_interval, ref_stats = refinement_learning(
         suo,
@@ -465,6 +472,12 @@ def ref_args_parser():
         "--stopping-samples",
         type=int,
         help="The amount of samples to stop refinement at",
+    )
+    conformence_group.add_argument(
+        "-split",
+        "--use-splitting",
+        action="store_true",
+        help="Use splitting to generate prefixes for the refinement stopping condition",
     )
     conformence_group.add_argument(
         "-dc",

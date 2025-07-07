@@ -138,6 +138,8 @@ class IntervalWidthCalculator(DistanceCalculator):
         weights = {s: float(p / total_prob) for s, p in samples_with_prob}
         samples = [s[0] for s in samples_with_prob]
 
+        logger.info(f"Staring building monitors")
+
         # Build the premise monitor on the learned model
         max_mon, max_mon_comps = create_monitor(
             interval,
@@ -148,6 +150,8 @@ class IntervalWidthCalculator(DistanceCalculator):
             use_exact=self.use_exact,
             precision=self.precision,
         )
+
+        logger.info(f"Created max monitor")
 
         min_mon, min_mon_comps = create_monitor(
             interval,
@@ -161,8 +165,7 @@ class IntervalWidthCalculator(DistanceCalculator):
 
         self.mon_comps = max_mon_comps
 
-        if self.verbose > 0:
-            logger.info(f"Created all monitors, now testing them")
+        logger.info(f"Created all monitors, now testing them")
 
         # Run premise on the learned model
         min_monitored_risks = test_monitor(
@@ -173,6 +176,8 @@ class IntervalWidthCalculator(DistanceCalculator):
             with_tqdm=False,
         )
 
+        logger.info(f"Monitored risks for min monitor: max={max(min_monitored_risks)}")
+
         max_monitored_risks = test_monitor(
             max_mon,
             samples,
@@ -180,6 +185,8 @@ class IntervalWidthCalculator(DistanceCalculator):
             skip_initial=True,
             with_tqdm=False,
         )
+
+        logger.info(f"Monitored risks for max monitor: min={min(max_monitored_risks)}")
 
         # Calculate the distance
         target_dist, target_all_dist = self.distance_func.distance(
@@ -324,6 +331,7 @@ class ThresholdStoppingCondition(RefinementStoppingCondition):
         verbose: int = 0,
         length: int = 0,
         amount: int = 0,
+        use_splitting: bool = True,
     ):
         super().__init__(
             suo,
@@ -339,6 +347,7 @@ class ThresholdStoppingCondition(RefinementStoppingCondition):
         self.not_improved = 0
 
         self.previous_interesting_traces = []
+        self.use_splitting = use_splitting
 
     def check(self, interval, initial_interval) -> None | tuple[Samples, Samples]:
         samples_with_prob = self._generate_traces()
@@ -384,7 +393,12 @@ class ThresholdStoppingCondition(RefinementStoppingCondition):
         self.previous_interesting_traces = [
             (t, w) for (t, w) in samples_with_prob if t in interesting_traces
         ]
-        return self._generate_prefixes(interesting_traces, splits), samples
+        return (
+            self._generate_prefixes(
+                interesting_traces, splits if self.use_splitting else None
+            ),
+            samples,
+        )
 
 
 class StabilizationStoppingCondition(RefinementStoppingCondition):

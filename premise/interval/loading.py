@@ -84,6 +84,10 @@ def build_suo(
     horizon = None
     initial_amount = None
 
+    logger.info(
+        f"Building System Under Observation {args.mc or args.sam or args.sim or args.acas}"
+    )
+
     if args.mc:
         model_def = default_models[args.mc]
         model_def.risk_property = f'Pmax=? [F<={vars(args).get("horizon", 1) or model_def.horizon} "{model_def.target_label}" ]'
