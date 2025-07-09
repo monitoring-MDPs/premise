@@ -144,7 +144,7 @@ class Train_SeqNSC():
 		#plt.title("accuracy")
 		#fig_acc.savefig(self.results_path+"/accuracies_{}epochs.png".format(self.n_epochs))
 		#plt.close()
-		torch.save(self.seq_nsc, self.net_path)
+		#torch.save(self.seq_nsc, self.net_path)
 		
 
 	def load_trained_net(self, n_epochs):

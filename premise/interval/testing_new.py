@@ -97,7 +97,8 @@ if __name__ == "__main__":
         default=None,
         help = 'Path to CP classifier'
     )
-    #-----
+
+    #REGRESSION MODEL
 
     parser.add_argument(
         "-reg",
@@ -112,6 +113,36 @@ if __name__ == "__main__":
         type=str,
         default=None,
         help="Observations to use for the regression model",
+    )
+
+    #IMC - NO REFINEMENT 
+
+    parser.add_argument(
+        "--trans_path",
+        type=str,
+        default=None,
+        help="Path no refinement transition intervals",
+    )
+    parser.add_argument(
+        "--init_path",
+        type=str,
+        default=None,
+        help="Path no refinement initial distribution intervals",
+    )
+
+    #IMC - REFINEMENT 
+
+    parser.add_argument(
+        "--extra_trans_path",
+        type=str,
+        default=None,
+        help="Path refinement transition intervals",
+    )
+    parser.add_argument(
+        "--extra_init_path",
+        type=str,
+        default=None,
+        help="Path refinement initial distribution intervals",
     )
 
     parser.add_argument(
@@ -227,6 +258,11 @@ if __name__ == "__main__":
                     extra_init_path=None,
                     regression_path=None,
                     regression_observations=None,
+                    conformal_se_path = None, 
+                    conformal_error_path = None, 
+                    conformal_rej_path = None, 
+                    conformal_stats_path = None, 
+                    cp_classification_path = None,
                 )
 
             if "stopping_criteria" in data["args"]:
@@ -247,6 +283,9 @@ if __name__ == "__main__":
             else:
                 test_args[key].regression_path = data["args"]["model_path"] + ".npy"
                 test_args[key].regression_observations = str(stats_file)
+
+                #ADD CONFORMAL PREDICTION
+
 
     else:
         key = (
@@ -290,7 +329,7 @@ if __name__ == "__main__":
                 initial_interval,
                 "min",
                 True,
-                args.horizon,
+                horizon,
                 args.dump,
                 args.verbose,
                 use_exact=args.exact,
@@ -331,16 +370,17 @@ if __name__ == "__main__":
 
         #Load conformance testing monitor 
         if args.conformal_se_path and args.conformal_error_path and args.conformal_rej_path and args.conformal_stats_path and args.cp_classification_path: 
-            state_estimator = torch.load(se_path, weights_only=False)
-            error_estimator = torch.load(error_path, weights_only=False)
-            cp_comb_class = torch.load(cp_classification_path, weights_only=False)
+            print('Load conformance testing monitor')
+            state_estimator = torch.load(args.se_path, weights_only=False)
+            error_estimator = torch.load(args.error_path, weights_only=False)
+            cp_comb_class = torch.load(args.cp_classification_path, weights_only=False)
 
-            with open(rej_path, 'rb') as f:
+            with open(args.rej_path, 'rb') as f:
                 rej_classifier = pickle.load(f)
     
             rej_classifier = rej_classifier['rej_rule']
 
-            with open(stats_path, 'rb') as f:
+            with open(args.conformal_stats_path, 'rb') as f:
                 max_min = pickle.load(f)
         
         #Target monitor
@@ -466,7 +506,8 @@ if __name__ == "__main__":
                 regression_risks.append(prob[0, 1])
 
             #Run conformal prediction monitor 
-            if state_estimator and error_estimator and cp_comb_class and rej_classifier and max_min: 
+            if args.conformal_se_path and args.conformal_error_path and args.conformal_rej_path and args.conformal_stats_path and args.cp_classification_path: 
+            #if state_estimator and error_estimator and cp_comb_class and rej_classifier and max_min: 
 
                 models_dict = {"IP": InvertedPendulum(), "MC": mc_model(args.horizon)}
                 model = models_dict[args.model_name]
@@ -543,5 +584,8 @@ if __name__ == "__main__":
             else:
                 filename = args.dump_stats
 
-            with open(filename, "wb") as f:
-                pickle.dump(stats, f)
+            print(stats)
+
+
+            #with open(filename, "wb") as f:
+            #    pickle.dump(stats, f)

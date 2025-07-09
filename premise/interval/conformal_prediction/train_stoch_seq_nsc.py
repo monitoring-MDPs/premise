@@ -203,8 +203,8 @@ class Train_StochSeqNSC():
 		#fig_acc.savefig(self.results_path+"/comb_accuracies_{}epochs.png".format(self.n_epochs))
 		#plt.close()
 
-		torch.save(self.seq_nsc, self.seq_nsc_net_path)
-		torch.save(self.seq_se, self.seq_se_net_path)
+		#torch.save(self.seq_nsc, self.seq_nsc_net_path)
+		#torch.save(self.seq_se, self.seq_se_net_path)
 		
 
 	def generate_test_results(self):

@@ -146,35 +146,41 @@ def reg_main(args: argparse.Namespace):
 
     distance = distance_measures[args.distance]()
 
-    testing_samples, regression_risks, model = learn_regression_model(
-        train_samples, observations, testing_samples, args
-    )
-    target_risks, target_dist, target_all_dist = regression_distance(
-        testing_samples, regression_risks, distance, test_weights, suo, args
-    )
-
-    sampled_risks = random_sample_monitor_test(
-        suo, testing_samples, args.horizon, args.conformence_amount
-    )
-
-    if args.dump_stats:
-        np.save(
-            args.dump_stats,
-            {
-                "target_dist": target_dist,
-                "target_all_dist": target_all_dist,
-                "weights": {s: float(w) for s, w in test_weights.items()},
-                "target_risks": {s: float(r) for s, r in target_risks.items()},
-                "regression_risks": {s: float(r) for s, r in regression_risks.items()},
-                "sampled_risks": sampled_risks,
-                "samples": testing_samples,
-                "args": vars(args),
-                "observations": observations,
-            },  # type: ignore
+    for i in range(1, 6):
+        end_index = int((i / 5) * len(train_samples))
+        currrent_train_samples = train_samples[:end_index]
+ 
+        testing_samples, regression_risks, model = learn_regression_model(
+            currrent_train_samples, observations, testing_samples, args
+        )
+        target_risks, target_dist, target_all_dist = regression_distance(
+            testing_samples, regression_risks, distance, test_weights, suo, args
         )
 
-    if args.model_path:
-        np.save(args.model_path, model)
+        sampled_risks = random_sample_monitor_test(
+            suo, testing_samples, args.horizon, args.conformence_amount
+        )
+
+        if args.dump_stats:
+            stats_path = f"{args.dump_stats}_{end_index}"
+            np.save(
+                args.dump_stats,
+                {
+                    "target_dist": target_dist,
+                    "target_all_dist": target_all_dist,
+                    "weights": {s: float(w) for s, w in test_weights.items()},
+                    "target_risks": {s: float(r) for s, r in target_risks.items()},
+                    "regression_risks": {s: float(r) for s, r in regression_risks.items()},
+                    "sampled_risks": sampled_risks,
+                    "samples": testing_samples,
+                    "args": vars(args),
+                    "observations": observations,
+                },  # type: ignore
+            )
+
+        if args.model_path:
+            path = f"{args.model_path}_{end_index}"
+            np.save(path, model)
 
 
 def build_learning_args_parser(parser: argparse.ArgumentParser):

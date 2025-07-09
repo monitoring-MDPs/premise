@@ -150,7 +150,6 @@ def learn_conformal_precition_model(args, model, suo, dataset, initial_amount, h
         print(dataset.Y_cal_scaled.shape)
         print(unc_meas_ref.shape)
 
-
         meas_cal_ref = np.vstack((dataset.Y_cal_scaled, unc_meas_ref))
         state_cal_ref = np.vstack((dataset.X_cal_scaled, unc_states_ref))
         output_cal_ref = np.hstack((dataset.L_cal, unc_outputs_ref))
@@ -324,69 +323,74 @@ def conformal_prediction_main(args: argparse.Namespace):
 
     model = mc_model(horizon)
 
-    trainset = []
-    for x in range(round((args.amount - 50)*20/41)):
-            path = suo.generate_random_traces([], (initial_amount+horizon))[0]
-            trainset.append(tuple(path))
-            
-    calibrset = []
-    for x in range(round((args.amount - 50)*6/41)):
-            path = tuple(suo.generate_random_traces([], (initial_amount+horizon))[0])
-            calibrset.append(path)
+    for i in range(1, 6):
+        args.amount = int((i / 5) * args.amount)
+        print('AMOUT')
+        print(args.amount)
 
-    testset = []
-    for x in range(100):
-            path = tuple(suo.generate_random_traces([], (initial_amount+horizon))[0])
-            testset.append(path)
+        trainset = []
+        for x in range(round((args.amount - 50)*20/41)):
+                path = suo.generate_random_traces([], (initial_amount+horizon))[0]
+                trainset.append(tuple(path))
+                
+        calibrset = []
+        for x in range(round((args.amount - 50)*6/41)):
+                path = tuple(suo.generate_random_traces([], (initial_amount+horizon))[0])
+                calibrset.append(path)
 
-    validset = []
-    for x in range(50): 
-            path = tuple(suo.generate_random_traces([], (initial_amount+horizon))[0])
-            validset.append(path)
+        testset = []
+        for x in range(100):
+                path = tuple(suo.generate_random_traces([], (initial_amount+horizon))[0])
+                testset.append(path)
 
+        validset = []
+        for x in range(50): 
+                path = tuple(suo.generate_random_traces([], (initial_amount+horizon))[0])
+                validset.append(path)
 
-    sets = {'trainset': trainset, 'calibrset': calibrset, 'testset': testset, 'validset': validset}
-    dicts = {}
+        sets = {'trainset': trainset, 'calibrset': calibrset, 'testset': testset, 'validset': validset}
 
-    for name, s in sets.items():
-        paths = model.gen_trajectories(s,horizon)
-        noisy_measurments = model.get_noisy_measurments(s,horizon)
-        labels = model.gen_labels(s,horizon)	
-        dicts[f"{name}_fn"] = {'x': paths, 'y': noisy_measurments, 'cat_labels': labels}
+        dicts = {}
 
+        for name, s in sets.items():
+            paths = model.gen_trajectories(s,horizon)
+            noisy_measurments = model.get_noisy_measurments(s,horizon)
+            labels = model.gen_labels(s,horizon)	
+            dicts[f"{name}_fn"] = {'x': paths, 'y': noisy_measurments, 'cat_labels': labels}
 
-    dataset = SeqDataset(dicts['trainset_fn'], dicts['testset_fn'], dicts['validset_fn'])
-    dataset.load_data()
-    dataset.add_calibration_path(dicts['calibrset_fn'])
-    dataset.load_calibration_data()
+        dataset = SeqDataset(dicts['trainset_fn'], dicts['testset_fn'], dicts['validset_fn'])
+        dataset.load_data()
+        dataset.add_calibration_path(dicts['calibrset_fn'])
+        dataset.load_calibration_data()
 
-    active_comb_ponsc, query_fnc, active_cp_comb_class, n_ref_points, n_active_points = learn_conformal_precition_model(args, model, suo, dataset, initial_amount, horizon)
+        active_comb_ponsc, query_fnc, active_cp_comb_class, n_ref_points, n_active_points = learn_conformal_precition_model(args, model, suo, dataset, initial_amount, horizon)
 
-    results_dict = {"rej_rule": query_fnc}
+        results_dict = {"rej_rule": query_fnc}
 
-    #SAVING REJECTION CLASSIFIER 
-    rej_filename = os.path.join(args.dump_stats, "conformal_rej.pickle")
-    with open(rej_filename, 'wb') as handle:
-        pickle.dump(results_dict, handle)
-   
-    nn_filename = os.path.join(args.dump_model, "conformal_state_estimator.pt") 
-    torch.save(active_comb_ponsc.seq_se, nn_filename)
+        #SAVING REJECTION CLASSIFIER
 
-    nn_filename = os.path.join(args.dump_model, "conformal_error_estimator.pt")
-    torch.save(active_comb_ponsc.seq_nsc, nn_filename)
+        rej_filename = os.path.join(args.dump_stats, f"{args.mc}_comp_conformal_pred_rejection_classifier_{args.run_id}_{args.amount}.pickle")
+        with open(rej_filename, 'wb') as handle:
+            pickle.dump(results_dict, handle)
+    
+        nn_filename = os.path.join(args.dump_model, f"{args.mc}_comp_conformal_pred_state_estimator_{args.run_id}_{args.amount}.pt") 
+        torch.save(active_comb_ponsc.seq_se, nn_filename)
 
-    nn_filename = os.path.join(args.dump_model, "cp_classification.pt")
-  
-    torch.save(active_cp_comb_class, nn_filename, pickle_module=dill)
+        nn_filename = os.path.join(args.dump_model, f"{args.mc}_comp_conformal_pred_label_estimator_{args.run_id}_{args.amount}.pt")
+        torch.save(active_comb_ponsc.seq_nsc, nn_filename)
 
-    sample_count = n_ref_points + n_active_points + len(trainset) + len(calibrset) + len(validset)
+        nn_filename = os.path.join(args.dump_model, f"{args.mc}_comp_conformal_pred_cp_classification_{args.run_id}_{args.amount}.pt")
+    
+        torch.save(active_cp_comb_class, nn_filename, pickle_module=dill)
 
-    dataset_stats = {'dataset.MIN[1]': dataset.MIN[1], 'dataset.MAX[1]': dataset.MAX[1], 'learned_on': sample_count, 'length_with_horizon': (initial_amount + horizon), 'horizon': horizon} 
+        sample_count = n_ref_points + n_active_points + len(trainset) + len(calibrset) + len(validset)
 
-    stats_filename = os.path.join(args.dump_stats, "conformal_stats.pickle")
+        dataset_stats = {'dataset.MIN[1]': dataset.MIN[1], 'dataset.MAX[1]': dataset.MAX[1], 'learned_on': sample_count, 'length_with_horizon': (initial_amount + horizon), 'horizon': horizon} 
 
-    with open(stats_filename, 'wb') as handle:
-        pickle.dump(dataset_stats, handle)
+        stats_filename = os.path.join(args.dump_stats, f"{args.mc}_comp_conformal_pred_conformal_stats_{args.run_id}_{args.amount}.pickle")
+
+        with open(stats_filename, 'wb') as handle:
+            pickle.dump(dataset_stats, handle)
 
 def build_learning_parser(parser: argparse.ArgumentParser):
     group = parser.add_argument_group("Learning Parameters")
@@ -453,4 +457,4 @@ if __name__ == "__main__":
 
     
 
-#python -m premise.interval.conformal_prediction.conformal_prediction --mc airportA-7-10-10 -a 500 --no-target --dump_model /workspaces/premise/premise/interval/conformal_prediction/test_results --dump_stats /workspaces/premise/premise/interval/conformal_prediction/test_results
+#python -m premise.interval.conformal_prediction.conformal_prediction --mc airportA-7-10-10 -a 3100 --no-target --dump_model /workspaces/premise/out/ --dump_stats /workspaces/premise/out/

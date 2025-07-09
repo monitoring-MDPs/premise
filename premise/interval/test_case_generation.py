@@ -54,7 +54,9 @@ if __name__ == "__main__":
             )
 
     all_states, all_transitions, initial_states = suo.get_states_and_transitions()
+    print("State count")
     print(len(all_states))
+    print("Transition count")
     print(len(all_transitions))
 
     traces = []
@@ -84,15 +86,18 @@ if __name__ == "__main__":
         with open(filename, "wb") as f:
             pickle.dump(traces, f)
 
-    
+
+
 
 
 # python -m premise.interval.test_case_generation -mc SnL-10x10 -l 15 -ho 5 --no-target --dump premise/analysis/test_sets/
 # python -m premise.interval.test_case_generation -mc airportA-7-10-10 -l 25 -ho 15 --no-target --dump premise/analysis/test_sets
-# python -m premise.interval.test_case_generation -mc airportA-7-50-30 -l 130 -ho 25 --no-target --dump premise/analysis/test_sets
-# python -m premise.interval.test_case_generation -mc airportB-7-50-30 -l 130 -ho 25 --no-target --dump premise/analysis/test_sets
+# python -m premise.interval.test_case_generation -mc airportA-7-40-20 -l 1 -ho 25 --no-target --dump premise/analysis/test_sets
+# python -m premise.interval.test_case_generation -mc airportB-3-50-30 -l 130 -ho 25 --no-target --dump premise/analysis/test_sets
 # python -m premise.interval.test_case_generation -mc evadeV-6-3 -l 20 -ho 12 --no-target --dump premise/analysis/test_sets
 # python -m premise.interval.test_case_generation -mc evadeI-15 -l 20 -ho 12 --no-target --dump premise/analysis/test_sets
 # python -m premise.interval.test_case_generation -mc SnLw-10x10 -sv pos -l 15 -ho 5 --no-target --dump premise/analysis/test_sets
 # python -m premise.interval.test_case_generation -mc evadeV-6-3-coarse -sv start turn c_ax c_ay c_dx c_dy -l 20 -ho 12 --no-target --dump premise/analysis/test_sets
 # python -m premise.interval.test_case_generation -mc airportB-7-50-30 -sv d p pobs turn -l 150 -ho 50 --no-target --dump premise/analysis/test_sets
+
+#default_models = {"airportA-7-10-10", "airportA-7-40-20", "airportB-3-50-30", "airportB-7-40-20", "evadeI-15", "evadeV-5-3", "evadeV-6-3", "refuelA-12-50", "refuelB-12-50", "SnL-10x10"}

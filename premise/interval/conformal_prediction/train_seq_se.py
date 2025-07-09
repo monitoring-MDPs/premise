@@ -115,7 +115,7 @@ class Train_SeqSE():
 			#fig_loss.savefig(self.results_path+"/A_losses{}epochs.png".format(self.n_epochs))
 			#plt.close()
 			
-			torch.save(self.seq_se, self.net_path)
+			#torch.save(self.seq_se, self.net_path)
 	
 	
 	def load_trained_net(self, n_epochs):

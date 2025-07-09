@@ -50,7 +50,9 @@ def conformal_testing_main(args: argparse.Namespace, se_path, error_path, rej_pa
     #cp_classification_path = args.cp_classification_path
 
     suo, initial_amount, horizon = build_suo(args)
-    horizon = args.horizon
+
+    args.horizon = horizon
+    args.length = initial_amount +  horizon
 
     models_dict = {"IP": InvertedPendulum(), "MC": mc_model(horizon)}
     model = models_dict[args.model_name]
@@ -173,4 +175,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     conformal_testing_main(args, args.se_path, args.error_path, args.rej_path, args.stats_path, args.cp_classification_path)
 
-#python -m premise.interval.conformal_prediction.conformal_prediction_testing --mc airportA-7-10-10 --testing_samples 500 --length 40 -ho 20 --no-target --se_path /workspaces/premise/premise/interval/conformal_prediction/test_results/conformal_state_estimator.pt --error_path /workspaces/premise/premise/interval/conformal_prediction/test_results/conformal_error_estimator.pt --rej_path /workspaces/premise/premise/interval/conformal_prediction/test_results/conformal_rej.pickle --cp_classification_path /workspaces/premise/premise/interval/conformal_prediction/test_results/cp_classification.pt --stats_path /workspaces/premise/premise/interval/conformal_prediction/test_results/conformal_stats.pickle
+#python -m premise.interval.conformal_prediction.conformal_prediction_testing --mc SnL-10x10 --testing_samples 10 --no-target --se_path /workspaces/premise/out/models/2025-07-08_08-55-26/conformal_state_estimator_SnL-10x10_10_702.pt  --error_path /workspaces/premise/out/models/2025-07-08_08-55-26/conformal_error_estimator_SnL-10x10_10_702.pt --rej_path /workspaces/premise/out/stats/2025-07-08_08-55-26/conformal_rej_SnL-10x10_10_702.pickle --cp_classification_path /workspaces/premise/out/models/2025-07-08_08-55-26/cp_classification_SnL-10x10_10_702.pt --stats_path /workspaces/premise/out/stats/2025-07-08_08-55-26/conformal_stats_SnL-10x10_10_702.pickle
