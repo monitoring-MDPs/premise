@@ -22,7 +22,7 @@ import joblib
 
 
 
-def learn_conformal_precition_model(args, model, suo, dataset, initial_amount, horizon):
+def learn_conformal_precition_model(args, model, suo, dataset, initial_amount, horizon, amount):
     #horizon = args.horizon
 
     model_name = args.model_name
@@ -130,7 +130,8 @@ def learn_conformal_precition_model(args, model, suo, dataset, initial_amount, h
 
     if args.do_refinement:
         print("----- REFINEMENT of the Rejection Rule...")
-        ref_samples = round((args.amount - 50)*5/41)
+        ref_samples = round((amount - 50)*5/41)
+        print(f"Requires: {ref_samples} samples")
 
         #unc_meas_ref, unc_states_ref, unc_outputs_ref = utils.Comb_PONSC_active_sample_query(pool_size = opt.pool_size_ref, model_class = model, conf_pred = cp_comb_class, trained_svc = query_fnc, se_fnc= se_fnc, dataset=dataset)
         #unc_meas_ref, unc_states_ref, unc_outputs_ref = utils.Comb_PONSC_active_sample_query(ref_samples, horizon, model_class = model, conf_pred = cp_comb_class, trained_svc = query_fnc, se_fnc = se_fnc, dataset=dataset)
@@ -187,7 +188,7 @@ def learn_conformal_precition_model(args, model, suo, dataset, initial_amount, h
         start_active = time.time()
         #unc_meas, unc_states, unc_outputs = utils.Comb_PONSC_active_sample_query(pool_size = opt.pool_size, model_class = model, conf_pred = curr_cp_comb_class, trained_svc = curr_query_fnc, se_fnc= curr_se_fnc, dataset=curr_dataset)
         #unc_meas, unc_states, unc_outputs = utils.Comb_PONSC_active_sample_query(active_samples, horizon, model_class = model, conf_pred = curr_cp_comb_class, trained_svc = curr_query_fnc, se_fnc = curr_se_fnc, dataset=curr_dataset)
-        active_samples = round((args.amount - 50)*10/41)
+        active_samples = round((amount - 50)*10/41)
         unc_meas, unc_states, unc_outputs = utils.Comb_PONSC_active_sample_query(suo, active_samples, (initial_amount + horizon), horizon, model_class=model, conf_pred = cp_comb_class, trained_svc = query_fnc, se_fnc = se_fnc, dataset=dataset)
 
         if len(unc_meas) < round(active_samples): 
@@ -323,32 +324,47 @@ def conformal_prediction_main(args: argparse.Namespace):
 
     model = mc_model(horizon)
 
-    for i in range(1, 6):
-        args.amount = int((i / 5) * args.amount)
-        print('AMOUT')
-        print(args.amount)
-
-        trainset = []
-        for x in range(round((args.amount - 50)*20/41)):
+    trainset = []
+    for x in range(round((args.amount - 50)*20/41)):
                 path = suo.generate_random_traces([], (initial_amount+horizon))[0]
                 trainset.append(tuple(path))
                 
-        calibrset = []
-        for x in range(round((args.amount - 50)*6/41)):
+    calibrset = []
+    for x in range(round((args.amount - 50)*6/41)):
                 path = tuple(suo.generate_random_traces([], (initial_amount+horizon))[0])
                 calibrset.append(path)
 
-        testset = []
-        for x in range(100):
+    testset = []
+    for x in range(100):
                 path = tuple(suo.generate_random_traces([], (initial_amount+horizon))[0])
                 testset.append(path)
 
-        validset = []
-        for x in range(50): 
+    validset = []
+    for x in range(50): 
                 path = tuple(suo.generate_random_traces([], (initial_amount+horizon))[0])
                 validset.append(path)
 
-        sets = {'trainset': trainset, 'calibrset': calibrset, 'testset': testset, 'validset': validset}
+
+    for i in range(1, 14):
+        print('___________________________________________________________________')
+        print(f'Learning interation : {i}')
+        print('___________________________________________________________________')
+        end_index = int((i / 13) * len(trainset))
+        current_trainset = trainset[:end_index]
+
+        end_index = int((i / 13) * len(calibrset))
+        current_calibrset = calibrset[:end_index]
+
+        amount = int((i / 13) * args.amount)
+
+        print('AMOUT')
+        print(amount)
+
+        print('Without active and refinement:')
+        print(len(current_trainset)+ len(current_calibrset) + 50)
+
+
+        sets = {'trainset': current_trainset, 'calibrset': current_calibrset, 'testset': testset, 'validset': validset}
 
         dicts = {}
 
@@ -363,23 +379,23 @@ def conformal_prediction_main(args: argparse.Namespace):
         dataset.add_calibration_path(dicts['calibrset_fn'])
         dataset.load_calibration_data()
 
-        active_comb_ponsc, query_fnc, active_cp_comb_class, n_ref_points, n_active_points = learn_conformal_precition_model(args, model, suo, dataset, initial_amount, horizon)
+        active_comb_ponsc, query_fnc, active_cp_comb_class, n_ref_points, n_active_points = learn_conformal_precition_model(args, model, suo, dataset, initial_amount, horizon, amount)
 
         results_dict = {"rej_rule": query_fnc}
 
         #SAVING REJECTION CLASSIFIER
 
-        rej_filename = os.path.join(args.dump_stats, f"{args.mc}_comp_conformal_pred_rejection_classifier_{args.run_id}_{args.amount}.pickle")
+        rej_filename = os.path.join(args.dump_stats, f"{args.mc}_comp_conformal_pred_rejection_classifier_{args.run_id}_{amount}.pickle")
         with open(rej_filename, 'wb') as handle:
             pickle.dump(results_dict, handle)
     
-        nn_filename = os.path.join(args.dump_model, f"{args.mc}_comp_conformal_pred_state_estimator_{args.run_id}_{args.amount}.pt") 
+        nn_filename = os.path.join(args.dump_model, f"{args.mc}_comp_conformal_pred_state_estimator_{args.run_id}_{amount}.pt") 
         torch.save(active_comb_ponsc.seq_se, nn_filename)
 
-        nn_filename = os.path.join(args.dump_model, f"{args.mc}_comp_conformal_pred_label_estimator_{args.run_id}_{args.amount}.pt")
+        nn_filename = os.path.join(args.dump_model, f"{args.mc}_comp_conformal_pred_label_estimator_{args.run_id}_{amount}.pt")
         torch.save(active_comb_ponsc.seq_nsc, nn_filename)
 
-        nn_filename = os.path.join(args.dump_model, f"{args.mc}_comp_conformal_pred_cp_classification_{args.run_id}_{args.amount}.pt")
+        nn_filename = os.path.join(args.dump_model, f"{args.mc}_comp_conformal_pred_cp_classification_{args.run_id}_{amount}.pt")
     
         torch.save(active_cp_comb_class, nn_filename, pickle_module=dill)
 
@@ -387,7 +403,7 @@ def conformal_prediction_main(args: argparse.Namespace):
 
         dataset_stats = {'dataset.MIN[1]': dataset.MIN[1], 'dataset.MAX[1]': dataset.MAX[1], 'learned_on': sample_count, 'length_with_horizon': (initial_amount + horizon), 'horizon': horizon} 
 
-        stats_filename = os.path.join(args.dump_stats, f"{args.mc}_comp_conformal_pred_conformal_stats_{args.run_id}_{args.amount}.pickle")
+        stats_filename = os.path.join(args.dump_stats, f"{args.mc}_comp_conformal_pred_conformal_stats_{args.run_id}_{amount}.pickle")
 
         with open(stats_filename, 'wb') as handle:
             pickle.dump(dataset_stats, handle)
@@ -457,4 +473,4 @@ if __name__ == "__main__":
 
     
 
-#python -m premise.interval.conformal_prediction.conformal_prediction --mc airportA-7-10-10 -a 3100 --no-target --dump_model /workspaces/premise/out/ --dump_stats /workspaces/premise/out/
+#python -m premise.interval.conformal_prediction.conformal_prediction --mc airportA-7-10-10 -a 3200 --no-target --dump_model /workspaces/premise/out/ --dump_stats /workspaces/premise/out/

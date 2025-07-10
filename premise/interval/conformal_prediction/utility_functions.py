@@ -60,9 +60,15 @@ def Comb_PONSC_active_sample_query(suo, active_samples, length, horizon, model_c
 	
 	samples = []
 
-	for x in range(((active_samples*2)//100)*100):
-		path = tuple(suo.generate_random_traces([], length)[0])
-		samples.append(path)
+	if ((active_samples*2)//100)*100 == 0:
+		for x in range(100): 
+			path = tuple(suo.generate_random_traces([], length)[0])
+			samples.append(path)
+
+	else:
+		for x in range(((active_samples*2)//100)*100):
+			path = tuple(suo.generate_random_traces([], length)[0])
+			samples.append(path)
 	
 	print(len(samples))
 

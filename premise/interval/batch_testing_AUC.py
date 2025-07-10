@@ -12,6 +12,7 @@ import pickle
 from stormpy import AddUncertaintyExact, Rational
 from premise.interval.utils import logger
 from sklearn import metrics
+import matplotlib.ticker as ticker
 
 
 from premise.interval.conformal_prediction.train_stoch_seq_nsc import *
@@ -148,17 +149,22 @@ def aggregted_alarms(testing_samples):
 def aggregated_stats_regression(regression_model, regression_stats, testing_samples, horizon, initial_amount): 
 
     regression_risks = {}
+    regression_ys = {}
 
     for x in range(1,11):
         paths = glob.glob(f'{regression_model}-{x}_*.npy')
+        
+        regression_ys[str(x)] = []
 
-        regression_ys = []
         for path in paths:
             match = re.search(r'_(\d+)\.npy$', path)
             if match:
-                regression_ys.append(int(match.group(1)))
+                regression_ys[str(x)].append(int(match.group(1)))
 
-        for y in regression_ys:
+        for key in regression_ys.keys(): 
+            regression_ys[key].sort()
+
+        for y in regression_ys[str(x)]:
             regression_risks[f'{x}-{y}'] = []
 
             reg_model = np.load(f'{regression_model}-{x}_{y}.npy', allow_pickle=True).item()
@@ -172,8 +178,81 @@ def aggregated_stats_regression(regression_model, regression_stats, testing_samp
                 prob = reg_model.predict_proba(X)    
                 regression_risks[f'{x}-{y}'].append(float(prob[:, 1].item()))
 
-
     return regression_risks, regression_ys
+
+def aggreagted_stats_conformal(new_noisy, se_path, error_path, rej_path, stats_path, cp_classification_path):
+
+    conformal_risks = {}
+    conformal_ys = {}
+
+    print(new_noisy)
+
+    for x in range(8,9):
+        paths = glob.glob(f'{se_path}_{x}_*.pt')
+
+        conformal_ys[str(x)] = []
+
+        for path in paths: 
+            match = re.search(r'_(\d+)\.pt$', path)
+            if match: 
+                conformal_ys[str(x)].append(int(match.group(1)))
+        
+        for key in conformal_ys.keys(): 
+            conformal_ys[key].sort()
+
+        for y in conformal_ys[str(x)]:
+            conformal_risks[f'{x}-{y}'] = [] 
+
+            state_estimator = torch.load(f'{se_path}_{x}_{y}.pt', weights_only=False)
+            label_estimator = torch.load(f'{error_path}_{x}_{y}.pt', weights_only=False)
+            cp_classification = torch.load(f'{cp_classification_path}_{x}_{y}.pt', weights_only=False)
+
+            with open(f'{rej_path}_{x}_{y}.pickle', 'rb') as f:
+                rej_classifier = pickle.load(f)
+    
+            rejection_classifier = rej_classifier['rej_rule']
+
+            with open(f'{stats_path}_{x}_{y}.pickle', 'rb') as f:
+                conformal_stats = pickle.load(f)
+
+            new_noisy_scaled = -1+2*(new_noisy - conformal_stats['dataset.MIN[1]'])/(conformal_stats['dataset.MAX[1]']-conformal_stats['dataset.MIN[1]'])
+            Y1 = np.transpose(new_noisy_scaled, (0,2,1))
+            Y1t = Variable(FloatTensor(Y1))
+
+            state_estimator.eval()    
+            state_estim = state_estimator(Y1t)
+            label_estimator.eval()
+            label_hypothesis = label_estimator(state_estim)
+    
+            label_prob = torch.nn.functional.softmax(label_hypothesis, dim=1)
+            error_prob = label_prob[:, 1]
+            error_prob = error_prob.tolist()
+
+
+            pool_conf_cred = cp_classification.compute_confidence_credibility(np.transpose(new_noisy_scaled,(0,2,1)))
+            keep_mask = utils.apply_svc_query_strategy(rejection_classifier, pool_conf_cred)
+
+            print('error_prob')
+            print(error_prob)
+            print('keep_mask')
+            print(keep_mask)
+
+            for u in range(len(error_prob)): 
+                if keep_mask[u] == -1.0: 
+                    error_prob[u] = 1.0 
+
+            print('RISKS')
+            print(error_prob)
+            
+            for u in range(len(error_prob)):
+                print(keep_mask[u])
+                print(error_prob[u])
+                conformal_risks[f'{x}-{y}'].append(error_prob[u])
+
+    print(conformal_risks)
+
+    return conformal_risks, conformal_ys
+
 
 def stats_true(horizon, initial_amount, testing_samples, suo): 
 
@@ -195,8 +274,119 @@ def stats_true(horizon, initial_amount, testing_samples, suo):
 
     return target_risks
 
+def plot_roc_curve(alarms, imc_risks, imc_risks_ref, regression_risks, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_risks, conformal_ys):
 
-def auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_transition_counts, imc_transition_counts_ref, regression_ys, target_risks): 
+
+    imc_final_risks = {}
+
+    for x in range(1,11): 
+        for key in imc_risks:
+            if key.split('-')[1] == max(imc_transition_counts[str(x)]):
+                print(key)
+                imc_final_risks[str(x)] = imc_risks[key]
+
+    imc_ref_final_risks = {}
+
+    for x in range(1,11): 
+        for key in imc_risks_ref:
+            if key.split('-')[1] == max(imc_transition_counts_ref[str(x)]):
+                print(key)
+                imc_ref_final_risks[str(x)] = imc_risks_ref[key]
+
+
+    reg_final_risks = {}
+
+    for x in range(1,11): 
+        for key in regression_risks: 
+            if key.split('-')[1] == max(regression_ys[str(x)]): 
+                print(key)
+                reg_final_risks[str(x)] = regression_risks[key]
+    
+    
+    conformal_final_risks = {}
+
+    for x in range(8,9): 
+        for key in conformal_risks: 
+            if key.split('-')[1] == max(conformal_ys[str(x)]): 
+                print(key)
+                conformal_final_risks[str(x)] = conformal_risks[key]
+
+
+    
+    plt.figure(figsize=(8, 6))
+    line_styles = ["-"]
+    style_index = 0
+
+    for key in imc_final_risks.keys():
+
+        fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_final_risks[key])
+        roc_auc = metrics.auc(fpr, tpr)
+        plt.plot(
+            fpr,
+            tpr,
+            label=f"No Refinement, (AUC = {roc_auc:.2f})",
+            color='red',
+        )
+
+    for key in imc_ref_final_risks.keys():
+
+        fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_ref_final_risks[key])
+        roc_auc = metrics.auc(fpr, tpr)
+        plt.plot(
+            fpr,
+            tpr,
+            label=f"Refinement, (AUC = {roc_auc:.2f})",
+            color='blue',
+        )
+    
+    for key in reg_final_risks.keys(): 
+
+        fpr, tpr, thresholds = metrics.roc_curve(alarms, reg_final_risks[key])
+        roc_auc = metrics.auc(fpr, tpr)
+        plt.plot(
+            fpr,
+            tpr,
+            label=f"Regression, (AUC = {roc_auc:.2f})",
+            color='green',
+        )
+
+    for key in conformal_final_risks.keys(): 
+
+        fpr, tpr, thresholds = metrics.roc_curve(alarms, conformal_final_risks[key])
+        roc_auc = metrics.auc(fpr, tpr)
+        plt.plot(
+            fpr,
+            tpr,
+            label=f"Conformal Prediction, (AUC = {roc_auc:.2f})",
+            color='orange',
+        )
+
+
+    plt.plot([0, 1], [0, 1], "r--")
+    plt.xlim((0, 1))
+    plt.ylim((0, 1))
+    plt.ylabel("True Positive Rate")
+    plt.xlabel("False Positive Rate")
+    plt.legend(loc="lower right")
+    plt.tick_params(axis="both")
+    plt.grid(True)
+
+    plt.savefig("/workspaces/premise/premise/analysis/SnL_ROC_test.pdf", dpi=300)
+    plt.show()
+
+
+
+         
+
+
+
+   
+
+
+
+
+
+def auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_risks, conformal_ys, target_risks, horizon, initial_amount): 
 
     fpr, tpr, threshold = metrics.roc_curve(alarms, target_risks)
     roc_auc = metrics.auc(fpr, tpr)
@@ -223,6 +413,16 @@ def auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
         roc_auc = metrics.auc(fpr, tpr)
         reg_auc[reg_key] = roc_auc
 
+    conformal_auc = {}
+
+    for conformal_key in conformal_risks.keys():
+        print('conformal_risks[key]')
+        print(conformal_risks[conformal_key])
+        fpr, tpr, threshold = metrics.roc_curve(alarms, conformal_risks[conformal_key])
+        roc_auc = metrics.auc(fpr, tpr)
+        conformal_auc[conformal_key] = roc_auc
+
+
     imc_results = {}
 
     for x in range(1,11):
@@ -234,7 +434,6 @@ def auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
             if x == entry:
                 imc_results[x].append(imc_auc[key])
 
-    #print(imc_results)
 
     imc_ref_results = {}
 
@@ -247,28 +446,40 @@ def auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
             if x == entry:
                 imc_ref_results[x].append(imc_ref_auc[key])
 
-    #print(imc_ref_results)
-
+    
     reg_results = {}
 
     for x in range(1,11):
         reg_results[str(x)] = []
 
+
     for key in reg_auc.keys():
         for entry in reg_results.keys():
             x = key.split('-')[0]
             if x == entry:
-                reg_results[x].append([key, reg_auc[key]])
+                reg_results[x].append(reg_auc[key])
 
-    #print(reg_results)
+    conformal_results = {}
 
-    return target_auc, imc_results, imc_ref_results, reg_results, imc_transition_counts, imc_transition_counts_ref, regression_ys
+    for x in range(8,9): 
+        conformal_results[str(x)] = []
+
+    for key in conformal_auc.keys(): 
+        for entry in conformal_results.keys():
+            x = key.split('-')[0]
+            if x == entry: 
+                conformal_results[x].append(conformal_auc[key])
 
 
-def plotting(target_auc, imc_results, imc_ref_results, reg_results, imc_transition_counts, imc_transition_counts_ref, regression_ys): 
+    return target_auc, imc_results, imc_ref_results, reg_results, conformal_results, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_ys
+
+
+def plotting(target_auc, imc_results, imc_ref_results, reg_results, conformal_results, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_ys, horizon, initial_amount): 
 
     R_sets = []
     NR_sets = []
+    REG_sets = []
+    CONF_sets = []
 
     for key in imc_ref_results.keys(): 
         total_state_count = []
@@ -289,8 +500,28 @@ def plotting(target_auc, imc_results, imc_ref_results, reg_results, imc_transiti
 
         NR_sets.append((total_state_count, imc_results[key]))
 
+
+    for key in reg_results.keys():
+        total_state_count = []
+        x = key.split('-')[0] 
+        for val in regression_ys[key]:
+            total_state_count.append(val*(horizon+initial_amount))
+        
+        REG_sets.append((total_state_count, reg_results[key]))
+
+
+    for key in conformal_results.keys():
+        total_state_count = []
+        x = key.split('-')[0]
+        for val in conformal_ys[key]:
+            total_state_count.append(val*(horizon+initial_amount))
+
+        CONF_sets.append((total_state_count, conformal_results[key]))
+            
+
     log = True
 
+    #REFINEMENT AVERAGE PERFORMANCE
     transitions_data = []
     auc_data = []
 
@@ -301,37 +532,43 @@ def plotting(target_auc, imc_results, imc_ref_results, reg_results, imc_transiti
         transitions_data.append(transitions)
         auc_data.append(auc_daum)
 
-        # Find common x range for interpolation
-        min_x = max(min(transitions) for transitions in transitions_data)
-        max_x = min(max(transitions) for transitions in transitions_data)
-        x_values = np.linspace(min_x, max_x, 500)
+    # Find common x range for interpolation
+    min_x = max(min(transitions) for transitions in transitions_data)
+    max_x = min(max(transitions) for transitions in transitions_data)
+    x_values = np.linspace(min_x, max_x, 500)
 
-        # Interpolate all runs to common x values
-        interpolated_auc = []
-        for auc, transitions in zip(auc_data, transitions_data):
-            if log:
-                auc = np.log10(auc)
-            interpolated = np.interp(x_values, transitions, auc)
-            if log:
-                interpolated = np.power(10, interpolated)
-            interpolated_auc.append(interpolated)
+    # Interpolate all runs to common x values
+    interpolated_auc = []
+    for auc, transitions in zip(auc_data, transitions_data):
+        if log:
+            auc = np.log10(auc)
+        interpolated = np.interp(x_values, transitions, auc)
+        if log:
+            interpolated = np.power(10, interpolated)
+        interpolated_auc.append(interpolated)
 
-        # Calculate mean and std for interpolated y values
-        auc_array = np.array(interpolated_auc)
-        mean_auc = np.mean(auc_array, axis=0)
-        std_auc = np.std(auc_array, axis=0)
-        min_auc = np.min(auc_array, axis=0)
-        max_auc = np.max(auc_array, axis=0)
+    # Calculate mean and std for interpolated y values
+    auc_array = np.array(interpolated_auc)
+    mean_auc = np.mean(auc_array, axis=0)
+    std_auc = np.std(auc_array, axis=0)
+    min_auc = np.min(auc_array, axis=0)
+    max_auc = np.max(auc_array, axis=0)
 
-        # Plot mean line
-        plt.plot(
-            x_values,
-            mean_auc,
-            color='blue',
+    plt.figure()
+    fig, ax = plt.subplots(figsize=(20, 10))
+
+    #Plot mean line
+    ax.plot(
+        x_values,
+        mean_auc,
+        color='blue',
+        label = 'Refinement',
+        linewidth=3,
+        linestyle=':',
         )
 
-        # Add shaded area for spread
-        plt.fill_between(
+    #Add shaded area for spread
+    ax.fill_between(
             x_values,
             mean_auc - std_auc,
             mean_auc + std_auc,
@@ -339,25 +576,213 @@ def plotting(target_auc, imc_results, imc_ref_results, reg_results, imc_transiti
             color='blue',
         )
 
-    plt.plot(R_sets[0][0], R_sets[0][1], color='green')
-    plt.plot(R_sets[1][0], R_sets[1][1], color='green')
-    plt.plot(R_sets[2][0], R_sets[2][1], color='green')
-    plt.plot(R_sets[3][0], R_sets[3][1], color='green')
-    plt.plot(R_sets[4][0], R_sets[4][1], color='green')
-    plt.plot(R_sets[5][0], R_sets[5][1], color='green')
-    plt.plot(R_sets[6][0], R_sets[6][1], color='green')
-    plt.plot(R_sets[7][0], R_sets[7][1], color='green')
-    plt.plot(R_sets[8][0], R_sets[8][1], color='green')
-    plt.plot(R_sets[9][0], R_sets[9][1], color='green')
+    #NO REFINEMENT AVERAGE PERFORMANCE
 
-    plt.xlabel("State count")
-    plt.ylabel("AUC")
-    if log:
-        plt.yscale("log")
-    else:
-        plt.ylim(bottom=0)
-    plt.legend()
-    plt.grid(True)
+    N_transitions_data = []
+    N_auc_data = []
+
+    for entry in NR_sets:
+        transitions = entry[0]
+        auc_daum = entry[1]
+
+        N_transitions_data.append(transitions)
+        N_auc_data.append(auc_daum)
+
+    # Find common x range for interpolation
+    N_min_x = max(min(transitions) for transitions in N_transitions_data)
+    N_max_x = min(max(transitions) for transitions in N_transitions_data)
+    N_x_values = np.linspace(N_min_x, N_max_x, 500)
+
+    # Interpolate all runs to common x values
+    N_interpolated_auc = []
+    for auc, transitions in zip(N_auc_data, N_transitions_data):
+        if log:
+            auc = np.log10(auc)
+        N_interpolated = np.interp(N_x_values, transitions, auc)
+        if log:
+            N_interpolated = np.power(10, N_interpolated)
+        N_interpolated_auc.append(N_interpolated)
+
+    # Calculate mean and std for interpolated y values
+    N_auc_array = np.array(N_interpolated_auc)
+    N_mean_auc = np.mean(N_auc_array, axis=0)
+    N_std_auc = np.std(N_auc_array, axis=0)
+    N_min_auc = np.min(N_auc_array, axis=0)
+    N_max_auc = np.max(N_auc_array, axis=0)
+
+
+    #Plot mean line
+    ax.plot(
+        N_x_values,
+        N_mean_auc,
+        color='red',
+        label = 'No refinement',
+        linewidth=3,
+        linestyle='--',
+        )
+
+    #Add shaded area for spread
+    ax.fill_between(
+            N_x_values,
+            N_mean_auc - N_std_auc,
+            N_mean_auc + N_std_auc,
+            alpha=0.2,
+            color='red',
+        )
+
+    #REGRESSION MODEL AVERAGE PERFORMANCE
+
+    REG_transitions_data = []
+    REG_auc_data = []
+
+    for entry in REG_sets:
+        transitions = entry[0]
+        auc_daum = entry[1]
+
+        REG_transitions_data.append(transitions)
+        REG_auc_data.append(auc_daum)
+
+    # Find common x range for interpolation
+    REG_min_x = max(min(transitions) for transitions in REG_transitions_data)
+    REG_max_x = min(max(transitions) for transitions in REG_transitions_data)
+    REG_x_values = np.linspace(REG_min_x, REG_max_x, 500)
+
+    # Interpolate all runs to common x values
+    REG_interpolated_auc = []
+    for auc, transitions in zip(REG_auc_data, REG_transitions_data):
+        if log:
+            auc = np.log10(auc)
+        REG_interpolated = np.interp(REG_x_values, transitions, auc)
+        if log:
+            REG_interpolated = np.power(10, REG_interpolated)
+        REG_interpolated_auc.append(REG_interpolated)
+
+    # Calculate mean and std for interpolated y values
+    REG_auc_array = np.array(REG_interpolated_auc)
+    REG_mean_auc = np.mean(REG_auc_array, axis=0)
+    REG_std_auc = np.std(REG_auc_array, axis=0)
+    REG_min_auc = np.min(REG_auc_array, axis=0)
+    REG_max_auc = np.max(REG_auc_array, axis=0)
+
+    #Plot mean line
+    ax.plot(
+        REG_x_values,
+        REG_mean_auc,
+        color='green',
+        label = 'Regression',
+        linestyle='-.'
+        )
+
+    #Add shaded area for spread
+    ax.fill_between(
+            REG_x_values,
+            REG_mean_auc - REG_std_auc,
+            REG_mean_auc + REG_std_auc,
+            alpha=0.2,
+            color='green'
+        )
+    
+    #CONFORMAL PREDICTION MODEL AVERAGE PERFORMANCE
+
+    CONF_transitions_data = []
+    CONF_auc_data = []
+
+    for entry in CONF_sets:
+        transitions = entry[0]
+        auc_daum = entry[1]
+
+        CONF_transitions_data.append(transitions)
+        CONF_auc_data.append(auc_daum)
+
+    # Find common x range for interpolation
+    CONF_min_x = max(min(transitions) for transitions in CONF_transitions_data)
+    CONF_max_x = min(max(transitions) for transitions in CONF_transitions_data)
+    CONF_x_values = np.linspace(CONF_min_x, CONF_max_x, 500)
+
+    # Interpolate all runs to common x values
+    CONF_interpolated_auc = []
+    for auc, transitions in zip(CONF_auc_data, CONF_transitions_data):
+        if log:
+            auc = np.log10(auc)
+        CONF_interpolated = np.interp(CONF_x_values, transitions, auc)
+        if log:
+            CONF_interpolated = np.power(10, CONF_interpolated)
+        CONF_interpolated_auc.append(CONF_interpolated)
+
+    # Calculate mean and std for interpolated y values
+    CONF_auc_array = np.array(CONF_interpolated_auc)
+    CONF_mean_auc = np.mean(CONF_auc_array, axis=0)
+    CONF_std_auc = np.std(CONF_auc_array, axis=0)
+    CONF_min_auc = np.min(CONF_auc_array, axis=0)
+    CONF_max_auc = np.max(CONF_auc_array, axis=0)
+
+    #Plot mean line
+    ax.plot(
+        CONF_x_values,
+        CONF_mean_auc,
+        color='orange',
+        label = 'Conformal prediction',
+        )
+
+    #Add shaded area for spread
+    ax.fill_between(
+            CONF_x_values,
+            CONF_mean_auc - CONF_std_auc,
+            CONF_mean_auc + CONF_std_auc,
+            alpha=0.2,
+            color='yellow',
+        )
+    
+
+    #plt.plot(REG_sets[0][0], REG_sets[0][1], color='green')
+    #plt.plot(REG_sets[1][0], REG_sets[1][1], color='green')
+    #plt.plot(REG_sets[2][0], REG_sets[2][1], color='green')
+    #plt.plot(REG_sets[3][0], REG_sets[3][1], color='green')
+    #plt.plot(REG_sets[4][0], REG_sets[4][1], color='green')
+    #plt.plot(REG_sets[5][0], REG_sets[5][1], color='green')
+    #plt.plot(REG_sets[6][0], REG_sets[6][1], color='green')
+    #plt.plot(REG_sets[7][0], REG_sets[7][1], color='green')
+    #plt.plot(REG_sets[8][0], REG_sets[8][1], color='green')
+    #plt.plot(REG_sets[9][0], REG_sets[9][1], color='green')
+
+    #plt.plot(R_sets[0][0], R_sets[0][1], color='green')
+    #plt.plot(R_sets[1][0], R_sets[1][1], color='green')
+    #plt.plot(R_sets[2][0], R_sets[2][1], color='green')
+    #plt.plot(R_sets[3][0], R_sets[3][1], color='green')
+    #plt.plot(R_sets[4][0], R_sets[4][1], color='green')
+    #plt.plot(R_sets[5][0], R_sets[5][1], color='green')
+    #plt.plot(R_sets[6][0], R_sets[6][1], color='green')
+    #plt.plot(R_sets[7][0], R_sets[7][1], color='green')
+    #plt.plot(R_sets[8][0], R_sets[8][1], color='green')
+    #plt.plot(R_sets[9][0], R_sets[9][1], color='green')
+
+    #plt.plot(NR_sets[0][0], NR_sets[0][1], color='red')
+    #plt.plot(NR_sets[1][0], NR_sets[1][1], color='red')
+    #plt.plot(NR_sets[2][0], NR_sets[2][1], color='red')
+    #plt.plot(NR_sets[3][0], NR_sets[3][1], color='red')
+    #plt.plot(NR_sets[4][0], NR_sets[4][1], color='red')
+    #plt.plot(NR_sets[5][0], NR_sets[5][1], color='red')
+    #plt.plot(NR_sets[6][0], NR_sets[6][1], color='red')
+    #plt.plot(NR_sets[7][0], NR_sets[7][1], color='red')
+    #plt.plot(NR_sets[8][0], NR_sets[8][1], color='red')
+    #plt.plot(NR_sets[9][0], NR_sets[9][1], color='red')
+
+    formatter = ticker.ScalarFormatter(useMathText=True)
+    formatter.set_powerlimits((4, 4))  # Force 10^4 scale
+    ax.xaxis.set_major_formatter(formatter)
+
+
+    ax.set_xlabel("State count")
+    ax.set_ylabel("AUC")
+    ax.legend(loc="lower right")
+    #if log:
+    #    plt.yscale("log")
+    #else:
+    #    plt.ylim(bottom=0)
+    ax.grid(True)
+    plt.subplots_adjust(bottom=0.25)
+    plt.title(f'{args.mc}')
+
     plt.savefig("/workspaces/premise/premise/analysis/SnL_AUC_test.pdf", dpi=300)
     plt.show()
 
@@ -373,21 +798,30 @@ def main_imc(args: argparse.Namespace):
             path = suo.generate_random_traces([], length)[0]
             testing_samples.append(tuple(path))
 
+    models_dict = {"IP": InvertedPendulum(), "MC": mc_model(horizon)}
+    model = models_dict['MC']
+    model = mc_model(horizon)
+
+    noisy_measurements = model.get_noisy_measurments(testing_samples, horizon)
+    
+
     alarms = aggregted_alarms(testing_samples)
     target_risks = stats_true(horizon, initial_amount, testing_samples, suo)
 
     imc_risks, imc_transition_counts = aggregated_stats_imc(args.imc_model, args.imc_stats, initial_amount, horizon, args, testing_samples)
     imc_risks_ref, imc_transition_counts_ref = aggregated_stats_imc(args.imc_model_ref, args.imc_stats_ref, initial_amount, horizon, args, testing_samples)
     regression_risks, regression_ys = aggregated_stats_regression(args.regression_model, args.regression_stats, testing_samples, horizon, initial_amount)
-    target_auc, imc_results, imc_ref_results, reg_results, imc_transition_counts, imc_transition_counts_ref, regression_ys = auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_transition_counts, imc_transition_counts_ref, regression_ys, target_risks)
-    plotting(target_auc, imc_results, imc_ref_results, reg_results, imc_transition_counts, imc_transition_counts_ref, regression_ys)
+    conformal_risks, conformal_ys = aggreagted_stats_conformal(noisy_measurements, args.se_path, args.error_path, args.rej_path, args.stats_path, args.cp_classification_path)              
+    target_auc, imc_results, imc_ref_results, reg_results, conformal_results, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_ys = auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_risks, conformal_ys,target_risks, horizon, initial_amount)
 
+    plotting(target_auc, imc_results, imc_ref_results, reg_results, conformal_results, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_ys, horizon, initial_amount)
+    plot_roc_curve(alarms, imc_risks, imc_risks_ref, regression_risks, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_risks, conformal_ys)
 
 def build_learning_parser(parser: argparse.ArgumentParser):
     group = parser.add_argument_group("Learning Parameters")
 
     group.add_argument("--model_name", type=str, default="MC", help="Name of the model (first letters code).")
-    group.add_argument("-s", "--testing_samples", type=int, default = 25, help="Total number of samples used in learning")
+    group.add_argument("-s", "--testing_samples", type=int, default = 100, help="Total number of samples used in learning")
     group.add_argument("--no-target", action="store_true", help="Do not use the target monitor" )
 
 
@@ -464,16 +898,7 @@ if __name__ == "__main__":
     main_imc(args)
     
     
-#python -m premise.interval.batch_testing_AUC --mc SnL-10x10 --imc_model /workspaces/premise/out/models/2025-07-08_08-55-26/SnL-10x10-comp-no-ref --imc_stats /workspaces/premise/out/stats/2025-07-08_08-55-26/SnL-10x10-comp-noref-stats 
-
-#python -m premise.interval.batch_testing_AUC --mc SnL-10x10 --imc_model /workspaces/premise/out/models/2025-07-08_08-55-26/SnL-10x10-comp-no-ref --imc_stats /workspaces/premise/out/stats/2025-07-08_08-55-26/SnL-10x10-comp-noref-stats --regression_model /workspaces/premise/out/models/2025-07-08_08-55-26/SnL-10x10-comp-reg --regression_stats /workspaces/premise/out/stats/2025-07-08_08-55-26/SnL-10x10-comp-reg-stats --imc_model_ref /workspaces/premise/out/models/2025-07-08_08-55-26/SnL-10x10-comp-ref --imc_stats_ref /workspaces/premise/out/stats/2025-07-08_08-55-26/SnL-10x10-comp-ref-stats
-
-
-#python -m premise.interval.batch_testing_AUC --mc SnL-10x10 --imc_model /workspaces/premise/out/models/2025-07-08_19-02-12/SnL-10x10-comp-no-ref --imc_stats /workspaces/premise/out/stats/2025-07-08_19-02-12/SnL-10x10-comp-noref-stats --regression_model /workspaces/premise/out/models/2025-07-08_19-02-12/SnL-10x10-comp-reg --regression_stats /workspaces/premise/out/stats/2025-07-08_19-02-12/SnL-10x10-comp-reg-stats --imc_model_ref /workspaces/premise/out/models/2025-07-08_19-02-12/SnL-10x10-comp-ref --imc_stats_ref /workspaces/premise/out/stats/2025-07-08_19-02-12/SnL-10x10-comp-ref-stats
-
-
-
-
+#python -m premise.interval.batch_testing_AUC --mc SnL-10x10 --imc_model /workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10-comp-no-ref --imc_stats /workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10-comp-noref-stats --regression_model /workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10-comp-reg --regression_stats /workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10-comp-reg-stats --imc_model_ref /workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10-comp-ref --imc_stats_ref /workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10-comp-ref-stats --se_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_state_estimator' --error_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_label_estimator' --rej_path '/workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_rejection_classifier' --stats_path '/workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_conformal_stats' --cp_classification_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_cp_classification'
 
 
 
