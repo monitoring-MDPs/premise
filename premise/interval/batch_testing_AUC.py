@@ -185,8 +185,6 @@ def aggreagted_stats_conformal(new_noisy, se_path, error_path, rej_path, stats_p
     conformal_risks = {}
     conformal_ys = {}
 
-    print(new_noisy)
-
     for x in range(8,9):
         paths = glob.glob(f'{se_path}_{x}_*.pt')
 
@@ -232,24 +230,13 @@ def aggreagted_stats_conformal(new_noisy, se_path, error_path, rej_path, stats_p
             pool_conf_cred = cp_classification.compute_confidence_credibility(np.transpose(new_noisy_scaled,(0,2,1)))
             keep_mask = utils.apply_svc_query_strategy(rejection_classifier, pool_conf_cred)
 
-            print('error_prob')
-            print(error_prob)
-            print('keep_mask')
-            print(keep_mask)
-
             for u in range(len(error_prob)): 
                 if keep_mask[u] == -1.0: 
                     error_prob[u] = 1.0 
-
-            print('RISKS')
-            print(error_prob)
             
             for u in range(len(error_prob)):
-                print(keep_mask[u])
-                print(error_prob[u])
                 conformal_risks[f'{x}-{y}'].append(error_prob[u])
 
-    print(conformal_risks)
 
     return conformal_risks, conformal_ys
 
@@ -279,46 +266,51 @@ def plot_roc_curve(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
 
     imc_final_risks = {}
 
-    for x in range(1,11): 
-        for key in imc_risks:
-            if key.split('-')[1] == max(imc_transition_counts[str(x)]):
-                print(key)
-                imc_final_risks[str(x)] = imc_risks[key]
+    ys = []
+    for key in imc_risks.keys():
+        ys.append(int(key.split('-')[1]))
+    
+    for key in imc_risks.keys():
+        if key.split('-')[1] == str(max(ys)):
+            imc_final_risks[key.split('-')[0]] = imc_risks[key]
+
+
 
     imc_ref_final_risks = {}
 
-    for x in range(1,11): 
-        for key in imc_risks_ref:
-            if key.split('-')[1] == max(imc_transition_counts_ref[str(x)]):
-                print(key)
-                imc_ref_final_risks[str(x)] = imc_risks_ref[key]
+    ys = []
+    for key in imc_risks_ref.keys():
+        ys.append(int(key.split('-')[1]))
+    
+    for key in imc_risks_ref.keys():
+        if key.split('-')[1] == str(max(ys)):
+            imc_ref_final_risks[key.split('-')[0]] = imc_risks_ref[key]
 
 
     reg_final_risks = {}
 
     for x in range(1,11): 
-        for key in regression_risks: 
+        for key in regression_risks.keys(): 
             if key.split('-')[1] == max(regression_ys[str(x)]): 
-                print(key)
+                print('max')
+                print(max(regression_ys[str(x)]))
                 reg_final_risks[str(x)] = regression_risks[key]
     
     
     conformal_final_risks = {}
 
     for x in range(8,9): 
-        for key in conformal_risks: 
+        for key in conformal_risks.keys(): 
             if key.split('-')[1] == max(conformal_ys[str(x)]): 
-                print(key)
+                print('max')
+                print(max(conformal_ys[str(x)]))
                 conformal_final_risks[str(x)] = conformal_risks[key]
 
 
     
     plt.figure(figsize=(8, 6))
-    line_styles = ["-"]
-    style_index = 0
 
     for key in imc_final_risks.keys():
-
         fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_final_risks[key])
         roc_auc = metrics.auc(fpr, tpr)
         plt.plot(
@@ -329,7 +321,6 @@ def plot_roc_curve(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
         )
 
     for key in imc_ref_final_risks.keys():
-
         fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_ref_final_risks[key])
         roc_auc = metrics.auc(fpr, tpr)
         plt.plot(
@@ -340,6 +331,7 @@ def plot_roc_curve(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
         )
     
     for key in reg_final_risks.keys(): 
+        print(reg_final_risks[key])
 
         fpr, tpr, thresholds = metrics.roc_curve(alarms, reg_final_risks[key])
         roc_auc = metrics.auc(fpr, tpr)
@@ -351,6 +343,7 @@ def plot_roc_curve(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
         )
 
     for key in conformal_final_risks.keys(): 
+        print(conformal_final_risks[key])
 
         fpr, tpr, thresholds = metrics.roc_curve(alarms, conformal_final_risks[key])
         roc_auc = metrics.auc(fpr, tpr)
@@ -361,26 +354,18 @@ def plot_roc_curve(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
             color='orange',
         )
 
-
     plt.plot([0, 1], [0, 1], "r--")
     plt.xlim((0, 1))
     plt.ylim((0, 1))
     plt.ylabel("True Positive Rate")
     plt.xlabel("False Positive Rate")
-    plt.legend(loc="lower right")
+    #plt.legend(loc="lower right")
     plt.tick_params(axis="both")
     plt.grid(True)
 
     plt.savefig("/workspaces/premise/premise/analysis/SnL_ROC_test.pdf", dpi=300)
     plt.show()
 
-
-
-         
-
-
-
-   
 
 
 
@@ -416,8 +401,6 @@ def auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
     conformal_auc = {}
 
     for conformal_key in conformal_risks.keys():
-        print('conformal_risks[key]')
-        print(conformal_risks[conformal_key])
         fpr, tpr, threshold = metrics.roc_curve(alarms, conformal_risks[conformal_key])
         roc_auc = metrics.auc(fpr, tpr)
         conformal_auc[conformal_key] = roc_auc
@@ -503,7 +486,7 @@ def plotting(target_auc, imc_results, imc_ref_results, reg_results, conformal_re
 
     for key in reg_results.keys():
         total_state_count = []
-        x = key.split('-')[0] 
+  
         for val in regression_ys[key]:
             total_state_count.append(val*(horizon+initial_amount))
         
@@ -512,7 +495,7 @@ def plotting(target_auc, imc_results, imc_ref_results, reg_results, conformal_re
 
     for key in conformal_results.keys():
         total_state_count = []
-        x = key.split('-')[0]
+
         for val in conformal_ys[key]:
             total_state_count.append(val*(horizon+initial_amount))
 
@@ -821,7 +804,7 @@ def build_learning_parser(parser: argparse.ArgumentParser):
     group = parser.add_argument_group("Learning Parameters")
 
     group.add_argument("--model_name", type=str, default="MC", help="Name of the model (first letters code).")
-    group.add_argument("-s", "--testing_samples", type=int, default = 100, help="Total number of samples used in learning")
+    group.add_argument("-s", "--testing_samples", type=int, default = 250, help="Total number of samples used in learning")
     group.add_argument("--no-target", action="store_true", help="Do not use the target monitor" )
 
 
