@@ -1,11 +1,13 @@
-import logging
 import sys
 from multiprocessing import Pool
 from premise.interval.utils import setup_logging
 from premise.interval.model_free.regression_model import reg_argsparser, reg_main
 from premise.interval.refinement import ref_args_parser, ref_main
 from premise.interval.utils import logger
-from premise.interval.conformal_prediction.conformal_prediction import conformal_prediction_argsparser, conformal_prediction_main
+from premise.interval.conformal_prediction.conformal_prediction import (
+    conformal_prediction_argsparser,
+    conformal_prediction_main,
+)
 from premise.models import default_models
 
 
@@ -48,6 +50,11 @@ if __name__ == "__main__":
         timeout = int(sys.argv[1][:-1]) * 60
     elif sys.argv[1][-1] == "s":
         timeout = int(sys.argv[1][:-1])
+    else:
+        logger.error(
+            "Invalid timeout format. Use <number>[h|m|s] (e.g., 1h, 30m, 45s)."
+        )
+        sys.exit(1)
 
     if sys.argv[2] == "refinement":
         ref_parser = ref_args_parser()
@@ -57,7 +64,7 @@ if __name__ == "__main__":
         except TimeoutError:
             logger.warning("Refinement timed out.")
     elif sys.argv[2] == "comp_methods":
-        if len(args) != 4: #ANTONINA
+        if len(args) != 4:  # ANTONINA
             print(
                 "Usage: python run.py comp_methods <args refinement> <> <args no refinement without -ss and -sc> <> <args regression>",
                 args,
@@ -75,7 +82,7 @@ if __name__ == "__main__":
             exit(1)
 
         transition_count = ref_stats["transition_count"]
-        #length = ref_stats["sample_length"]
+        # length = ref_stats["sample_length"]
 
         logger.info(f"Samples from refinement: {transition_count}")
 
@@ -87,7 +94,7 @@ if __name__ == "__main__":
         except TimeoutError:
             logger.warning("No-refinement timed out, continue to regression.")
 
-        #REGRESSION
+        # REGRESSION
         reg_parser = reg_argsparser()
         reg_args = reg_parser.parse_args(args[2])
 
@@ -102,15 +109,12 @@ if __name__ == "__main__":
         except TimeoutError:
             logger.warning("Regression timed out.")
 
-        #CONFORMAL PREDICTION
+        # CONFORMAL PREDICTION
         conformal_parser = conformal_prediction_argsparser()
         conformal_args = conformal_parser.parse_args(args[3])
         conformal_args.amount = transition_count // (horizon + initial_amount)
 
         try:
-            run_with_timeout(conformal_prediction_main, (conformal_args,), timeout) 
+            run_with_timeout(conformal_prediction_main, (conformal_args,), timeout)
         except TimeoutError:
             logger.warning("Conformal Prediction timed out.")
-
-
-

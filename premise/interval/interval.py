@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import logging
+import stat
 from time import time
 from typing import Any
 import numpy as np
@@ -40,7 +41,7 @@ import stormpy as sp
 
 from premise.interval.policy_iteration import policy_iter_imc
 from premise.monitor import UnfoldingRiskAssessment, Monitor
-from premise.interval.utils import logger
+from premise.interval.utils import logger, setup_logging
 
 
 State = tuple[Any, Any, bool]
@@ -288,13 +289,13 @@ def dict_to_interval_ipomdp(
     current_row = 0
     for s, d_dict in sorted(transitions.items()):
         builder.new_row_group(current_row)
-        if sum([x.upper() for x in d_dict.values()]) < 1:
+        if sum(x.upper() for x in d_dict.values()) < 1:
             raise ValueError(
-                f"Upper bounds are below 1 for state {s} ({sum([x.upper() for x in d_dict.values()])}): {d_dict}"
+                f"Upper bounds are below 1 for state {s} ({sum(x.upper() for x in d_dict.values())}): {d_dict}"
             )
-        if sum([x.lower() for x in d_dict.values()]) > 1:
+        if sum(x.lower() for x in d_dict.values()) > 1:
             raise ValueError(
-                f"Lower bounds are above 1 for state {s} ({sum([x.lower() for x in d_dict.values()])}): {d_dict}"
+                f"Lower bounds are above 1 for state {s} ({sum(x.lower() for x in d_dict.values())}): {d_dict}"
             )
         for dest, interval in sorted(d_dict.items()):
             builder.add_next_value(current_row, dest, interval)
@@ -450,7 +451,7 @@ def build_monitor_from_model(
 
     expr_manager = ExpressionManager()
 
-    prop = parse_properties(f'P{maxmin}=? [F "{target}"]')
+    prop = parse_properties(f'P{maxmin}=? [F<={horizon} "{target}"]')
 
     if ipomdp.is_exact:
         task = ExactCheckTask(prop[0].raw_formula, False)
@@ -459,21 +460,18 @@ def build_monitor_from_model(
 
     imdp = stormpy_ipomdp_to_imdp(ipomdp)
     logger.info("Converted IPOMDP to IMDP")
-    imdp = stormpy_product_unroll(imdp, horizon)
-    logger.info("Unrolled IMDP to horizon")
 
     if ipomdp.is_exact:
         result = check_exact_interval_mdp(imdp, task, stormpy_environment)
     else:
         result = check_interval_mdp(imdp, task, stormpy_environment)
 
-    # Risks are the risks at the step 0 of every state, they are experimentally checked correct
     risks = []
     for i in range(len(ipomdp.states)):
         if ipomdp.is_exact:
-            risks.append(RationalInterval(result.at(i * (horizon + 1))))
+            risks.append(RationalInterval(result.at(i)))
         else:
-            risks.append(Interval(result.at(i * (horizon + 1))))
+            risks.append(Interval(result.at(i)))
 
     if verbose > 0:
         if state_index_map is None:
@@ -558,7 +556,7 @@ def main(args):
         trans_dict,
         init_dict,
         args.maxmin,
-        bool(args.target),
+        True,
         args.horizon,
         args.dump,
         args.verbose,
@@ -635,5 +633,7 @@ if __name__ == "__main__":
     parser.add_argument("--verbose", "-v", action="count", default=0)
 
     int_args = parser.parse_args()
+
+    setup_logging()
 
     main(int_args)
