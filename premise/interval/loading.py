@@ -3,6 +3,7 @@ from ast import mod
 import logging
 
 import numpy as np
+from pygame import init
 
 from premise.system import (
     CarlaSimSystemUnderObservation,
@@ -78,8 +79,8 @@ def build_suo(
     args: Namespace,
 ) -> tuple[
     SystemUnderObservation,
-    int | None,
-    int | None,
+    int,
+    int,
 ]:
     horizon = None
     initial_amount = None
@@ -120,6 +121,12 @@ def build_suo(
         )
     else:
         raise ValueError("No model specified")
+
+    if horizon is None:
+        horizon = args.get("horizon", 1)
+    if initial_amount is None:
+        initial_amount = args.get("initial_amount", 0)
+
     return suo, initial_amount, horizon
 
 

@@ -15,27 +15,30 @@ from premise.interval.conformal_prediction.MC_model import *
 import time
 import torch.nn.functional
 from premise.interval.loading import build_suo, build_suo_args_parser
-from premise.interval.utils import setup_logging
+from premise.interval.utils import setup_logging, logger
+import dill
 
 
 def learn_conformal_prediction_model(
     args, model, suo, dataset, initial_amount, horizon, amount
 ):
     # horizon = args.horizon
-
     model_name = args.model_name
+
+    torch.set_num_threads(1)
+    torch.set_num_interop_threads(1)
 
     se = Train_SeqSE(model_name, dataset, net_type=args.net_type)
     start_time = time.time()
     se.train(args.nb_epochs, args.batch_size, lr=args.lr)
-    # print("SE TRAINING TIME: ", time.time()-start_time)
+    logger.info(f"SE TRAINING TIME: {time.time()-start_time}")
 
     nsc = Train_SeqNSC(
         model_name, dataset, net_type=args.net_type, nb_filters=args.nb_filters
     )
     start_time = time.time()
     nsc.train(args.nb_epochs, args.batch_size, args.lr)
-    # print("NSC TRAINING TIME: ", time.time()-start_time)
+    logger.info(f"NSC TRAINING TIME: {time.time()-start_time}")
 
     nsc_info = (nsc.idx, args.nb_epochs)
     se_info = (se.idx, args.nb_epochs)
@@ -50,7 +53,7 @@ def learn_conformal_prediction_model(
     )
     start_time = time.time()
     comb_ponsc.train(args.nb_epochs_tuning, args.batch_size, args.lr_tuning)
-    # print("FINE TUNING TRAINING TIME: ", time.time()-start_time)
+    logger.info(f"FINE TUNING TRAINING TIME: {time.time()-start_time}")
 
     comb_ponsc.generate_test_results()
 
@@ -90,10 +93,10 @@ def learn_conformal_prediction_model(
 
     cp_regr = ICP_Regression(Xc=meas_cal, Yc=state_cal, trained_model=se_fnc)
 
-    print("----- Computing CP Regression validity and (box) efficiency...")
+    logger.info("----- Computing CP Regression validity and (box) efficiency...")
     se_box_coverage = cp_regr.get_box_coverage(args.epsilon, meas_test, state_test)
     se_box_efficiency = cp_regr.get_efficiency(box_flag=True)
-    print(
+    logger.info(
         "Box-Coverage for significance = ",
         1 - args.epsilon,
         ": ",
@@ -102,48 +105,43 @@ def learn_conformal_prediction_model(
         se_box_efficiency,
     )
 
-    print("----- Computing CP Regression validity and NON-BOX efficiency...")
+    logger.info("----- Computing CP Regression validity and NON-BOX efficiency...")
     se_coverage = cp_regr.get_coverage(args.epsilon, meas_test, state_test)
     se_efficiency = cp_regr.get_efficiency(box_flag=False)
-    print(
-        "Regr (NON-BOX) Coverage for significance = ",
-        1 - args.epsilon,
-        ": ",
-        se_coverage,
-        "; Efficiency = ",
-        se_efficiency,
+    logger.info(
+        f"Regr (NON-BOX) Coverage for significance = {1 - args.epsilon}: {se_coverage}; Efficiency = {se_efficiency}",
     )
 
-    print("----- Computing test CP classification validity...")
-    print("Coverage on the test set states:")
+    logger.info("----- Computing test CP classification validity...")
+    logger.info("Coverage on the test set states:")
     nsc_coverage = cp_class.compute_coverage(
         eps=args.epsilon, inputs=state_test, outputs=output_test
     )
     nsc_efficiency = cp_class.compute_efficiency()
-    print("Test empirical coverage: ", nsc_coverage, " Efficiency = ", nsc_efficiency)
+    logger.info(
+        f"Test empirical coverage: {nsc_coverage}; Efficiency = {nsc_efficiency}"
+    )
 
-    print("Coverage on the test states estimated by the SE:")
+    logger.info("Coverage on the test states estimated by the SE:")
     estim_state_test = se_fnc(meas_test)
     ponsc_coverage = cp_class.compute_coverage(
         eps=args.epsilon, inputs=estim_state_test, outputs=output_test
     )
-    print(
-        "Test empirical coverage on ESTIM STATES: ",
-        ponsc_coverage,
-        " (Expected = ",
-        1 - args.epsilon,
-        ")",
+    logger.info(
+        f"Test empirical coverage on ESTIM STATES: {ponsc_coverage} (Expected = {1 - args.epsilon})"
     )
 
-    print("----- Computing test CP COMB classification validity...")
-    print("Coverage on the test set measurments:")
+    logger.info("----- Computing test CP COMB classification validity...")
+    logger.info("Coverage on the test set measurments:")
     ponsc_coverage = cp_comb_class.compute_coverage(
         eps=args.epsilon, inputs=meas_test, outputs=output_test
     )
     ponsc_efficiency = cp_comb_class.compute_efficiency()
-    print("Test empirical coverage: ", ponsc_coverage, "Efficiency:", ponsc_efficiency)
+    logger.info(
+        f"Test empirical coverage: {ponsc_coverage}; Efficiency = {ponsc_efficiency}"
+    )
 
-    print("----- Labeling correct/incorrect predictions...")
+    logger.info("----- Labeling correct/incorrect predictions...")
     cal_errors = utils.label_correct_incorrect_pred(
         np.argmax(cp_comb_class.cal_pred_lkh, axis=1), output_cal
     )
@@ -156,26 +154,24 @@ def learn_conformal_prediction_model(
         cal_errors[0] = -1
     if np.sum(cal_errors) == -1 * len(cal_errors):
         cal_errors[0] = 1
-    print("----- Computing calibration confidence and credibility...")
+    logger.info("----- Computing calibration confidence and credibility...")
     cal_conf_cred = cp_comb_class.compute_cross_confidence_credibility()
 
     kernel_type = "rbf"
-    print("----- Training the query strategy on calibration data...")
+    logger.info("----- Training the query strategy on calibration data...")
     query_fnc = utils.train_svc_query_strategy(kernel_type, cal_conf_cred, cal_errors)
 
     test_conf_cred = cp_comb_class.compute_confidence_credibility(meas_test)
     test_pred_errors = utils.apply_svc_query_strategy(query_fnc, test_conf_cred)
 
     rej_rate = utils.compute_rejection_rate(test_pred_errors)
-    print("----- Rejection rate = ", rej_rate)
+    logger.info(f"----- Rejection rate = {rej_rate}")
 
     nb_detected, nb_errors, detection_rate = utils.compute_error_detection_rate(
         test_pred_errors, test_errors
     )
-    print(
-        "----- Error detection rate = ",
-        detection_rate,
-        "({}/{})".format(nb_detected, nb_errors),
+    logger.info(
+        f"----- Error detection rate = {detection_rate} ({nb_detected}/{nb_errors})"
     )
 
     fp_indexes, fn_indexes = utils.label_fp_fn(
@@ -186,20 +182,15 @@ def learn_conformal_prediction_model(
     )
 
     nb_detected_fp, nb_fp, nb_detected_fn, nb_fn = res
-    # print("nb_detected_fp/nb_fp = {}/{}".format(nb_detected_fp,nb_fp))
-    # print("nb_detected_fn/nb_fn = {}/{}".format(nb_detected_fn,nb_fn))
 
-    print(
-        "FP Detection rate: ",
-        fp_detection_rate,
-        "FN Detection rate: ",
-        fn_detection_rate,
+    logger.info(
+        f"FP Detection rate: {fp_detection_rate}; FN Detection rate: {fn_detection_rate}"
     )
 
     if args.do_refinement:
-        print("----- REFINEMENT of the Rejection Rule...")
+        logger.info("----- REFINEMENT of the Rejection Rule...")
         ref_samples = round((amount - 50) * 5 / 41)
-        print(f"Requires: {ref_samples} samples")
+        logger.info(f"Requires: {ref_samples} samples")
 
         # unc_meas_ref, unc_states_ref, unc_outputs_ref = utils.Comb_PONSC_active_sample_query(pool_size = opt.pool_size_ref, model_class = model, conf_pred = cp_comb_class, trained_svc = query_fnc, se_fnc= se_fnc, dataset=dataset)
         # unc_meas_ref, unc_states_ref, unc_outputs_ref = utils.Comb_PONSC_active_sample_query(ref_samples, horizon, model_class = model, conf_pred = cp_comb_class, trained_svc = query_fnc, se_fnc = se_fnc, dataset=dataset)
@@ -218,18 +209,18 @@ def learn_conformal_prediction_model(
         )
 
         if len(unc_meas_ref) < ref_samples:
-            print("Not enough samples for refinement step")
+            logger.info("Not enough samples for refinement step")
         else:
             unc_meas_ref = unc_meas_ref[:ref_samples]
             unc_states_ref = unc_states_ref[:ref_samples]
             unc_outputs_ref = unc_outputs_ref[:ref_samples]
 
         n_ref_points = len(unc_meas_ref)
-        print("Nb of points to add: ", n_ref_points)
+        logger.info(f"Nb of points to add: {n_ref_points}")
 
-        print("Shapes")
-        print(dataset.Y_cal_scaled.shape)
-        print(unc_meas_ref.shape)
+        logger.info("Shapes")
+        logger.info(f"Calibration data shape: {dataset.Y_cal_scaled.shape}")
+        logger.info(f"Uncertain measurements shape: {unc_meas_ref.shape}")
 
         meas_cal_ref = np.vstack((dataset.Y_cal_scaled, unc_meas_ref))
         state_cal_ref = np.vstack((dataset.X_cal_scaled, unc_states_ref))
@@ -251,7 +242,9 @@ def learn_conformal_prediction_model(
             np.argmax(ponsc_fnc(meas_cal_ref), axis=1), output_cal_ref
         )
 
-        print("----- Training a REFINED query strategy on enlarged calibration data...")
+        logger.info(
+            "----- Training a REFINED query strategy on enlarged calibration data..."
+        )
         ref_query_fnc = utils.train_svc_query_strategy(
             kernel_type, ref_cal_conf_cred, ref_cal_errors
         )
@@ -271,9 +264,9 @@ def learn_conformal_prediction_model(
     curr_dataset = dataset
     curr_se_fnc = se_fnc
     for k in range(args.nb_active_iterations):
-        print("--- xxx ACTIVE ITERATION NB. ", k)
+        logger.info(f"--- xxx ACTIVE ITERATION NB. {k}")
 
-        print("----- Active selection of additional (uncertain) points...")
+        logger.info("----- Active selection of additional (uncertain) points...")
         start_active = time.time()
         # unc_meas, unc_states, unc_outputs = utils.Comb_PONSC_active_sample_query(pool_size = opt.pool_size, model_class = model, conf_pred = curr_cp_comb_class, trained_svc = curr_query_fnc, se_fnc= curr_se_fnc, dataset=curr_dataset)
         # unc_meas, unc_states, unc_outputs = utils.Comb_PONSC_active_sample_query(active_samples, horizon, model_class = model, conf_pred = curr_cp_comb_class, trained_svc = curr_query_fnc, se_fnc = curr_se_fnc, dataset=curr_dataset)
@@ -291,16 +284,18 @@ def learn_conformal_prediction_model(
         )
 
         if len(unc_meas) < round(active_samples):
-            print("Not enough samples for active learning step")
+            logger.info("Not enough samples for active learning step")
         else:
             unc_meas = unc_meas[:active_samples]
             unc_states = unc_states[:active_samples]
             unc_outputs = unc_outputs[:active_samples]
 
-        print("XXX time to active query points for pool: ", time.time() - start_active)
+        logger.info(
+            f"XXX time to active query points for pool: {time.time() - start_active}"
+        )
 
         n_active_points = len(unc_outputs)
-        print("Nb of points to add: ", n_active_points)
+        logger.info(f"Nb of points to add: {n_active_points}")
 
         # n_retrain = int(np.round(opt.nb_active_points*opt.split_rate))
         n_retrain = int(np.round(n_active_points * args.split_rate))  # ANTONINA
@@ -325,7 +320,7 @@ def learn_conformal_prediction_model(
 
         # tuned_info = (comb_ponsc.idx, n_epochs_tuning)
         # RIFACCIO SOLO IL FINE TUNING
-        print("----- ACTIVE RETRAINING...")
+        logger.info("----- ACTIVE RETRAINING...")
 
         if False:  # Retrain everything from scratch
             active_se = Train_SeqSE(model_name, active_dataset, net_type=opt.net_type)
@@ -456,6 +451,7 @@ def learn_conformal_prediction_model(
 
 def conformal_prediction_main(args: argparse.Namespace):
     setup_logging()
+    logger.info(f"Starting conformal prediction training... ({args})")
     suo, initial_amount, horizon = build_suo(args)
     # horizon = args.horizon
 
@@ -486,10 +482,19 @@ def conformal_prediction_main(args: argparse.Namespace):
         path = tuple(suo.generate_random_traces([], (initial_amount + horizon))[0])
         validset.append(path)
 
+    logger.info(f"Trainset size: {len(trainset)}")
+    logger.info(f"Calibrset size: {len(calibrset)}")
+    logger.info(f"Testset size: {len(testset)}")
+    logger.info(f"Validset size: {len(validset)}")
+
     for i in range(1, 14):
-        print("___________________________________________________________________")
-        print(f"Learning interation : {i}")
-        print("___________________________________________________________________")
+        logger.info(
+            "___________________________________________________________________"
+        )
+        logger.info(f"Learning interation : {i}")
+        logger.info(
+            "___________________________________________________________________"
+        )
         end_index = int((i / 13) * len(trainset))
         current_trainset = trainset[:end_index]
 
@@ -498,11 +503,13 @@ def conformal_prediction_main(args: argparse.Namespace):
 
         amount = int((i / 13) * args.amount)
 
-        print("AMOUT")
-        print(amount)
+        logger.info(f"AMOUNT: {amount}")
+        logger.info(f"Current trainset size: {len(current_trainset)}")
+        logger.info(f"Current calibrset size: {len(current_calibrset)}")
 
-        print("Without active and refinement:")
-        print(len(current_trainset) + len(current_calibrset) + 50)
+        logger.info(
+            f"Without active and refinement: {len(current_trainset) + len(current_calibrset) + 50}"
+        )
 
         sets = {
             "trainset": current_trainset,
@@ -599,82 +606,82 @@ def build_learning_parser(parser: argparse.ArgumentParser):
     group = parser.add_argument_group("Learning Parameters")
 
     group.add_argument(
-        "--model_name",
+        "--model-name",
         type=str,
         default="MC",
         help="Name of the model (first letters code).",
     )
     group.add_argument(
-        "--do_refinement",
+        "--do-refinement",
         type=bool,
         default=True,
         help="Flag: refine of the rejection rule.",
     )
     group.add_argument(
-        "--nb_active_iterations",
+        "--nb-active-iterations",
         type=int,
         default=1,
         help="Number of active learning iterations.",
     )
-    group.add_argument("--nb_epochs", type=int, default=200, help="Number of epochs.")
+    group.add_argument("--nb-epochs", type=int, default=200, help="Number of epochs.")
     group.add_argument(
-        "--nb_epochs_active",
+        "--nb-epochs-active",
         type=int,
         default=400,
         help="Number of epochs in active learning.",
     )
-    group.add_argument("--batch_size", type=int, default=64, help="Batch size.")
+    group.add_argument("--batch-size", type=int, default=64, help="Batch size.")
     group.add_argument("--lr", type=float, default=0.00001, help="Adam: learning rate")
     group.add_argument(
-        "--lr_tuning",
+        "--lr-tuning",
         type=float,
         default=0.000001,
         help="Adam: learning rate for fine tuning",
     )
     group.add_argument(
-        "--net_type", type=str, default="Conv", help="Type of the net: Conv or FF."
+        "--net-type", type=str, default="Conv", help="Type of the net: Conv or FF."
     )
     group.add_argument(
-        "--nb_filters", type=int, default=128, help="Number of filters per conv layer."
+        "--nb-filters", type=int, default=128, help="Number of filters per conv layer."
     )
     group.add_argument(
         "--epsilon", type=float, default=0.05, help="CP significance level."
     )
     group.add_argument(
-        "--split_rate", type=float, default=10 / 14, help="adam: learning rate"
+        "--split-rate", type=float, default=10 / 14, help="adam: learning rate"
     )
     group.add_argument(
-        "--pool_size_ref",
+        "--pool-size-ref",
         type=int,
         default=25000,
         help="Size of the pool for the refinement step.",
     )
     group.add_argument(
-        "--pool_size",
+        "--pool-size",
         type=int,
         default=50000,
         help="Size of the pool for one active learning step.",
     )
     group.add_argument(
-        "--reinit_weights",
+        "--reinit-weights",
         type=bool,
         default=False,
         help="Flag: do reinitialize the weights in active learning steps.",
     )
     group.add_argument(
-        "--do_finetuning",
+        "--do-finetuning",
         type=bool,
         default=False,
         help="Flag: do fine-tuning of the two step process.",
     )
     group.add_argument(
-        "--nb_epochs_tuning",
+        "--nb-epochs-tuning",
         type=int,
         default=100,
         help="Number of epochs of fine-tuning.",
     )
     group.add_argument(
-        "--nb_epochs_active_tuning",
+        "--nb-epochs-active-tuning",
         type=int,
         default=200,
         help="Number of epochs of fine-tuning in active learning.",
@@ -691,7 +698,7 @@ def build_learning_parser(parser: argparse.ArgumentParser):
 
     group.add_argument(
         "-m",
-        "--dump_model",
+        "--dump-model",
         type=str,
         help="Path to dump the model to",
     )
@@ -711,7 +718,7 @@ def conformal_prediction_argsparser():
     )
 
     parser.add_argument(
-        "--dump_stats",
+        "--dump-stats",
         type=str,
         help="Path to dump the model to",
     )

@@ -1,5 +1,8 @@
+import copy
 import sys
 from multiprocessing import Pool
+
+from sympy import rf
 from premise.interval.utils import setup_logging
 from premise.interval.model_free.regression_model import reg_argsparser, reg_main
 from premise.interval.refinement import ref_args_parser, ref_main
@@ -64,39 +67,60 @@ if __name__ == "__main__":
         except TimeoutError:
             logger.warning("Refinement timed out.")
     elif sys.argv[2] == "comp_methods":
-        if len(args) != 4:  # ANTONINA
+        if len(args) != 3:
             print(
-                "Usage: python run.py comp_methods <args refinement> <> <args no refinement without -ss and -sc> <> <args regression>",
+                "Usage: python run.py comp_methods <args refinement> :: <args regression> :: <args conformal prediction>",
                 args,
                 sys.argv,
                 file=sys.stderr,
             )
-            sys.exit(1)
+            sys.exit(2)
+
+        # NORMAL REFINEMENT without splitting
         ref_parser = ref_args_parser()
 
         ref_args = ref_parser.parse_args(args[0])
         try:
             ref_stats = run_with_timeout(ref_main, (ref_args,), timeout)
+            ref_trans_count = ref_stats["transition_count"]
         except TimeoutError:
             logger.warning("Refinement timed out, stopping experiment.")
-            exit(1)
+            ref_trans_count = 0
 
-        transition_count = ref_stats["transition_count"]
-        # length = ref_stats["sample_length"]
+        # NORMAL REFINEMENT with splitting
+        ref_split_args = copy.deepcopy(ref_args)
+        ref_split_args.model_path = ref_args.model_path.replace("ref", "refsplit")
+        ref_split_args.dump_stats = ref_args.dump_stats.replace("ref", "refsplit")
+        ref_split_args.use_splitting = True
+        try:
+            ref_split_stats = run_with_timeout(ref_main, (ref_split_args,), timeout)
+            ref_split_trans_count = ref_split_stats["transition_count"]
+        except TimeoutError:
+            logger.warning("Refinement with splitting timed out, stopping experiment.")
+            ref_split_trans_count = 0
+
+        transition_count = max(ref_trans_count, ref_split_trans_count)
+        if transition_count == 0:
+            logger.warning(
+                "No transitions were made in refinement, stopping experiment."
+            )
+            sys.exit(3)
 
         logger.info(f"Samples from refinement: {transition_count}")
 
-        ref_args_2 = ref_parser.parse_args(args[1])
-        ref_args_2.stopping_samples = transition_count
-        ref_args_2.stopping_criteria = "samples"
+        no_ref = copy.deepcopy(ref_args)
+        no_ref.model_path = ref_args.model_path.replace("ref", "noref")
+        no_ref.dump_stats = ref_args.dump_stats.replace("ref", "noref")
+        no_ref.stopping_samples = transition_count
+        no_ref.stopping_criteria = "samples"
         try:
-            run_with_timeout(ref_main, (ref_args_2,), timeout)
+            run_with_timeout(ref_main, (no_ref,), timeout)
         except TimeoutError:
             logger.warning("No-refinement timed out, continue to regression.")
 
         # REGRESSION
         reg_parser = reg_argsparser()
-        reg_args = reg_parser.parse_args(args[2])
+        reg_args = reg_parser.parse_args(args[1])
 
         model_def = default_models[ref_args.mc]
         horizon = model_def.horizon
@@ -111,7 +135,7 @@ if __name__ == "__main__":
 
         # CONFORMAL PREDICTION
         conformal_parser = conformal_prediction_argsparser()
-        conformal_args = conformal_parser.parse_args(args[3])
+        conformal_args = conformal_parser.parse_args(args[2])
         conformal_args.amount = transition_count // (horizon + initial_amount)
 
         try:
