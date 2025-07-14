@@ -9,7 +9,7 @@ import argparse
 from premise.interval.loading import build_suo, build_suo_args_parser
 from premise.interval.interval import Samples
 from premise.interval.loss import distance_measures
-from premise.interval.utils import setup_logging
+from premise.interval.utils import setup_logging, logger
 from premise.interval.conformence import random_sample_monitor_test
 from premise.monitor import Monitor
 
@@ -33,9 +33,9 @@ def learn_regression_model(train_samples, observations, testing_samples, args):
         row = prep_trace_for_regression(sub_trace, observations)
         binary_data.append(row)
 
-        #y.append(1 if any(x[2] == True for x in sub_trace) else 0)
+        # y.append(1 if any(x[2] == True for x in sub_trace) else 0)
         y.append(1 if any(x[2] == True for x in trace[num_steps:]) else 0)
-        
+
     X = pd.DataFrame(binary_data, columns=column_names)
 
     model = LogisticRegression(n_jobs=1)
@@ -107,6 +107,8 @@ def regression_distance(
 def reg_main(args: argparse.Namespace):
     setup_logging()
 
+    logger.info(f"Running regression with args: {args}")
+
     suo, initial_amount, horizon = build_suo(args)
 
     if args.length is None:
@@ -144,12 +146,17 @@ def reg_main(args: argparse.Namespace):
     test_weights = {s: float(p / total_prob) for s, p in samples_with_prob}
     testing_samples = [s[0] for s in samples_with_prob]
 
+    logger.info(
+        f"Generated {len(train_samples)} training samples and {len(testing_samples)} testing samples."
+    )
+
     distance = distance_measures[args.distance]()
 
     for i in range(1, 14):
+        logger.info(f"Running regression for {i} steps...")
         end_index = int((i / 13) * len(train_samples))
         currrent_train_samples = train_samples[:end_index]
- 
+
         testing_samples, regression_risks, model = learn_regression_model(
             currrent_train_samples, observations, testing_samples, args
         )
@@ -170,7 +177,9 @@ def reg_main(args: argparse.Namespace):
                     "target_all_dist": target_all_dist,
                     "weights": {s: float(w) for s, w in test_weights.items()},
                     "target_risks": {s: float(r) for s, r in target_risks.items()},
-                    "regression_risks": {s: float(r) for s, r in regression_risks.items()},
+                    "regression_risks": {
+                        s: float(r) for s, r in regression_risks.items()
+                    },
                     "sampled_risks": sampled_risks,
                     "samples": testing_samples,
                     "args": vars(args),

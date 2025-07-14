@@ -1,3 +1,4 @@
+import math
 from premise.interval.conformal_prediction.SeqNSC import *
 from premise.interval.conformal_prediction.SeqSE import *
 import numpy as np
@@ -5,10 +6,12 @@ import os
 from torch.autograd import Variable
 import matplotlib.pyplot as plt
 
+from premise.interval.utils import logger
+
 plt.rcParams.update({"font.size": 22})
 import time
 
-cuda = True if torch.cuda.is_available() else False
+cuda = False
 # cuda = False
 
 FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
@@ -51,7 +54,7 @@ class Train_StochSeqNSC:
             self.idx = self.seq_nsc_idx + "+" + self.seq_se_idx
         else:
             self.idx = str(np.random.randint(0, 100000))
-        print("ID = ", self.idx)
+        logger.info(f"ID = {self.idx}")
 
         self.results_path = (
             self.model_name
@@ -145,7 +148,7 @@ class Train_StochSeqNSC:
         accuracies = []
         val_accuracies = []
 
-        bat_per_epo = int(self.seq_dataset.n_training_points / batch_size)
+        bat_per_epo = math.ceil(self.seq_dataset.n_training_points / batch_size)
         n_steps = bat_per_epo * n_epochs
 
         if self.net_type == "FF":
@@ -223,10 +226,8 @@ class Train_StochSeqNSC:
                 tmp_loss.append(comb_loss_fnc2.item())
 
             if epoch % 50 == 0:
-                print(
-                    "Epoch= {},\t loss = {:2.4f},\t accuracy = {}".format(
-                        epoch + 1, tmp_loss[-1], tmp_acc[-1]
-                    )
+                logger.info(
+                    f"Epoch= {epoch + 1},\t loss = {tmp_loss[-1]:2.4f},\t accuracy = {tmp_acc[-1]}"
                 )
 
             val_state_estim = self.seq_se(Yval_t)
@@ -282,16 +283,13 @@ class Train_StochSeqNSC:
         state_estimates = self.seq_se(Ytest)
         label_predictions = self.seq_nsc(state_estimates)
         end_time = time.time() - start_time
-        print(
-            "Time to make {} predictions: ".format(self.seq_dataset.n_test_points),
-            end_time,
-            ", per point time: ",
-            end_time / self.seq_dataset.n_test_points,
+        logger.info(
+            f"Time to make {self.seq_dataset.n_test_points} predictions: {end_time}, per point time: {end_time / self.seq_dataset.n_test_points}"
         )
 
         test_accuracy = self.compute_accuracy(Ttest, label_predictions)
 
-        print("Combined Test Accuracy: ", test_accuracy)
+        logger.info(f"Combined Test Accuracy: {test_accuracy}")
 
         # os.makedirs(self.results_path, exist_ok=True)
         # f = open(self.results_path+"/results_{}epochs.txt".format(self.n_epochs), "w")
