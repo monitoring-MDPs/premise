@@ -468,8 +468,9 @@ def conformal_prediction_main(args: argparse.Namespace):
     trainset = []
     for x in range(round((args.amount - 50) * 20 / 41)):
         path = suo.generate_random_traces([], (initial_amount + horizon))[0]
-        trainset.append(tuple(path))
-
+        #trainset.append(tuple(path)) 
+        trainset.append(path)
+        
     calibrset = []
     for x in range(round((args.amount - 50) * 6 / 41)):
         path = tuple(suo.generate_random_traces([], (initial_amount + horizon))[0])
@@ -732,4 +733,4 @@ if __name__ == "__main__":
     conformal_prediction_main(args)
 
 
-# python -m premise.interval.conformal_prediction.conformal_prediction --mc airportA-7-10-10 -a 3200 --no-target --dump_model /workspaces/premise/out/ --dump_stats /workspaces/premise/out/
+# python -m premise.interval.conformal_prediction.conformal_prediction --mc airportA-7-10-10 -a 300 --no-target --dump_model /workspaces/premise/out/ --dump_stats /workspaces/premise/out/

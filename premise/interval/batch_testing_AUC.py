@@ -110,7 +110,7 @@ def aggregated_stats_imc(path, stats_path, initial_amount, horizon, args, testin
             mon, mon_comps = create_monitor(
                 transition_intervals,
                 initial_distribution,
-                "min",
+                "min", 
                 True,
                 horizon,
                 args.dump,
@@ -261,39 +261,47 @@ def stats_true(horizon, initial_amount, testing_samples, suo):
 
     return target_risks
 
-def plot_roc_curve(alarms, imc_risks, imc_risks_ref, regression_risks, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_risks, conformal_ys):
+#def plot_roc_curve(alarms, imc_risks, imc_risks_ref, regression_risks, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_risks, conformal_ys):
+def plot_roc_curve(alarms, regression_risks , regression_ys, conformal_risks, conformal_ys):
 
+    #mc_final_risks = {}
 
-    imc_final_risks = {}
+    #ys = []
+    #for key in imc_risks.keys():
+    #    ys.append(int(key.split('-')[1])) #IS IT THE SAME NUMBERS FOR ALL THE 10 RUNS? 
 
-    ys = []
-    for key in imc_risks.keys():
-        ys.append(int(key.split('-')[1]))
     
-    for key in imc_risks.keys():
-        if key.split('-')[1] == str(max(ys)):
-            imc_final_risks[key.split('-')[0]] = imc_risks[key]
+    #for key in imc_risks.keys():
+    #    if key.split('-')[1] == str(max(ys)):
+    #        print(key)
+    #        imc_final_risks[key.split('-')[0]] = imc_risks[key]
 
-
-
-    imc_ref_final_risks = {}
-
-    ys = []
-    for key in imc_risks_ref.keys():
-        ys.append(int(key.split('-')[1]))
     
-    for key in imc_risks_ref.keys():
-        if key.split('-')[1] == str(max(ys)):
-            imc_ref_final_risks[key.split('-')[0]] = imc_risks_ref[key]
+    #print('imc_final_risks')
+    #print(imc_final_risks)
+
+
+    #imc_ref_final_risks = {}
+
+    #ys = []
+    #for key in imc_risks_ref.keys():
+    #    ys.append(int(key.split('-')[1]))
+    
+    #for key in imc_risks_ref.keys():
+    #    if key.split('-')[1] == str(max(ys)):
+    #        print(key)
+    #        imc_ref_final_risks[key.split('-')[0]] = imc_risks_ref[key]
+
+
+    #print('imc_ref_final_risks')
+    #print(imc_ref_final_risks)
 
 
     reg_final_risks = {}
 
     for x in range(1,11): 
         for key in regression_risks.keys(): 
-            if key.split('-')[1] == max(regression_ys[str(x)]): 
-                print('max')
-                print(max(regression_ys[str(x)]))
+            if int(key.split('-')[1]) == max(regression_ys[str(x)]): 
                 reg_final_risks[str(x)] = regression_risks[key]
     
     
@@ -301,65 +309,117 @@ def plot_roc_curve(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
 
     for x in range(8,9): 
         for key in conformal_risks.keys(): 
-            if key.split('-')[1] == max(conformal_ys[str(x)]): 
-                print('max')
-                print(max(conformal_ys[str(x)]))
+            if int(key.split('-')[1]) == max(conformal_ys[str(x)]): 
                 conformal_final_risks[str(x)] = conformal_risks[key]
 
-
     
-    plt.figure(figsize=(8, 6))
+    plt.figure()
+    fig, ax = plt.subplots(figsize=(16, 12))
 
-    for key in imc_final_risks.keys():
-        fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_final_risks[key])
-        roc_auc = metrics.auc(fpr, tpr)
-        plt.plot(
-            fpr,
-            tpr,
-            label=f"No Refinement, (AUC = {roc_auc:.2f})",
-            color='red',
-        )
+    #for key in imc_final_risks.keys():
+    #    fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_final_risks[key])
+    #    roc_auc = metrics.auc(fpr, tpr)
+    #    plt.plot(
+    #        fpr,
+    #        tpr,
+    #        label=f"No Refinement, (AUC = {roc_auc:.2f})",
+    #        color='red',
+    #    )
 
-    for key in imc_ref_final_risks.keys():
-        fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_ref_final_risks[key])
-        roc_auc = metrics.auc(fpr, tpr)
-        plt.plot(
-            fpr,
-            tpr,
-            label=f"Refinement, (AUC = {roc_auc:.2f})",
-            color='blue',
-        )
+    #for key in imc_ref_final_risks.keys():
+    #    fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_ref_final_risks[key])
+    #    roc_auc = metrics.auc(fpr, tpr)
+    #    plt.plot(
+    #        fpr,
+    #        tpr,
+    #        label=f"Refinement, (AUC = {roc_auc:.2f})",
+    #        color='blue',
+    #    )
+
+
+
+    #REGRESSION MEAN PERFORMANCE
+    regression_roc_data = {}
     
     for key in reg_final_risks.keys(): 
-        print(reg_final_risks[key])
 
         fpr, tpr, thresholds = metrics.roc_curve(alarms, reg_final_risks[key])
         roc_auc = metrics.auc(fpr, tpr)
-        plt.plot(
-            fpr,
-            tpr,
-            label=f"Regression, (AUC = {roc_auc:.2f})",
-            color='green',
-        )
+        regression_roc_data[key] = [fpr, tpr, roc_auc]
 
+    mean_fpr = np.linspace(0, 1, 100)
+    tprs = []
+    aucs = []
+
+    for key in regression_roc_data.keys(): 
+        interp_tpr = np.interp(mean_fpr, regression_roc_data[key][0], regression_roc_data[key][1])
+        aucs.append(regression_roc_data[key][2])
+        interp_tpr[0] = 0.0
+        tprs.append(interp_tpr)
+
+        
+    mean_tpr = np.mean(tprs, axis=0)
+    mean_tpr[-1] = 1.0  
+    mean_auc = np.mean(aucs)
+
+    plt.plot(mean_fpr, mean_tpr, color = 'green',  label = f'Regression, (Mean AUC = {mean_auc:.2f})')
+
+    std_tpr = np.std(tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+    ax.fill_between(
+        mean_fpr,
+        tprs_lower,
+        tprs_upper,
+        color="green",
+        alpha=0.2,
+    )
+
+    #CONFORMAL MEAN PERFORMANCE 
+
+    conformal_roc_data = {}
+    
     for key in conformal_final_risks.keys(): 
-        print(conformal_final_risks[key])
 
         fpr, tpr, thresholds = metrics.roc_curve(alarms, conformal_final_risks[key])
         roc_auc = metrics.auc(fpr, tpr)
-        plt.plot(
-            fpr,
-            tpr,
-            label=f"Conformal Prediction, (AUC = {roc_auc:.2f})",
-            color='orange',
-        )
+        conformal_roc_data[key] = [fpr, tpr, roc_auc]
 
+    mean_fpr = np.linspace(0, 1, 100)
+    tprs = []
+    aucs = []
+
+    for key in conformal_roc_data.keys(): 
+        interp_tpr = np.interp(mean_fpr, conformal_roc_data[key][0], conformal_roc_data[key][1])
+        aucs.append(conformal_roc_data[key][2])
+        interp_tpr[0] = 0.0
+        tprs.append(interp_tpr)
+        
+    mean_tpr = np.mean(tprs, axis=0)
+    mean_tpr[-1] = 1.0  
+    mean_auc = np.mean(aucs)
+
+    plt.plot(mean_fpr, mean_tpr, color = 'orange',  label = f'Regression, (Mean AUC = {mean_auc:.2f})')
+
+    std_tpr = np.std(tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+    ax.fill_between(
+        mean_fpr,
+        tprs_lower,
+        tprs_upper,
+        color="orange",
+        alpha=0.2,
+    )
+
+
+    
     plt.plot([0, 1], [0, 1], "r--")
     plt.xlim((0, 1))
     plt.ylim((0, 1))
     plt.ylabel("True Positive Rate")
     plt.xlabel("False Positive Rate")
-    #plt.legend(loc="lower right")
+    plt.legend(loc="lower right")
     plt.tick_params(axis="both")
     plt.grid(True)
 
@@ -786,25 +846,27 @@ def main_imc(args: argparse.Namespace):
     model = mc_model(horizon)
 
     noisy_measurements = model.get_noisy_measurments(testing_samples, horizon)
-    
 
     alarms = aggregted_alarms(testing_samples)
     target_risks = stats_true(horizon, initial_amount, testing_samples, suo)
 
-    imc_risks, imc_transition_counts = aggregated_stats_imc(args.imc_model, args.imc_stats, initial_amount, horizon, args, testing_samples)
-    imc_risks_ref, imc_transition_counts_ref = aggregated_stats_imc(args.imc_model_ref, args.imc_stats_ref, initial_amount, horizon, args, testing_samples)
+    #imc_risks, imc_transition_counts = aggregated_stats_imc(args.imc_model, args.imc_stats, initial_amount, horizon, args, testing_samples)
+    #imc_risks_ref, imc_transition_counts_ref = aggregated_stats_imc(args.imc_model_ref, args.imc_stats_ref, initial_amount, horizon, args, testing_samples)
     regression_risks, regression_ys = aggregated_stats_regression(args.regression_model, args.regression_stats, testing_samples, horizon, initial_amount)
     conformal_risks, conformal_ys = aggreagted_stats_conformal(noisy_measurements, args.se_path, args.error_path, args.rej_path, args.stats_path, args.cp_classification_path)              
-    target_auc, imc_results, imc_ref_results, reg_results, conformal_results, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_ys = auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_risks, conformal_ys,target_risks, horizon, initial_amount)
+    #target_auc, imc_results, imc_ref_results, reg_results, conformal_results, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_ys = auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_risks, conformal_ys,target_risks, horizon, initial_amount)
 
-    plotting(target_auc, imc_results, imc_ref_results, reg_results, conformal_results, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_ys, horizon, initial_amount)
-    plot_roc_curve(alarms, imc_risks, imc_risks_ref, regression_risks, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_risks, conformal_ys)
+    #plotting(target_auc, imc_results, imc_ref_results, reg_results, conformal_results, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_ys, horizon, initial_amount)
+    #plot_roc_curve(alarms, imc_risks, imc_risks_ref, regression_risks, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_risks, conformal_ys)
+
+    #PARTIAL ROC: 
+    plot_roc_curve(alarms, regression_risks , regression_ys, conformal_risks, conformal_ys)
 
 def build_learning_parser(parser: argparse.ArgumentParser):
     group = parser.add_argument_group("Learning Parameters")
 
     group.add_argument("--model_name", type=str, default="MC", help="Name of the model (first letters code).")
-    group.add_argument("-s", "--testing_samples", type=int, default = 250, help="Total number of samples used in learning")
+    group.add_argument("-s", "--testing_samples", type=int, default = 500, help="Total number of samples used in learning")
     group.add_argument("--no-target", action="store_true", help="Do not use the target monitor" )
 
 
