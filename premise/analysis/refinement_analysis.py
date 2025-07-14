@@ -3,6 +3,7 @@ from pathlib import Path
 import re
 import matplotlib.pyplot as plt
 import numpy as np
+from sympy import use
 
 
 def plot_distances(distances, samples, title, threshold=None, log=False, fname=None):
@@ -104,10 +105,7 @@ def plot_mult_distances(data_dict: dict, title, log=False):
 
 def main(
     stats_paths=[
-        ("../../out/stats/2025-06-17_15-07-13", "obs start state, 10 prefixes"),
-        ("../../out/stats/2025-06-18_09-54-18", "prefix start state, 10 prefixes"),
-        ("../../out/stats/2025-06-18_15-46-39", "prefix start state, splitting"),
-        ("../../out/stats/2025-06-23_11-19-27", "obs start state, splitting"),
+        ("../../out/stats/2025-07-11_14-12-59", "obs start state, 10 prefixes"),
     ]
 ):
     stats_dicts: dict[tuple, dict] = {}
@@ -143,6 +141,11 @@ def main(
                     data["args"]["stopping_criteria"]
                     if "stopping_criteria" in data["args"]
                     else "regression"
+                ),
+                (
+                    data["args"]["use-splitting"]
+                    if "use-splitting" in data["args"]
+                    else False
                 ),
             )
 

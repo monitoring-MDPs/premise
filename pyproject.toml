@@ -8,9 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 tqdm = "^4.67.0"
-stormpy = { path = "../stormpy-premise"}
 black = "^24.10.0"
-py-spy = "^0.4.0"
 scenic = "^3.0.0"
 jupyter = "^1.1.1"
 scikit-learn = "^1.6.1"
@@ -18,6 +16,9 @@ torch = "^2.7.0"
 torchvision = "^0.22.0"
 imageio = {extras = ["ffmpeg"], version = "^2.37.0"}
 dill = "^0.4.0"
+
+[tool.poetry.group.stormpy.dependencies]
+stormpy = { path = "../stormpy-premise"}
 
 [tool.poetry.group.carla.dependencies]
 python = "~=3.10.0"
@@ -30,6 +31,7 @@ stormvogel = { path="../stormvogel",  markers = "python_version >= '3.11'", deve
 [tool.poetry.group.dev.dependencies]
 pybind11-stubgen = "^2.5.1"
 memray = "^1.17.2"
+py-spy = "^0.4.0"
 
 [build-system]
 requires = ["poetry-core"]

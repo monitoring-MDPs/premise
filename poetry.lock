@@ -3475,7 +3475,7 @@ version = "0.4.0"
 description = "Sampling profiler for Python programs"
 optional = false
 python-versions = "*"
-groups = ["main"]
+groups = ["dev"]
 files = [
     {file = "py_spy-0.4.0-py2.py3-none-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl", hash = "sha256:f2cf3f7130e7d780471faa5957441d3b4e0ec39a79b2c00f4c33d494f7728428"},
     {file = "py_spy-0.4.0-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:47cdda4c34d9b6cb01f3aaeceb2e88faf57da880207fe72ff6ff97e9bb6cc8a9"},
@@ -4765,7 +4765,7 @@ version = "1.9.0"
 description = "stormpy - Python Bindings for Storm"
 optional = false
 python-versions = ">=3.7"
-groups = ["main"]
+groups = ["stormpy"]
 files = []
 develop = false
 
@@ -5323,4 +5323,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "450476f92c48289c7a2cdc666139a41f54f71e70f08fb5b21b227808a94ff18b"
+content-hash = "18c6d9806d1c3e88226ed287900f0fdb36ef2c495db22204d205254a29606a0b"
