@@ -64,7 +64,7 @@ class MultiLineFormatter(logging.Formatter):
 def setup_logging():
     global logger
 
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     print(logger)
     handler = logging.StreamHandler(sys.stdout)
     formatter = MultiLineFormatter(

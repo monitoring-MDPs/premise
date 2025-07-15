@@ -25,8 +25,6 @@ def learn_conformal_prediction_model(
     # horizon = args.horizon
     model_name = args.model_name
 
-    torch.set_num_threads(1)
-
     se = Train_SeqSE(model_name, dataset, net_type=args.net_type)
     start_time = time.time()
     se.train(args.nb_epochs, args.batch_size, lr=args.lr)
@@ -445,6 +443,10 @@ def learn_conformal_prediction_model(
 
 def conformal_prediction_main(args: argparse.Namespace):
     setup_logging()
+
+    torch.set_num_threads(1)
+    torch.set_num_interop_threads(1)
+
     logger.info(f"Starting conformal prediction training... ({args})")
     suo, initial_amount, horizon = build_suo(args)
     # horizon = args.horizon

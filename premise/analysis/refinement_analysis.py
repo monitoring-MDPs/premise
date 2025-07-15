@@ -1,5 +1,6 @@
 # %%
 from pathlib import Path
+import pickle
 import re
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,10 +26,10 @@ def plot_mult_distances(data_dict: dict, title, log=False):
 
     run_keys = set(k[0] for k in data_dict.keys())
     type_keys = set(k[1] for k in data_dict.keys())
-    ls_map = {k: ["-", "-.", ":"][i % 4] for i, k in enumerate(type_keys)}
+    ls_map = {k: ["-", "-.", ":"][i % 4] for i, k in enumerate(run_keys)}
     col_map = {
         k: plt.rcParams["axes.prop_cycle"].by_key()["color"][i % 10]
-        for i, k in enumerate(run_keys)
+        for i, k in enumerate(type_keys)
     }
 
     for key, datas in sorted(data_dict.items(), reverse=True):
@@ -61,9 +62,9 @@ def plot_mult_distances(data_dict: dict, title, log=False):
         plt.plot(
             x_values,
             mean_distances,
-            linestyle=ls_map[key[1]],
-            label=key,
-            color=col_map[key[0]],
+            linestyle=ls_map[key[0]],
+            label=key[1],
+            color=col_map[key[1]],
         )
 
         # Add shaded area for spread
@@ -72,7 +73,7 @@ def plot_mult_distances(data_dict: dict, title, log=False):
             mean_distances - std_distances,
             mean_distances + std_distances,
             alpha=0.2,
-            color=col_map[key[0]],
+            color=col_map[key[1]],
         )
         # plt.fill_between(
         #     x_values,
@@ -86,7 +87,6 @@ def plot_mult_distances(data_dict: dict, title, log=False):
         if datas[0][2] is not None:
             plt.axhline(
                 y=datas[0][2],
-                color=col_map[key[0]],
                 linestyle="--",
                 c="red",
             )
@@ -105,8 +105,7 @@ def plot_mult_distances(data_dict: dict, title, log=False):
 
 def main(
     stats_paths=[
-        ("../../out/stats/2025-07-11_14-12-59", "new lengths"),
-        ("../../out/stats/2025-07-14_13-54-31", "old lengths"),
+        ("../../out/stats/2025-07-14_16-09-42", "results"),
     ]
 ):
     stats_dicts: dict[tuple, dict] = {}
@@ -119,43 +118,72 @@ def main(
             paths = [path]
 
         for stat_path in paths:
-            data = np.load(stat_path, allow_pickle=True).item()
-            model_key = (
-                data["args"]["mc"],
-                (
-                    tuple(data["args"]["sys_vars"])
-                    if data["args"]["sys_vars"] is not None
-                    else None
-                ),
-                data["args"]["sam"],
-                data["args"]["sim"],
-                data["args"]["acas"],
-                # data["args"]["distance"],
-            )
+            try:
+                data = np.load(stat_path, allow_pickle=True).item()
+            except AttributeError:
+                data = pickle.load(stat_path.open("rb"))
 
-            if model_key not in stats_dicts:
-                stats_dicts[model_key] = {}
+            try:
+                model_key = (
+                    data["args"]["mc"],
+                    (
+                        tuple(data["args"]["sys_vars"])
+                        if data["args"]["sys_vars"] is not None
+                        else None
+                    ),
+                    data["args"]["sam"],
+                    data["args"]["sim"],
+                    data["args"]["acas"],
+                    # data["args"]["distance"],
+                )
 
-            learn_type_key = (
-                name,
-                (
-                    data["args"]["stopping_criteria"]
-                    if "stopping_criteria" in data["args"]
-                    else "regression"
-                ),
-                (
-                    data["args"]["use-splitting"]
-                    if "use-splitting" in data["args"]
-                    else False
-                ),
-            )
+                if model_key not in stats_dicts:
+                    stats_dicts[model_key] = {}
 
-            run_key = (data["args"]["run_id"] if "run_id" in data["args"] else 0,)
+                learn_type_key = ""  # f"{name}: "
+                if "stopping_criteria" in data["args"]:
+                    if data["args"]["stopping_criteria"] == "threshold":
+                        learn_type_key += "refinement"
+                        if (
+                            "use_splitting" in data["args"]
+                            and data["args"]["use_splitting"]
+                        ):
+                            learn_type_key += " with splitting"
+                        else:
+                            learn_type_key += " with 10 points"
+                    elif data["args"]["stopping_criteria"] == "samples":
+                        learn_type_key += "no refinement"
+                    else:
+                        learn_type_key += data["args"]["stopping_criteria"]
+                else:
+                    learn_type_key += "regression"
 
-            if learn_type_key not in stats_dicts[model_key]:
-                stats_dicts[model_key][learn_type_key] = {}
+                learn_type_key = (name, learn_type_key)
 
-            stats_dicts[model_key][learn_type_key][run_key] = data
+                # learn_type_key = (
+                #     name,
+                #     (
+                #         data["args"]["stopping_criteria"]
+                #         if "stopping_criteria" in data["args"]
+                #         else "regression"
+                #     ),
+                #     (
+                #         data["args"]["use_splitting"]
+                #         if "use_splitting" in data["args"]
+                #         else False
+                #     ),
+                # )
+
+                run_key = (data["args"]["run_id"] if "run_id" in data["args"] else 0,)
+
+                if learn_type_key not in stats_dicts[model_key]:
+                    stats_dicts[model_key][learn_type_key] = {}
+
+                stats_dicts[model_key][learn_type_key][run_key] = data
+            except Exception as e:
+                print(f"Error processing {stat_path}: {e} ({data})")
+
+                continue
 
     for model_key, exp_dict in stats_dicts.items():
         plot_data: dict[tuple, list[tuple]] = {}

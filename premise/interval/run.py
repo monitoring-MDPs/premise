@@ -1,4 +1,5 @@
 import copy
+import resource
 import sys
 from multiprocessing import Pool
 
@@ -25,6 +26,11 @@ def split_args(args, delim):
 
 
 def run_with_timeout(func, args, timeout):
+    resource.setrlimit(
+        resource.RLIMIT_AS,
+        (1024 * 1024 * 1024 * 15, resource.RLIM_INFINITY),  # 15GiB limit
+    )
+
     with Pool(processes=1) as pool:
         async_result = pool.apply_async(func, args)
         try:
