@@ -1,9 +1,143 @@
 import pickle
 from typing import Optional
-import numpy as np
+from stormpy import (
+    SparsePomdp,
+    SparseRationalPomdp,
+    Rational,
+    StateLabeling,
+    SparseRationalModelComponents,
+    SparseModelComponents,
+)
+import stormpy as sp
 from premise.interval.interval import Samples, State
 from premise.interval.utils import logger
 from premise.system import SystemUnderObservation
+
+
+def dict_to_pomdp(
+    trans_dict: dict[tuple[State, State], float],
+    init_dict: dict[State, float],
+    target_label,
+    use_exact=True,
+) -> tuple[
+    SparsePomdp | SparseRationalPomdp,
+    dict[State, int],
+    dict[State, int],
+]:
+    transitions: dict[int, dict[int, float | Rational]] = {}
+    state_index_map: dict[State, int] = {}
+    observations = {}
+    observation_map = {}
+
+    # Get all states
+    state_index = 1
+
+    real_states = set()
+    for (s, d), _ in trans_dict.items():
+        real_states.add(s)
+        real_states.add(d)
+
+        if d not in state_index_map:
+            # Add not seen observations to the observation map
+            if d[-2] not in observation_map:
+                observation_map[d[-2]] = len(observation_map)
+
+            state_index_map[d] = state_index
+            transitions[state_index] = {}
+            observations[state_index] = observation_map[d[-2]]
+            state_index += 1
+
+        if s not in state_index_map:
+            # Add not seen observations to the observation map
+            if s[-2] not in observation_map:
+                observation_map[s[-2]] = len(observation_map)
+
+            state_index_map[s] = state_index
+            transitions[state_index] = {}
+            observations[state_index] = observation_map[s[-2]]
+            state_index += 1
+
+    init_state = 0
+    transitions[init_state] = {}
+    for d, p in sorted(
+        init_dict.items(),
+        key=lambda x: (x[0][0][0] if isinstance(x[0][0], tuple) else x[0][0]),
+    ):
+        if d not in real_states:
+            continue
+
+        if use_exact:
+            prob = Rational(p)
+        else:
+            prob = p
+        transitions[init_state][state_index_map[d]] = prob
+
+    for (s, d), p in sorted(
+        trans_dict.items(),
+        key=lambda x: x[0][0][0][0] if isinstance(x[0][0][0], tuple) else x[0][0][0],
+    ):
+        if s not in state_index_map:
+            state_index_map[s] = state_index
+            transitions[state_index] = {}
+            observations[state_index] = observation_map[s[-2]]
+            state_index += 1
+        if d not in state_index_map:
+            state_index_map[d] = state_index
+            transitions[state_index] = {}
+            observations[state_index] = observation_map[d[-2]]
+            state_index += 1
+
+        s_index = state_index_map[s]
+        d_index = state_index_map[d]
+        if use_exact:
+            prob = Rational(p)
+        else:
+            prob = p
+        transitions[s_index][d_index] = prob
+
+    if use_exact:
+        builder = sp.storage.RationalSparseMatrixBuilder(0, 0, 0, False, True)
+    else:
+        builder = sp.storage.SparseMatrixBuilder(0, 0, 0, False, True)
+
+    current_row = 0
+    for s, d_dict in sorted(transitions.items()):
+        builder.new_row_group(current_row)
+        for dest, prob in sorted(d_dict.items()):
+            builder.add_next_value(current_row, dest, prob)
+        current_row += 1
+
+    matrix = builder.build(overridden_column_count=len(state_index_map) + 1)
+
+    labeling = StateLabeling(len(state_index_map) + 1)  # For the initial state
+
+    labeling.add_label("init")
+    labeling.add_label("target")
+    # for s, i in state_index_map.items():
+    #     labeling.add_label(str(s))
+
+    labeling.add_label_to_state("init", init_state)
+    for s, i in state_index_map.items():
+        # labeling.add_label_to_state(str(s), i)
+        if s[-1] == target_label:  # target label (Change between models)
+            labeling.add_label_to_state("target", i)
+
+    if use_exact:
+        components = SparseRationalModelComponents(matrix, labeling)
+    else:
+        components = SparseModelComponents(matrix, labeling)
+    components.observability_classes = [0] + [
+        o for _, o in sorted(observations.items())
+    ]
+
+    if use_exact:
+        return SparseRationalPomdp(components), observation_map, state_index_map
+    else:
+        return SparsePomdp(components), observation_map, state_index_map
+
+
+def create_mle_monitor(init_interval, interval, target_label, use_exact=True):
+    pass
 
 
 def maximum_likelihood_estimation(

@@ -93,7 +93,7 @@ def plot_mult_distances(data_dict: dict, title, log=False):
 
     plt.title(title)
     plt.xlabel("Transitions")
-    plt.ylabel("Distance")
+    plt.ylabel("Interval width loss")
     if log:
         plt.yscale("log")
     else:
@@ -105,7 +105,8 @@ def plot_mult_distances(data_dict: dict, title, log=False):
 
 def main(
     stats_paths=[
-        ("../../out/stats/2025-07-11_14-12-59", "obs start state, 10 prefixes"),
+        ("../../out/stats/2025-07-11_14-12-59", "new lengths"),
+        ("../../out/stats/2025-07-14_13-54-31", "old lengths"),
     ]
 ):
     stats_dicts: dict[tuple, dict] = {}

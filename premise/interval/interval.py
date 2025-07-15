@@ -400,7 +400,7 @@ def create_monitor(
     Monitor,
     MonitorComponents,
 ]:
-    logger.info("Staring create monitor")
+    logger.info("Starting create monitor")
     ipomdp, observation_map, state_index_map = dict_to_interval_ipomdp(
         trans_dict, init_dict, target_label, use_exact
     )
@@ -451,7 +451,8 @@ def build_monitor_from_model(
 
     expr_manager = ExpressionManager()
 
-    prop = parse_properties(f'P{maxmin}=? [F<={horizon} "{target}"]')
+    prop_string = f'P{maxmin}=? [F<={horizon} "{target}"]'
+    prop = parse_properties(prop_string)
 
     if ipomdp.is_exact:
         task = ExactCheckTask(prop[0].raw_formula, False)
@@ -465,6 +466,8 @@ def build_monitor_from_model(
         result = check_exact_interval_mdp(imdp, task, stormpy_environment)
     else:
         result = check_interval_mdp(imdp, task, stormpy_environment)
+
+    logger.info(f"Checking {prop_string}")
 
     risks = []
     for i in range(len(ipomdp.states)):

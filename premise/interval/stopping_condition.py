@@ -165,6 +165,12 @@ class IntervalWidthCalculator(DistanceCalculator):
 
         self.mon_comps = max_mon_comps
 
+        logger.debug(
+            f"Max monitor risks: {[(float(i.lower()), float(i.upper())) for i in max_mon_comps.risks]} \n\n"
+            f"Min monitor risks: {[(float(i.lower()), float(i.upper())) for i in min_mon_comps.risks]}\n\n"
+            "----------------------------------------------"
+        )
+
         logger.info(f"Created all monitors, now testing them")
 
         # Run premise on the learned model
@@ -176,7 +182,9 @@ class IntervalWidthCalculator(DistanceCalculator):
             with_tqdm=False,
         )
 
-        logger.info(f"Monitored risks for min monitor: max={max(min_monitored_risks)}")
+        logger.info(
+            f"Monitored risks for min monitor: max={max(min_monitored_risks.values())}"
+        )
 
         max_monitored_risks = test_monitor(
             max_mon,
@@ -186,7 +194,9 @@ class IntervalWidthCalculator(DistanceCalculator):
             with_tqdm=False,
         )
 
-        logger.info(f"Monitored risks for max monitor: min={min(max_monitored_risks)}")
+        logger.info(
+            f"Monitored risks for max monitor: min={min(max_monitored_risks.values())}"
+        )
 
         # Calculate the distance
         target_dist, target_all_dist = self.distance_func.distance(

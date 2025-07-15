@@ -223,26 +223,11 @@ def ref_main(args: argparse.Namespace):
 
     suo, initial_amount, horizon = build_suo(args)
     if args.sample_length is None:
-        if initial_amount is not None and horizon is not None:
-            args.sample_length = initial_amount + horizon
-        else:
-            raise ValueError(
-                "Either sample_length must be specified or initial_amount and horizon must be provided by the model."
-            )
+        args.sample_length = initial_amount + horizon
     if args.horizon is None:
-        if horizon is not None:
-            args.horizon = horizon
-        else:
-            raise ValueError(
-                "Either horizon must be specified or it must be provided by the model."
-            )
+        args.horizon = horizon
     if args.conformence_length is None:
-        if initial_amount is not None:
-            args.conformence_length = initial_amount
-        else:
-            raise ValueError(
-                "Either conformence_length must be specified or initial_amount must be provided by the model."
-            )
+        args.conformence_length = initial_amount
 
     distance = distance_measures[args.distance](args.distance_threshold)
 
@@ -263,6 +248,11 @@ def ref_main(args: argparse.Namespace):
             args.exact,
             args.precision,
             args.verbose,
+        )
+    else:
+        raise ValueError(
+            f"Unknown distance calculator: {args.distance_calculator}. "
+            "Must be one of 'target' or 'interval'."
         )
 
     if args.stopping_criteria == "stabilization":

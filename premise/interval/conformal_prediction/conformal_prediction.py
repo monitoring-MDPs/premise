@@ -26,7 +26,6 @@ def learn_conformal_prediction_model(
     model_name = args.model_name
 
     torch.set_num_threads(1)
-    torch.set_num_interop_threads(1)
 
     se = Train_SeqSE(model_name, dataset, net_type=args.net_type)
     start_time = time.time()
@@ -97,12 +96,7 @@ def learn_conformal_prediction_model(
     se_box_coverage = cp_regr.get_box_coverage(args.epsilon, meas_test, state_test)
     se_box_efficiency = cp_regr.get_efficiency(box_flag=True)
     logger.info(
-        "Box-Coverage for significance = ",
-        1 - args.epsilon,
-        ": ",
-        se_box_coverage,
-        "; Box Efficiency = ",
-        se_box_efficiency,
+        f"Box-Coverage for significance = {1 - args.epsilon}: {se_box_coverage}; Box Efficiency = {se_box_efficiency}",
     )
 
     logger.info("----- Computing CP Regression validity and NON-BOX efficiency...")
@@ -464,9 +458,9 @@ def conformal_prediction_main(args: argparse.Namespace):
     trainset = []
     for x in range(round((args.amount - 50) * 20 / 41)):
         path = suo.generate_random_traces([], (initial_amount + horizon))[0]
-        #trainset.append(tuple(path)) 
+        # trainset.append(tuple(path))
         trainset.append(path)
-        
+
     calibrset = []
     for x in range(round((args.amount - 50) * 6 / 41)):
         path = tuple(suo.generate_random_traces([], (initial_amount + horizon))[0])
