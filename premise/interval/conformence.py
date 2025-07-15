@@ -36,7 +36,7 @@ def test_monitor(
     skip_initial=False,
     with_tqdm=True,
     intermediate_results: Literal[True] = True,
-) -> tuple[dict[Trace, Any], list[Any]]: ...
+) -> tuple[dict[Trace, Any], list[list[Any]]]: ...
 
 
 def test_monitor(
@@ -49,6 +49,7 @@ def test_monitor(
 ):
     risks: dict[Trace, Any] = {}
     it = tqdm.tqdm(samples) if with_tqdm else samples
+    res = []
     for trace in it:
         observations = [t[1] for t in trace]
 
@@ -57,9 +58,11 @@ def test_monitor(
         else:
             mon.initialize(obs_func(observations[0]))
 
-        res = []
+        res_inner = []
         for obs in observations[0 if skip_initial else 1 : -1]:
-            res.append(mon.step(obs_func(obs), compute_risk=intermediate_results))
+            res_inner.append(mon.step(obs_func(obs), compute_risk=intermediate_results))
+        if intermediate_results:
+            res.append(res_inner)
 
         last_risk = mon.step(obs_func(observations[-1]), compute_risk=True)
         risks[trace] = last_risk
