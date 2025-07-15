@@ -1,16 +1,21 @@
+import argparse
 import pickle
-from typing import Optional
 from stormpy import (
     SparsePomdp,
-    SparseRationalPomdp,
+    SparseExactPomdp,
     Rational,
     StateLabeling,
-    SparseRationalModelComponents,
+    SparseExactModelComponents,
     SparseModelComponents,
 )
 import stormpy as sp
+import stormpy
+from premise.interval.conformence import test_monitor
+from premise.interval.loading import build_suo, build_suo_args_parser
+from premise.models import _analyse_model
+from premise.monitor import Monitor, UnfoldingRiskAssessment
 from premise.interval.interval import Samples, State
-from premise.interval.utils import logger
+from premise.interval.utils import logger, setup_logging
 from premise.system import SystemUnderObservation
 
 
@@ -20,7 +25,7 @@ def dict_to_pomdp(
     target_label,
     use_exact=True,
 ) -> tuple[
-    SparsePomdp | SparseRationalPomdp,
+    SparsePomdp | SparseExactPomdp,
     dict[State, int],
     dict[State, int],
 ]:
@@ -123,7 +128,7 @@ def dict_to_pomdp(
             labeling.add_label_to_state("target", i)
 
     if use_exact:
-        components = SparseRationalModelComponents(matrix, labeling)
+        components = SparseExactModelComponents(matrix, labeling)
     else:
         components = SparseModelComponents(matrix, labeling)
     components.observability_classes = [0] + [
@@ -131,21 +136,29 @@ def dict_to_pomdp(
     ]
 
     if use_exact:
-        return SparseRationalPomdp(components), observation_map, state_index_map
+        return SparseExactPomdp(components), observation_map, state_index_map
     else:
         return SparsePomdp(components), observation_map, state_index_map
 
 
-def create_mle_monitor(init_interval, interval, target_label, use_exact=True):
-    pass
+def create_mle_monitor(horizon: int, storm_model: SparsePomdp | SparseExactPomdp):
+    prop_string = f'P=? [F<={horizon} "target"]'
+    prop = sp.parse_properties(prop_string)[0]
+    risk = _analyse_model(storm_model, prop).get_values()
+    expr_manager = stormpy.ExpressionManager()
+    unfolder = stormpy.pomdp.create_observation_trace_unfolder(
+        storm_model, risk, expr_manager
+    )
+    ura = UnfoldingRiskAssessment(stormpy.Environment(), unfolder)
+    mon = Monitor(ura, 1000000)
+    return mon
 
 
 def maximum_likelihood_estimation(
     all_states: list[State],
     all_transitions: list[tuple[State, State]],
+    all_initial_states: list[State],
     samples: Samples,
-    min_trans_prob: float = 0.01,
-    remove_unseen_transitions: bool = True,
 ):
     # Initialize counts for state visits and transitions
     visit_state_count = {state: 0 for state in all_states}
@@ -169,62 +182,164 @@ def maximum_likelihood_estimation(
 
     # Compute initial state probabilities
     initial_state_probabilities = {}
-    for state, count in visit_state_count.items():
+    for state in all_initial_states:
+        count = visit_state_count.get(state, 0)
         if count > 0:
             initial_state_probabilities[state] = count / len(samples)
         else:
             initial_state_probabilities[state] = 0.0
 
-    # Remove unseen transitions if specified
-    if remove_unseen_transitions:
-        initial_state_probabilities = {
-            state: prob
-            for state, prob in initial_state_probabilities.items()
-            if prob >= min_trans_prob
-        }
-        transition_probabilities = {
-            (src, dest): prob
-            for (src, dest), prob in transition_probabilities.items()
-            if prob >= min_trans_prob
-        }
-
     return initial_state_probabilities, transition_probabilities
+
+
+def test_mle_monitor(
+    suo: SystemUnderObservation,
+    model,
+    horizon: int,
+    initial_length: int,
+    testing_amount: int,
+    use_exact: bool = True,
+):
+    storm_model, observation_map, state_index_map = dict_to_pomdp(
+        model[1],
+        model[0],
+        True,
+        use_exact=use_exact,
+    )
+
+    logger.info(f"Created storm model")
+
+    mon = create_mle_monitor(horizon, storm_model)
+
+    logger.info(f"Created monitor")
+
+    test_samples = suo.generate_random_traces(
+        [],
+        initial_length,
+        testing_amount,
+    )
+
+    res = test_monitor(
+        mon,
+        test_samples,
+        lambda x: observation_map[x],
+        skip_initial=True,
+        with_tqdm=False,
+    )
+
+    return res
 
 
 def mle_learning(
     suo: SystemUnderObservation,
     all_states: list[State],
     all_transitions: list[tuple[State, State]],
+    all_initial_states: list[State],
     iterations: int,
-    initial_amount: int,
+    initial_length: int,
     horizon: int,
     learning_amount: int,
-    testing_amount: int = 100,
-    model_path: Optional[str] = None,
+    model_path: str,
 ):
     samples = suo.generate_random_traces(
         [],
-        initial_amount + horizon,
+        initial_length + horizon,
         learning_amount,
     )
     samples_per_iteration = len(samples) // iterations
+
+    sample_count_list = []
+
     for i in range(iterations):
         logger.info(f"Iteration {i + 1}/{iterations}")
 
         sample_subset = samples[: samples_per_iteration * (i + 1)]
+        sample_count_list.append(len(sample_subset))
+
         model = maximum_likelihood_estimation(
             all_states,
             all_transitions,
+            all_initial_states,
             sample_subset,
         )
 
         with open(f"{model_path}-{i}.pickl", "wb") as f:
             pickle.dump(model, f)
 
-        logger.info(f"Learned transition probabilities, now testing.")
+    return sample_count_list
 
-        test_samples = suo.generate_random_traces(
-            [],
-            initial_amount,
-            testing_amount,
-        )
+
+def mle_learning_main(args):
+    setup_logging()
+
+    logger.info(f"Starting MLE learning with args: {args}")
+
+    suo, initial_length, horizon = build_suo(args)
+    if args.horizon is None:
+        args.horizon = horizon
+    if args.initial_length is None:
+        args.initial_length = initial_length
+
+    all_states, all_transitions, all_initial_states = suo.get_states_and_transitions()
+
+    sample_count_list = mle_learning(
+        suo,
+        all_states,
+        all_transitions,
+        all_initial_states,
+        args.iterations,
+        args.initial_length,
+        args.horizon,
+        args.samples,
+        args.dump_stats,
+    )
+
+    stats = {
+        "args": vars(args),
+        "sample_counts": sample_count_list,
+        "model_paths": [f"{args.dump_model}-{i}.pickl" for i in range(args.iterations)],
+    }
+
+    with open(args.dump_stats, "wb") as f:
+        pickle.dump(stats, f)
+
+    return stats
+
+
+def mle_args_parser():
+    parser = argparse.ArgumentParser(description="MLE Learning")
+
+    build_suo_args_parser(parser)
+
+    parser.add_argument(
+        "-i", "--iterations", type=int, default=10, help="Number of iterations"
+    )
+    parser.add_argument(
+        "-il",
+        "--initial-length",
+        type=int,
+        help="Initial length of samples",
+    )
+    parser.add_argument("-ho", "--horizon", type=int, help="Horizon for the MDP")
+    parser.add_argument(
+        "-s", "--samples", type=int, help="Number of samples to generate"
+    )
+    parser.add_argument(
+        "-m", "--dump-model", type=str, default="model", help="Path to save the model"
+    )
+    parser.add_argument(
+        "-stats", "--dump-stats", type=str, default="stats", help="Path to save stats"
+    )
+    parser.add_argument(
+        "--run-id", type=int, default=0, help="Run ID for keeping track of runs"
+    )
+    parser.add_argument(
+        "-v", "--verbose", help="Enable verbose logging", action="count", default=0
+    )
+    return parser
+
+
+if __name__ == "__main__":
+    mle_args = mle_args_parser().parse_args()
+    mle_learning_main(mle_args)
+    logger.info("MLE Learning completed successfully.")

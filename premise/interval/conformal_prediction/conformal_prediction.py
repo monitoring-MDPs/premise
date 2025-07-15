@@ -446,6 +446,9 @@ def conformal_prediction_main(args: argparse.Namespace):
 
     torch.set_num_threads(1)
     torch.set_num_interop_threads(1)
+    os.environ["OPENBLAS_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
+    os.environ["BLIS_NUM_THREADS"] = "1"
 
     logger.info(f"Starting conformal prediction training... ({args})")
     suo, initial_amount, horizon = build_suo(args)

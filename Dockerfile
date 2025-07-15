@@ -28,4 +28,4 @@ RUN poetry install --without stormpy,sv,carla,dev --no-root
 
 # ENV PATH=$OLD_PATH
 
-COPY premise .
+COPY . .

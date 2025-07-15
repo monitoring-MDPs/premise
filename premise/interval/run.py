@@ -3,7 +3,7 @@ import resource
 import sys
 from multiprocessing import Pool
 
-from sympy import rf
+from premise.interval.maximum_likelihood import mle_args_parser, mle_learning_main
 from premise.interval.utils import setup_logging
 from premise.interval.model_free.regression_model import reg_argsparser, reg_main
 from premise.interval.refinement import ref_args_parser, ref_main
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         logger.error(
             "Invalid timeout format. Use <number>[h|m|s] (e.g., 1h, 30m, 45s)."
         )
-        sys.exit(1)
+        sys.exit(2)
 
     if sys.argv[2] == "refinement":
         ref_parser = ref_args_parser()
@@ -73,9 +73,9 @@ if __name__ == "__main__":
         except TimeoutError:
             logger.warning("Refinement timed out.")
     elif sys.argv[2] == "comp_methods":
-        if len(args) != 3:
+        if len(args) != 4:
             print(
-                "Usage: python run.py comp_methods <args refinement> :: <args regression> :: <args conformal prediction>",
+                "Usage: python run.py comp_methods <args refinement> :: <args regression> :: <args mle> :: <args conformal prediction>",
                 args,
                 sys.argv,
                 file=sys.stderr,
@@ -139,9 +139,19 @@ if __name__ == "__main__":
         except TimeoutError:
             logger.warning("Regression timed out.")
 
+        # MAXIMUM LIKELIHOOD ESTIMATION
+        mle_parser = mle_args_parser()
+        mle_args = mle_parser.parse_args(args[2])
+        mle_args.samples = transition_count // (horizon + initial_amount)
+
+        try:
+            run_with_timeout(mle_learning_main, (mle_args,), timeout)
+        except TimeoutError:
+            logger.warning("MLE timed out.")
+
         # CONFORMAL PREDICTION
         conformal_parser = conformal_prediction_argsparser()
-        conformal_args = conformal_parser.parse_args(args[2])
+        conformal_args = conformal_parser.parse_args(args[3])
         conformal_args.amount = transition_count // (horizon + initial_amount)
 
         try:

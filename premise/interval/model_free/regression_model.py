@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 from typing import Any
@@ -105,6 +106,10 @@ def regression_distance(
 
 
 def reg_main(args: argparse.Namespace):
+    os.environ["OPENBLAS_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
+    os.environ["BLIS_NUM_THREADS"] = "1"
+
     setup_logging()
 
     logger.info(f"Running regression with args: {args}")
