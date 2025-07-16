@@ -291,7 +291,7 @@ def mle_learning_main(args):
         args.initial_length,
         args.horizon,
         args.samples,
-        args.dump_stats,
+        args.dump_model,
     )
 
     stats = {
