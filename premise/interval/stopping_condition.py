@@ -287,7 +287,8 @@ class SampleCountStoppingCondition(RefinementStoppingCondition):
         length: int,
         amount: int,
         learning_length: int,
-        prefix_amount: int = 10,
+        prefix_amount: int,
+        iterations: int,
     ):
         super().__init__(
             suo, distance_calculator, prefix_amount, verbose, length, amount
@@ -295,6 +296,7 @@ class SampleCountStoppingCondition(RefinementStoppingCondition):
         self.transition_count = transition_count
         self.refine_amount = refine_amount
         self.learning_length = learning_length
+        self.iterations = iterations
 
     def check(self, interval, initial_interval) -> None | tuple[Samples, Samples]:
         pre_sampling_transition_count = self.suo.stats()["transition_count"]
@@ -313,7 +315,7 @@ class SampleCountStoppingCondition(RefinementStoppingCondition):
             return None
 
         additional_samples = (
-            self.transition_count / self.learning_length / self.prefix_amount
+            self.transition_count / self.learning_length / self.iterations
             - len(samples)
         )
 

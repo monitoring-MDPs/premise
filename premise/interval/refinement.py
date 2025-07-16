@@ -289,6 +289,7 @@ def ref_main(args: argparse.Namespace):
             args.conformence_amount,
             args.sample_length,
             args.prefix_amount,
+            args.iterations,
         )
     else:
         raise ValueError(f"Unknown stopping criteria: {args.stopping_criteria}")
@@ -462,6 +463,13 @@ def ref_args_parser():
         "--stopping-samples",
         type=int,
         help="The amount of samples to stop refinement at",
+    )
+    conformence_group.add_argument(
+        "-it",
+        "--iterations",
+        type=int,
+        default=8,
+        help="The amount of iterations to use for the sample count stopping condition",
     )
     conformence_group.add_argument(
         "-split",
