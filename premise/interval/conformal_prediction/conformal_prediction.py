@@ -486,7 +486,7 @@ def conformal_prediction_main(args: argparse.Namespace):
     logger.info(f"Testset size: {len(testset)}")
     logger.info(f"Validset size: {len(validset)}")
 
-    for i in range(1, 14):
+    for i in range(1, 9):
         logger.info(
             "___________________________________________________________________"
         )
@@ -494,13 +494,13 @@ def conformal_prediction_main(args: argparse.Namespace):
         logger.info(
             "___________________________________________________________________"
         )
-        end_index = int((i / 13) * len(trainset))
+        end_index = int((i / 8) * len(trainset))
         current_trainset = trainset[:end_index]
 
-        end_index = int((i / 13) * len(calibrset))
+        end_index = int((i / 8) * len(calibrset))
         current_calibrset = calibrset[:end_index]
 
-        amount = int((i / 13) * args.amount)
+        amount = int((i / 8) * args.amount)
 
         logger.info(f"AMOUNT: {amount}")
         logger.info(f"Current trainset size: {len(current_trainset)}")
@@ -739,4 +739,4 @@ if __name__ == "__main__":
     conformal_prediction_main(args)
 
 
-# python -m premise.interval.conformal_prediction.conformal_prediction --mc airportA-7-10-10 -a 300 --no-target --dump_model /workspaces/premise/out/ --dump_stats /workspaces/premise/out/
+# python -m premise.interval.conformal_prediction.conformal_prediction --mc airportA-7-10-10 -a 55 --no-target --dump-stats /workspaces/premise/premise/analysis/test_sets --dump-model /workspaces/premise/premise/analysis/test_sets

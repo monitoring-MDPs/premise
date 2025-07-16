@@ -70,6 +70,7 @@ def Comb_PONSC_active_sample_query(suo, active_samples, length, horizon, model_c
 			path = tuple(suo.generate_random_traces([], length)[0])
 			samples.append(path)
 	
+	print('len(samples)')
 	print(len(samples))
 
 	pool_of_trajs = model_class.gen_trajectories(samples,horizon)
@@ -80,17 +81,17 @@ def Comb_PONSC_active_sample_query(suo, active_samples, length, horizon, model_c
 
 	pool_of_meas_scaled = -1+2*(pool_of_meas-dataset.MIN[1])/(dataset.MAX[1]-dataset.MIN[1])
 
-	BS = 1000
+	BS = 100
 	#BS = ((active_samples)//100)*100
 	n_batches = len(samples)//BS
-	print('BATCH SIZE')
-	print(BS)
+	print('n_batches')
+	print(n_batches)
 
 	pool_conf_cred = np.empty((len(samples), 2))
 
 	for i in range(n_batches):
 		pool_conf_cred[i*BS:(i+1)*BS] = conf_pred.compute_confidence_credibility(np.transpose(pool_of_meas_scaled[i*BS:(i+1)*BS],(0,2,1)))
-	
+
 	pool_pred_errors = apply_svc_query_strategy(trained_svc, pool_conf_cred)
 
 	selected_indices = np.where((1 - pool_pred_errors).astype(bool))[0] 
@@ -102,14 +103,16 @@ def Comb_PONSC_active_sample_query(suo, active_samples, length, horizon, model_c
 	unc_labels = model_class.gen_labels(samples,horizon)
 	unc_labels = unc_labels[selected_indices] #ANTONINA
 
+
 	while len(unc_meas_scaled) < active_samples:
 		print('Appending')
 
 		for x in range(500):
 			samples.append(tuple(suo.generate_random_traces([], length))[0])
-		
-		print(len(samples))
 
+		print('len(samples)')
+		print(len(samples))
+		
 		# Generate a pool of random inputs (remember to scale them)
 		pool_of_trajs = model_class.gen_trajectories(samples,horizon)
 
@@ -119,11 +122,12 @@ def Comb_PONSC_active_sample_query(suo, active_samples, length, horizon, model_c
 
 		pool_of_meas_scaled = -1+2*(pool_of_meas-dataset.MIN[1])/(dataset.MAX[1]-dataset.MIN[1])
 
-		BS = 1000
+		BS = 100
 		#BS = (active_samples//100)*100
 		n_batches = len(samples)//BS
 
 		pool_conf_cred = np.empty((len(samples), 2))
+
 		for i in range(n_batches):
 			pool_conf_cred[i*BS:(i+1)*BS] = conf_pred.compute_confidence_credibility(np.transpose(pool_of_meas_scaled[i*BS:(i+1)*BS],(0,2,1)))
 

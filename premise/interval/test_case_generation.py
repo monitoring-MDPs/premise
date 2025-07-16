@@ -35,6 +35,13 @@ if __name__ == "__main__":
     parser.add_argument("--dump", type=str, help="Path to the file to dump test traces")
     parser.add_argument("--verbose", "-v", action="count", default=0)
 
+    parser.add_argument(
+        "-t",
+        "--existing-transitions",
+        action="store_true",
+        help="Use only real transitions as defined by the model",
+    )
+
     args = parser.parse_args()
 
     suo, initial_amount, horizon = build_suo(args)
@@ -53,7 +60,10 @@ if __name__ == "__main__":
                 "Either horizon must be specified or it must be provided by the model."
             )
 
-    all_states, all_transitions, initial_states = suo.get_states_and_transitions()
+
+    all_states, all_transitions, initial_states = suo.get_states_and_transitions(
+        all_transitions=not args.existing_transitions
+    )
     print("State count")
     print(len(all_states))
     print("Transition count")
@@ -68,7 +78,7 @@ if __name__ == "__main__":
             suo.generate_random_traces([], args.sample_length + args.horizon)
         )
         traces.append(trace)
-        print(traces)
+       
 
     if args.dump:
         # Construct the full path with the desired filename format
@@ -90,14 +100,18 @@ if __name__ == "__main__":
 
 
 
-# python -m premise.interval.test_case_generation -mc SnL-10x10 -l 15 -ho 5 --no-target --dump premise/analysis/test_sets/
-# python -m premise.interval.test_case_generation -mc airportA-7-10-10 -l 25 -ho 15 --no-target --dump premise/analysis/test_sets
-# python -m premise.interval.test_case_generation -mc airportA-7-40-20 -l 1 -ho 25 --no-target --dump premise/analysis/test_sets
-# python -m premise.interval.test_case_generation -mc airportB-3-50-30 -l 130 -ho 25 --no-target --dump premise/analysis/test_sets
-# python -m premise.interval.test_case_generation -mc evadeV-6-3 -l 20 -ho 12 --no-target --dump premise/analysis/test_sets
-# python -m premise.interval.test_case_generation -mc evadeI-15 -l 20 -ho 12 --no-target --dump premise/analysis/test_sets
-# python -m premise.interval.test_case_generation -mc SnLw-10x10 -sv pos -l 15 -ho 5 --no-target --dump premise/analysis/test_sets
-# python -m premise.interval.test_case_generation -mc evadeV-6-3-coarse -sv start turn c_ax c_ay c_dx c_dy -l 20 -ho 12 --no-target --dump premise/analysis/test_sets
-# python -m premise.interval.test_case_generation -mc airportB-7-50-30 -sv d p pobs turn -l 150 -ho 50 --no-target --dump premise/analysis/test_sets
+# python -m premise.interval.test_case_generation -mc SnL-10x10 -l 15 -ho 5 --no-target --dump premise/analysis/test_sets/ --existing-transitions
+# python -m premise.interval.test_case_generation -mc airportA-7-10-10 -l 25 -ho 15 --no-target --dump premise/analysis/test_sets --existing-transitions
+# python -m premise.interval.test_case_generation -mc airportA-7-40-20 -l 1 -ho 1 --no-target --dump premise/analysis/test_sets --existing-transitions
+# python -m premise.interval.test_case_generation -mc airportB-3-50-30 -l 1 -ho 2 --no-target --dump premise/analysis/test_sets --existing-transitions
+# python -m premise.interval.test_case_generation -mc airportB-7-40-20 -l 1 -ho 2 --no-target --dump premise/analysis/test_sets --existing-transitions
+# python -m premise.interval.test_case_generation -mc evadeV-6-3 -l 20 -ho 12 --no-target --dump premise/analysis/test_sets --existing-transitions
+# python -m premise.interval.test_case_generation -mc refuelB-12-50 -l 20 -ho 12 --no-target --dump premise/analysis/test_sets --existing-transitions
+
+
+# python -m premise.interval.test_case_generation -mc airportA-7-10-10 -sv d p pobs turn -l 25 -ho 15 --no-target --dump premise/analysis/test_sets --existing-transitions
+# python -m premise.interval.test_case_generation -mc SnLw-10x10 -sv pos -l 15 -ho 5 --no-target --dump premise/analysis/test_sets --existing-transitions
+# python -m premise.interval.test_case_generation -mc evadeV-6-3-coarse -sv start turn c_ax c_ay c_dx c_dy -l 20 -ho 12 --no-target --dump premise/analysis/test_sets --existing-transitions
+# python -m premise.interval.test_case_generation -mc airportB-3-40-20 -sv d p pobs turn -l 150 -ho 50 --no-target --dump premise/analysis/test_sets --existing-transitions
 
 #default_models = {"airportA-7-10-10", "airportA-7-40-20", "airportB-3-50-30", "airportB-7-40-20", "evadeI-15", "evadeV-5-3", "evadeV-6-3", "refuelA-12-50", "refuelB-12-50", "SnL-10x10"}
