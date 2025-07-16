@@ -112,7 +112,7 @@ if __name__ == "__main__":
             )
             sys.exit(3)
 
-        logger.info(f"Samples from refinement: {transition_count}")
+        logger.info(f"Transitions from refinement: {transition_count}")
 
         no_ref = copy.deepcopy(ref_args)
         no_ref.model_path = ref_args.model_path.replace("ref", "noref")
