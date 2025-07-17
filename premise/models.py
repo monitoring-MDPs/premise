@@ -34,7 +34,7 @@ default_models = {
         "DMAX=40,PMAX=20",
         'Pmax=? [F "crash"]',
         target_label="crash",
-        horizon=50,
+        horizon=35,
         initial_amount=125,
     ),
     "airportB-3-50-30": ModelDescription(
@@ -42,7 +42,7 @@ default_models = {
         "DMAX=50,PMAX=30",
         'Pmax=? [F "crash"]',
         target_label="crash",
-        horizon=50,
+        horizon=35,
         initial_amount=150,
     ),
     "airportB-7-40-20": ModelDescription(
@@ -50,7 +50,7 @@ default_models = {
         "DMAX=40,PMAX=20",
         'Pmax=? [F "crash"]',
         target_label="crash",
-        horizon=50,
+        horizon=35,
         initial_amount=125,
     ),
     "evadeI-15": ModelDescription(
