@@ -10,8 +10,7 @@ from premise.interval.utils import logger
 
 plt.rcParams.update({"font.size": 22})
 
-cuda = False
-# cuda = False
+cuda = True if torch.cuda.is_available() else False
 FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 LongTensor = torch.cuda.LongTensor if cuda else torch.LongTensor
 

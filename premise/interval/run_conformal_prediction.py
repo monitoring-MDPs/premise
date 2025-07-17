@@ -18,7 +18,7 @@ from premise.interval.conformal_prediction.conformal_prediction import (
     conformal_prediction_argsparser,
     conformal_prediction_main,
 )
-from premise.models import default_models
+from premise.models import ModelDescription, default_models
 
 
 def split_args(args, delim):
@@ -29,7 +29,6 @@ def split_args(args, delim):
         else:
             res[-1].append(a)
     return res
-
 
 
 def run_with_timeout(func, args, timeout):
@@ -48,30 +47,28 @@ def run_with_timeout(func, args, timeout):
         return result
 
 
-    
-def get_transition_count(stats_path, model_def):
+def get_transition_count(stats_path: str, model_def_name: str):
     transition_stats = []
-    path = Path(stats_path) 
+    path = Path(stats_path)
     if path.is_dir():
         paths = path.iterdir()
     else:
         paths = [path]
 
     for stat_path in paths:
-        if model_def in str(stat_path):
-            if '-ref-' in str(stat_path) or '-refsplit-' in str(stat_path):
-                    try:
-                        data = np.load(stat_path, allow_pickle=True).item()
-                    except AttributeError:
-                        data = pickle.load(stat_path.open("rb"))
-                    try:
-                        transition_stats.append(np.sum(data["transitions_learned"]))
-                    except Exception as e:
-                        print(f"Error processing {stat_path}: {e} ({data})")
+        if model_def_name in str(stat_path):
+            if "-ref-" in str(stat_path) or "-refsplit-" in str(stat_path):
+                try:
+                    data = np.load(stat_path, allow_pickle=True).item()
+                except AttributeError:
+                    data = pickle.load(stat_path.open("rb"))
+                try:
+                    transition_stats.append(np.sum(data["transitions_learned"]))
+                except Exception as e:
+                    print(f"Error processing {stat_path}: {e} ({data})")
 
     return max(transition_stats)
 
-           
 
 if __name__ == "__main__":
     args = split_args(sys.argv[3:], "::")
@@ -94,13 +91,13 @@ if __name__ == "__main__":
         sys.exit(2)
 
     if len(args) != 1:
-            print(
-                "Usage: python run_conformal_prediction.py ",
-                args,
-                sys.argv,
-                file=sys.stderr,
-            )
-            sys.exit(2)
+        print(
+            "Usage: python run_conformal_prediction.py ",
+            args,
+            sys.argv,
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
     conformal_parser = conformal_prediction_argsparser()
     conformal_args = conformal_parser.parse_args(args[0])
@@ -109,7 +106,7 @@ if __name__ == "__main__":
     horizon = model_def.horizon
     initial_amount = model_def.initial_amount
 
-    transition_count = get_transition_count('/workspaces/premise/out/stats/2025-07-10_07-55-18', model_def)
+    transition_count = get_transition_count(sys.argv[2], conformal_args.mc)
 
     conformal_args.amount = transition_count // (horizon + initial_amount)
 
@@ -118,5 +115,4 @@ if __name__ == "__main__":
     except TimeoutError:
         logger.warning("Conformal Prediction timed out.")
 
-
-    
+# ;python -m premise.interval.run_conformal_prediction 10m out/stats/2025-07-15_15-11-51 -mc SnL-10x10 --dump-model out/tmp/test17/ --dump-stats out/tmp/test17/ --no-target

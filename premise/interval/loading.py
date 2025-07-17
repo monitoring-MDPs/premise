@@ -1,9 +1,6 @@
 from argparse import ArgumentParser, Namespace
-from ast import mod
-import logging
 
 import numpy as np
-from pygame import init
 
 from premise.system import (
     CarlaSimSystemUnderObservation,
