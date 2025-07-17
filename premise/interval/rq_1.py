@@ -1,119 +1,87 @@
 import argparse
-import logging
-from pathlib import Path
-import glob 
-import re
-from scipy.interpolate import interp1d
+from matplotlib import pyplot as plt
 import numpy as np
-import pandas as pd
 from sympy import Line2D
-from tqdm import tqdm
+from tqdm import tqdm, trange
 import os
-import pickle
-from stormpy import AddUncertaintyExact, Rational
-from premise.interval.utils import logger
-from sklearn import metrics
 import matplotlib.ticker as ticker
 
 
-from premise.interval.conformal_prediction.train_stoch_seq_nsc import *
-from premise.interval.conformal_prediction.train_seq_se import *
-from premise.interval.conformal_prediction.train_seq_nsc import *
-from premise.interval.conformal_prediction.CP_Classification import *
-from premise.interval.conformal_prediction.CP_Regression import *
-from premise.interval.conformal_prediction.SeqDataset import *
-import torch
-from torch.autograd import Variable
-import premise.interval.conformal_prediction.utility_functions as utils
 import numpy as np
 import argparse
-from premise.interval.conformal_prediction.InvertedPendulum import *
-from premise.interval.conformal_prediction.MC_model import *
-import torch.nn.functional 
 
 import argparse
-import logging
-from pathlib import Path
 
 import numpy as np
-import pandas as pd
 from tqdm import tqdm
 import os
-import pickle
-from stormpy import AddUncertaintyExact, Rational
-from premise.interval.utils import logger
-
-from premise.interval.conformal_prediction.train_stoch_seq_nsc import *
-from premise.interval.conformal_prediction.train_seq_se import *
-from premise.interval.conformal_prediction.train_seq_nsc import *
-from premise.interval.conformal_prediction.CP_Classification import *
-from premise.interval.conformal_prediction.CP_Regression import *
-from premise.interval.conformal_prediction.SeqDataset import *
 
 
-from premise.interval.interval import (
-    stormpy_imdp_to_ipomdp,
-    stormpy_exact_pomdp_to_mdp,
-)
-from premise.interval.model_free.regression_model import prep_trace_for_regression
 from premise.interval.loading import (
-    build_imc_loading_args_parser,
     build_suo,
     build_suo_args_parser,
     load_imc,
 )
-from premise.interval.conformence import random_sample_monitor_test, test_monitor
+from premise.interval.conformence import test_monitor
 from premise.interval.interval import (
-    Samples,
     Trace,
     create_monitor,
-    build_monitor_from_model,
 )
 
 
-def stats_true(horizon, initial_amount, testing_samples, suo): 
+def stats_true(horizon, initial_amount, testing_samples, suo):
 
     target_risks = []
 
     for trace in tqdm(testing_samples):
         sub_trace: Trace = trace[:initial_amount]
-      
-        target_risk = test_monitor(
-                    suo.create_target_monitor(),
-                    [sub_trace],
-                    with_tqdm=False, 
-                )[sub_trace]
-        
-        target_risks.append(float(target_risk))
+
+        target_risk, risks = test_monitor(
+            suo.create_target_monitor(),
+            [sub_trace],
+            with_tqdm=False,
+            intermediate_results=True,
+        )
+
+        print(
+            f"Target risk for trace {sub_trace}: {target_risk[sub_trace]} with intermediate results {risks}"
+        )
+
+        target_risks.append(float(target_risk[sub_trace]))
 
     return target_risks
 
 
-def aggregated_stats_imc(path, stats_path, initial_amount, horizon, args, testing_samples): 
+def aggregated_stats_imc(
+    path, stats_path, initial_amount, horizon, args, testing_samples
+):
 
     imc_risks = {}
 
     imc_transition_counts = {}
 
-    for x in range(1,11):
+    for x in range(1, 11):
 
-        print(f'Experiment number {x}')
-        statistics = np.load(f'{stats_path}-{x}.npy', allow_pickle=True)
+        print(f"Experiment number {x}")
+        if not os.path.exists(f"{stats_path}-{x}.npy"):
+            print(f"Statistics file for experiment {x} does not exist.")
+            continue
+        statistics = np.load(f"{stats_path}-{x}.npy", allow_pickle=True)
 
-        obj = statistics.item()     
-        imc_transition_count = obj['transitions_learned']
+        obj = statistics.item()
+        imc_transition_count = obj["transitions_learned"]
 
-        sum = 0 
+        sum = 0
         total_imc_transition_count = []
         for z in range(len(imc_transition_count)):
-            sum += imc_transition_count[z] 
+            sum += imc_transition_count[z]
             total_imc_transition_count.append(sum)
 
-        imc_transition_counts[str(x)]= total_imc_transition_count
+        imc_transition_counts[str(x)] = total_imc_transition_count
 
-        for y in range(1, len(imc_transition_count) +1): 
-            initial_distribution = f'{path}-{x}-{y}-initial_interval.npy'
-            transition_intervals = f'{path}-{x}-{y}-interval.npy'
+        for y in trange(1, len(imc_transition_count) + 1):
+            initial_distribution = f"{path}-{x}-{y}-initial_interval.npy"
+            transition_intervals = f"{path}-{x}-{y}-interval.npy"
 
             args.trans_path = transition_intervals
             args.init_path = initial_distribution
@@ -127,7 +95,7 @@ def aggregated_stats_imc(path, stats_path, initial_amount, horizon, args, testin
             mon, mon_comps = create_monitor(
                 transition_intervals,
                 initial_distribution,
-                "min", 
+                "min",
                 True,
                 horizon,
                 args.dump,
@@ -136,9 +104,9 @@ def aggregated_stats_imc(path, stats_path, initial_amount, horizon, args, testin
                 precision=args.precision,
             )
 
-            imc_risks[f'{x}-{y}'] = []
+            imc_risks[f"{x}-{y}"] = []
 
-            for t in testing_samples: 
+            for t in testing_samples:
                 sub_trace: Trace = t[:initial_amount]
                 risk = test_monitor(
                     mon,
@@ -146,32 +114,34 @@ def aggregated_stats_imc(path, stats_path, initial_amount, horizon, args, testin
                     obs_func=lambda x: mon_comps.observation_map[x],
                     skip_initial=True,
                     with_tqdm=False,
-                    )[sub_trace]
-                
-                imc_risks[f'{x}-{y}'].append(float(risk))
+                )[sub_trace]
+
+                imc_risks[f"{x}-{y}"].append(float(risk))
 
     return imc_risks, imc_transition_counts
 
 
-def distance_graph(target_risks, imc_risks, imc_transition_counts, testing_samples_weights): 
+def distance_graph(
+    target_risks, imc_risks, imc_transition_counts, testing_samples_weights
+):
 
     distance_stats = {}
 
     for key in imc_risks.keys():
-        total_distance = 0 
+        total_distance = 0
         for x in range(len(target_risks)):
-            total_distance += testing_samples_weights[x] * abs(imc_risks[key][x] - target_risks[x])
+            total_distance += testing_samples_weights[x] * abs(
+                imc_risks[key][x] - target_risks[x]
+            )
             distance_stats[key] = total_distance
 
-    
     distance_graph_data = {}
-    for x in range(1,11):
-            distance_graph_data[x] = []
+    for x in range(1, 11):
+        distance_graph_data[x] = []
 
-    
     for key in distance_stats.keys():
-        for x in range(1,11):
-            if key.split('-')[0] == str(x):
+        for x in range(1, 11):
+            if key.split("-")[0] == str(x):
                 distance_graph_data[x].append(distance_stats[key])
 
 
@@ -184,13 +154,12 @@ def distance_graph(target_risks, imc_risks, imc_transition_counts, testing_sampl
     for x in range(1,11):
         graph_data.append([distance_graph_data[x], imc_transition_counts[str(x)]])
 
-
     log = False
     plt.figure()
     fig, ax = plt.subplots(figsize=(16, 8))
 
 
-    #IMC AVERAGE PERFORMANCE
+    # IMC AVERAGE PERFORMANCE
     transitions_data = []
     distance_data = []
 
@@ -220,9 +189,8 @@ def distance_graph(target_risks, imc_risks, imc_transition_counts, testing_sampl
     distance_array = np.array(interpolated_auc)
     mean_distance = np.mean(distance_array, axis=0)
     std_distance = np.std(distance_array, axis=0)
-   
 
-    #Plot mean line
+    # Plot mean line
     ax.plot(
         x_values,
         mean_distance,
@@ -232,7 +200,7 @@ def distance_graph(target_risks, imc_risks, imc_transition_counts, testing_sampl
         linestyle='--',
         )
 
-    #Add shaded area for spread
+    # Add shaded area for spread
     ax.fill_between(
             x_values,
             mean_distance - std_distance,
@@ -261,8 +229,9 @@ def distance_graph(target_risks, imc_risks, imc_transition_counts, testing_sampl
     plt.savefig("/workspaces/premise/premise/analysis/rq_1_distance_to_RRF.pdf", dpi=300)
     plt.show()
 
-def overestimation_graph(target_risks, imc_risks, imc_transition_counts): 
-    
+
+def overestimation_graph(target_risks, imc_risks, imc_transition_counts):
+
     plt.figure()
     plt.plot([0, 1], [0, 1], "--", color = 'black')
 
@@ -304,18 +273,19 @@ def main_imc(args: argparse.Namespace):
     testing_samples = []
     testing_samples_weights = []
 
-    
     for x in range(args.testing_samples):
-            path = suo.generate_random_traces_with_prob([], length)
-            testing_samples.append(tuple(path[0][0]))
-            testing_samples_weights.append(float(path[0][1]))
-
+        path = suo.generate_random_traces_with_prob([], length)
+        testing_samples.append(tuple(path[0][0]))
+        testing_samples_weights.append(float(path[0][1]))
 
     target_risks = stats_true(horizon, initial_amount, testing_samples, suo)
-    imc_risks, imc_transition_counts = aggregated_stats_imc(args.imc_model, args.imc_stats, initial_amount, horizon, args, testing_samples)
-    distance_graph(target_risks, imc_risks, imc_transition_counts, testing_samples_weights)
+    imc_risks, imc_transition_counts = aggregated_stats_imc(
+        args.imc_model, args.imc_stats, initial_amount, horizon, args, testing_samples
+    )
+    distance_graph(
+        target_risks, imc_risks, imc_transition_counts, testing_samples_weights
+    )
     overestimation_graph(target_risks, imc_risks, imc_transition_counts)
-    
 
 
 def build_learning_parser(parser: argparse.ArgumentParser):
@@ -338,35 +308,19 @@ def testing_argsparser():
         help="Increase verbosity level (can be used multiple times)",
     )
 
-    parser.add_argument('--imc_model',
-                        type = str, 
-                        help = 'Path imc models'
-                        )
-    
-    parser.add_argument('--imc_stats',
-                        type = str, 
-                        help = 'Path imc stats'
-    )
-    parser.add_argument('--mc_model',
-                        type = str, 
-                        help = 'Path mc models'
-                        )
-    parser.add_argument('--mc_stats',
-                        type = str, 
-                        help = 'Path mc stats'
-    )
+    parser.add_argument("--imc-model", type=str, help="Path imc models")
+
+    parser.add_argument("--imc-stats", type=str, help="Path imc stats")
+    parser.add_argument("--mc-model", type=str, help="Path mc models")
+    parser.add_argument("--mc-stats", type=str, help="Path mc stats")
 
     return parser
-
 
 
 if __name__ == "__main__":
     parser = testing_argsparser()
     args = parser.parse_args()
     main_imc(args)
-    
-    
-#python -m premise.interval.rq_1 --mc SnL-10x10 --imc_model /workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10-comp-no-ref --imc_stats /workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10-comp-noref-stats 
 
 
-
+# python -m premise.interval.rq_1 --mc SnL-10x10 --imc-model /workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10-comp-no-ref --imc-stats /workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10-comp-noref-stats
