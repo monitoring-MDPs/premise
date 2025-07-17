@@ -830,7 +830,6 @@ def plotting(target_auc, imc_results, imc_ref_results, reg_results, conformal_re
     #plt.plot(REG_sets[8][0], REG_sets[8][1], color='green')
     #plt.plot(REG_sets[9][0], REG_sets[9][1], color='green')
 
-
     formatter = ticker.ScalarFormatter(useMathText=True)
     formatter.set_powerlimits((4, 4))  # Force 10^4 scale
     ax.xaxis.set_major_formatter(formatter)
