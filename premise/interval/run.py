@@ -28,7 +28,7 @@ def split_args(args, delim):
 def run_with_timeout(func, args, timeout):
     resource.setrlimit(
         resource.RLIMIT_AS,
-        (1024 * 1024 * 1024 * 15, resource.RLIM_INFINITY),  # 15GiB limit
+        (1024 * 1024 * 1024 * 20, resource.RLIM_INFINITY),  # 20GiB limit
     )
 
     with Pool(processes=1) as pool:

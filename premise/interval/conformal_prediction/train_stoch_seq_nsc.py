@@ -49,6 +49,12 @@ class Train_StochSeqNSC:
         return accuracy.item()
 
     def train(self, n_epochs, batch_size, lr):
+
+        if cuda:
+            logger.info("Using CUDA for training.")
+        else:
+            logger.info("Using CPU for training.")
+
         if self.fine_tuning_flag:
             self.idx = self.seq_nsc_idx + "+" + self.seq_se_idx
         else:

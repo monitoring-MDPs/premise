@@ -157,7 +157,7 @@ def reg_main(args: argparse.Namespace):
 
     distance = distance_measures[args.distance]()
 
-    for i in range(1, 9):
+    for i in range(8, 9):
         logger.info(f"Running regression for {i} steps...")
         end_index = int((i / 8) * len(train_samples))
         currrent_train_samples = train_samples[:end_index]

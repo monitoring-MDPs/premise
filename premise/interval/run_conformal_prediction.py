@@ -1,7 +1,7 @@
 import copy
 import resource
 import sys
-from multiprocessing import Pool
+from multiprocessing import Pool, set_start_method
 from pathlib import Path
 import pickle
 import re
@@ -75,6 +75,8 @@ if __name__ == "__main__":
 
     setup_logging()
 
+    set_start_method("spawn")
+
     logger.info(f"Running with args: {args}")
 
     # Calculate timeout
@@ -115,4 +117,4 @@ if __name__ == "__main__":
     except TimeoutError:
         logger.warning("Conformal Prediction timed out.")
 
-# ;python -m premise.interval.run_conformal_prediction 10m out/stats/2025-07-15_15-11-51 -mc SnL-10x10 --dump-model out/tmp/test17/ --dump-stats out/tmp/test17/ --no-target
+# python -m premise.interval.run_conformal_prediction 10m out/stats/2025-07-15_15-11-51 -mc SnL-10x10 --dump-model out/tmp/test17/ --dump-stats out/tmp/test17/ --no-target

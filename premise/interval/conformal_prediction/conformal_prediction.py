@@ -486,7 +486,7 @@ def conformal_prediction_main(args: argparse.Namespace):
     logger.info(f"Testset size: {len(testset)}")
     logger.info(f"Validset size: {len(validset)}")
 
-    for i in range(1, 9):
+    for i in range(8, 9):
         logger.info(
             "___________________________________________________________________"
         )

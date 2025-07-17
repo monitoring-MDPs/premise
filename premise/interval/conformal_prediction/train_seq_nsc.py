@@ -48,6 +48,11 @@ class Train_SeqNSC:
 
     def train(self, n_epochs, batch_size, lr):
 
+        if cuda:
+            logger.info("Using CUDA for training.")
+        else:
+            logger.info("Using CPU for training.")
+
         self.idx = str(np.random.randint(0, 100000))
         logger.info(f"ID = {self.idx}")
 
