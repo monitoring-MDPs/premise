@@ -15,3 +15,5 @@ while read -r cmd; do
         echo "$cmd" | sed "s/run_id/${i}/g"
     done
 done | shuf | parallel --verbose --results out/logs/$now/{#}_{}/ --ungroup --eta --no-run-if-empty --joblog out/logs/$now/joblog.tsv --jobs 10
+
+scripts/exp-conformal.sh out/stats/$now out/models/$now out/logs/$now

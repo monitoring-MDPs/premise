@@ -1,7 +1,10 @@
 import copy
+from pathlib import Path
 import resource
 import sys
-from multiprocessing import Pool
+from multiprocessing import Pool, TimeoutError
+
+import numpy as np
 
 from premise.interval.maximum_likelihood import mle_args_parser, mle_learning_main
 from premise.interval.utils import setup_logging
@@ -38,9 +41,6 @@ def run_with_timeout(func, args, timeout):
         except Exception as e:
             pool.terminate()
             pool.join()
-            if isinstance(e, TimeoutError):
-                logger.warning("Timeout occurred")
-                raise TimeoutError("Timeout occurred")
             raise e
         return result
 
@@ -90,8 +90,15 @@ if __name__ == "__main__":
             ref_stats = run_with_timeout(ref_main, (ref_args,), timeout)
             ref_trans_count = ref_stats["transition_count"]
         except TimeoutError:
-            logger.warning("Refinement timed out, stopping experiment.")
-            ref_trans_count = 0
+            logger.warning("Refinement timed out.")
+            if Path(ref_args.dump_stats).exists():
+                data = np.load(ref_args.dump_stats, allow_pickle=True).item()
+                ref_trans_count = data.get("transition_count", 0)
+                logger.info(
+                    f"Found unfinished stats, using last transition count: {ref_trans_count}"
+                )
+            else:
+                ref_trans_count = 0
 
         # NORMAL REFINEMENT with splitting
         ref_split_args = copy.deepcopy(ref_args)
@@ -102,8 +109,15 @@ if __name__ == "__main__":
             ref_split_stats = run_with_timeout(ref_main, (ref_split_args,), timeout)
             ref_split_trans_count = ref_split_stats["transition_count"]
         except TimeoutError:
-            logger.warning("Refinement with splitting timed out, stopping experiment.")
-            ref_split_trans_count = 0
+            logger.warning("Refinement with splitting timed out.")
+            if Path(ref_split_args.dump_stats).exists():
+                data = np.load(ref_split_args.dump_stats, allow_pickle=True).item()
+                ref_split_trans_count = data.get("transition_count", 0)
+                logger.info(
+                    f"Found unfinished stats, using last transition count: {ref_split_trans_count}"
+                )
+            else:
+                ref_split_trans_count = 0
 
         transition_count = max(ref_trans_count, ref_split_trans_count)
         if transition_count == 0:
@@ -123,6 +137,9 @@ if __name__ == "__main__":
             run_with_timeout(ref_main, (no_ref,), timeout)
         except TimeoutError:
             logger.warning("No-refinement timed out, continue to regression.")
+        except Exception as e:
+            logger.error(f"Error in no-refinement: {e}")
+            logger.info("No-refinement failed, continuing to regression.")
 
         # REGRESSION
         reg_parser = reg_argsparser()
@@ -138,6 +155,9 @@ if __name__ == "__main__":
             run_with_timeout(reg_main, (reg_args,), timeout)
         except TimeoutError:
             logger.warning("Regression timed out.")
+        except Exception as e:
+            logger.error(f"Error in regression: {e}")
+            logger.info("Regression failed, continuing to MLE.")
 
         # MAXIMUM LIKELIHOOD ESTIMATION
         mle_parser = mle_args_parser()
@@ -148,13 +168,16 @@ if __name__ == "__main__":
             run_with_timeout(mle_learning_main, (mle_args,), timeout)
         except TimeoutError:
             logger.warning("MLE timed out.")
+        except Exception as e:
+            logger.error(f"Error in MLE: {e}")
+            logger.info("MLE failed, continuing to Conformal Prediction.")
 
         # CONFORMAL PREDICTION
-        conformal_parser = conformal_prediction_argsparser()
-        conformal_args = conformal_parser.parse_args(args[3])
-        conformal_args.amount = transition_count // (horizon + initial_amount)
+        # conformal_parser = conformal_prediction_argsparser()
+        # conformal_args = conformal_parser.parse_args(args[3])
+        # conformal_args.amount = transition_count // (horizon + initial_amount)
 
-        try:
-            run_with_timeout(conformal_prediction_main, (conformal_args,), timeout)
-        except TimeoutError:
-            logger.warning("Conformal Prediction timed out.")
+        # try:
+        #     run_with_timeout(conformal_prediction_main, (conformal_args,), timeout)
+        # except TimeoutError:
+        #     logger.warning("Conformal Prediction timed out.")

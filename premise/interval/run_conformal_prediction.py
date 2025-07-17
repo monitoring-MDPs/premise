@@ -40,9 +40,6 @@ def run_with_timeout(func, args, timeout):
         except Exception as e:
             pool.terminate()
             pool.join()
-            if isinstance(e, TimeoutError):
-                logger.warning("Timeout occurred")
-                raise TimeoutError("Timeout occurred")
             raise e
         return result
 
@@ -63,9 +60,15 @@ def get_transition_count(stats_path: str, model_def_name: str):
                 except AttributeError:
                     data = pickle.load(stat_path.open("rb"))
                 try:
-                    transition_stats.append(np.sum(data["transitions_learned"]))
+                    transition_stats.append(data["transition_count"])
                 except Exception as e:
                     print(f"Error processing {stat_path}: {e} ({data})")
+
+    if len(transition_stats) == 0:
+        logger.error(
+            f"No transition stats found for model {model_def_name} in {stats_path}"
+        )
+        sys.exit(1)
 
     return max(transition_stats)
 
@@ -116,5 +119,9 @@ if __name__ == "__main__":
         run_with_timeout(conformal_prediction_main, (conformal_args,), timeout)
     except TimeoutError:
         logger.warning("Conformal Prediction timed out.")
+    except Exception as e:
+        logger.error(f"Error in Conformal Prediction: {e}")
+        logger.info("Conformal Prediction failed, exiting.")
+        sys.exit(1)
 
 # python -m premise.interval.run_conformal_prediction 10m out/stats/2025-07-15_15-11-51 -mc SnL-10x10 --dump-model out/tmp/test17/ --dump-stats out/tmp/test17/ --no-target

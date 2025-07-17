@@ -88,7 +88,8 @@ def build_suo(
 
     if args.mc:
         model_def = default_models[args.mc]
-        model_def.risk_property = f'Pmax=? [F<={vars(args).get("horizon", model_def.horizon)} "{model_def.target_label}" ]'
+        logger.info(f"Using model definition: {model_def}")
+        model_def.risk_property = f'Pmax=? [F<={vars(args).get("horizon", model_def.horizon) or model_def.horizon} "{model_def.target_label}" ]'
         horizon = model_def.horizon
         initial_amount = model_def.initial_amount
 

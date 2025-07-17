@@ -27,6 +27,28 @@ from premise.trace_generator import ConditionalIntervalTraceGenerator
 from premise.interval.utils import logger
 
 
+class StatsSaver:
+    def __init__(self, args: argparse.Namespace, suo: SystemUnderObservation):
+        self.args = args
+        self.suo = suo
+        self.stats = {}
+
+    def create_stats(
+        self, stopping_condition: RefinementStoppingCondition, ref_stats: dict
+    ):
+        self.stats = (
+            stopping_condition.stats()
+            | self.suo.stats()
+            | ref_stats
+            | {"args": vars(self.args)}
+        )
+
+    def save_stats(self):
+        if self.args.dump_stats:
+            np.save(self.args.dump_stats, self.stats)  # type: ignore
+        return self.stats
+
+
 def refinement_learning(
     suo: SystemUnderObservation,
     existing_transitions: bool,
@@ -43,6 +65,7 @@ def refinement_learning(
     intermediate_model_path: Optional[str] = None,
     conditional_sampling_type: str = "obs",
     verbose: int = 0,
+    stats_saver: Optional[StatsSaver] = None,
 ):
     all_states, all_transitions, initial_states = suo.get_states_and_transitions(
         all_transitions=not existing_transitions
@@ -185,6 +208,14 @@ def refinement_learning(
                 f"Finished learning with {transitions_learned[-1]} additional transitions (total: {suo.stats()['transition_count']})"
             )
 
+        if stats_saver is not None:
+            stats_saver.create_stats(
+                refinement_stopping_condition,
+                {"transitions_learned": transitions_learned, "unfinished": True},
+            )
+
+        res = refinement_stopping_condition.check(interval, initial_interval)
+
         if intermediate_model_path is not None:
             save_imc(
                 initial_interval,
@@ -193,7 +224,9 @@ def refinement_learning(
                 intermediate_model_path + "-" + str(iteration),
             )
 
-        res = refinement_stopping_condition.check(interval, initial_interval)
+        if stats_saver is not None:
+            stats_saver.save_stats()
+
         if res is not None:
             prefixes, extra_samples = res
         else:
@@ -228,6 +261,8 @@ def ref_main(args: argparse.Namespace):
         args.horizon = horizon
     if args.conformence_length is None:
         args.conformence_length = initial_amount
+
+    stats_saver = StatsSaver(args, suo)
 
     distance = distance_measures[args.distance](args.distance_threshold)
 
@@ -312,11 +347,11 @@ def ref_main(args: argparse.Namespace):
         args.model_path,
         args.conditional_sampling_type,
         args.verbose,
+        stats_saver,
     )
 
-    stats = ref_stop_cond.stats() | suo.stats() | ref_stats | {"args": vars(args)}
-    if args.dump_stats:
-        np.save(args.dump_stats, stats)  # type: ignore
+    stats_saver.create_stats(ref_stop_cond, ref_stats)
+    stats = stats_saver.save_stats()
 
     save_imc(initial_interval, interval, suo, args.model_path)
     return stats
