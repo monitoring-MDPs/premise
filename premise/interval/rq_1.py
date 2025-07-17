@@ -174,6 +174,12 @@ def distance_graph(target_risks, imc_risks, imc_transition_counts, testing_sampl
             if key.split('-')[0] == str(x):
                 distance_graph_data[x].append(distance_stats[key])
 
+
+    final_distances = []
+    for x in range(1,11):
+        final_distances.append(distance_graph_data[x][-1]) 
+
+
     graph_data = []
     for x in range(1,11):
         graph_data.append([distance_graph_data[x], imc_transition_counts[str(x)]])
@@ -181,19 +187,8 @@ def distance_graph(target_risks, imc_risks, imc_transition_counts, testing_sampl
 
     log = False
     plt.figure()
-    fig, ax = plt.subplots(figsize=(20, 10))
+    fig, ax = plt.subplots(figsize=(16, 8))
 
-
-    ax.plot(graph_data[0][1],graph_data[0][0])
-    ax.plot(graph_data[1][1],graph_data[1][0])
-    ax.plot(graph_data[2][1],graph_data[2][0])
-    ax.plot(graph_data[3][1],graph_data[3][0])
-    ax.plot(graph_data[4][1],graph_data[4][0])
-    ax.plot(graph_data[5][1],graph_data[5][0])
-    ax.plot(graph_data[6][1],graph_data[6][0])
-    ax.plot(graph_data[7][1],graph_data[7][0])
-    ax.plot(graph_data[8][1],graph_data[8][0])
-    ax.plot(graph_data[9][1],graph_data[9][0])
 
     #IMC AVERAGE PERFORMANCE
     transitions_data = []
@@ -231,10 +226,10 @@ def distance_graph(target_risks, imc_risks, imc_transition_counts, testing_sampl
     ax.plot(
         x_values,
         mean_distance,
-        color='blue',
-        label = 'IMC',
+        color='red',
+        label = f'IMC, (Average final distance: {np.mean(final_distances):.3f})',
         linewidth=5,
-        linestyle=':',
+        linestyle='--',
         )
 
     #Add shaded area for spread
@@ -243,18 +238,18 @@ def distance_graph(target_risks, imc_risks, imc_transition_counts, testing_sampl
             mean_distance - std_distance,
             mean_distance + std_distance,
             alpha=0.2,
-            color='blue',
+            color='red',
         )
     
     formatter = ticker.ScalarFormatter(useMathText=True)
     formatter.set_powerlimits((4, 4))  # Force 10^4 scale
     ax.xaxis.set_major_formatter(formatter)
-    ax.tick_params(axis='both', labelsize=20)
-    ax.xaxis.get_offset_text().set_size(20)
+    ax.tick_params(axis='both', labelsize=25)
+    ax.xaxis.get_offset_text().set_size(25)
 
     ax.set_xlabel("State count", fontsize=30)
     ax.set_ylabel("Distance to Target", fontsize=30)
-    ax.legend(loc="lower right")
+    ax.legend(loc="upper right")
     if log:
         plt.yscale("log")
     else:
@@ -262,34 +257,42 @@ def distance_graph(target_risks, imc_risks, imc_transition_counts, testing_sampl
     ax.grid(True)
     plt.subplots_adjust(bottom=0.25)
     plt.title(f'{args.mc}', fontsize=30)
-
+    plt.tight_layout()
     plt.savefig("/workspaces/premise/premise/analysis/rq_1_distance_to_RRF.pdf", dpi=300)
     plt.show()
 
 def overestimation_graph(target_risks, imc_risks, imc_transition_counts): 
     
     plt.figure()
-    plt.plot([0, 1], [0, 1], "r--")
+    plt.plot([0, 1], [0, 1], "--", color = 'black')
 
     imc_ys = []
 
     for key in imc_risks.keys():
         imc_ys.append(int(key.split('-')[1]))
-    
-    for key in imc_risks.keys():
-        if key.split('-')[1] == max(imc_ys):
-            print(key)
-            plt.scatter(imc_risks[key], target_risks, color='blue', marker='o', label='IMC')
-    
-    legend_elements = [
-        Line2D([0], [0], marker='o', color='blue', label='IMC',
-        markerfacecolor='blue', markersize=8),
-                        ]
-    plt.legend(handles=legend_elements)
 
+
+    for key in imc_risks.keys():
+        print(key.split('-')[0])
+        print(type(key.split('-')[0]))
+        if key.split('-')[1] == str(max(imc_ys)):
+            print(key.split('-')[0])
+            print(type(key.split('-')[0]))
+            if key.split('-')[0] == str(1):
+                plt.scatter(imc_risks[key], target_risks, color='red', marker='o', label = "IMC")
+            else: 
+                plt.scatter(imc_risks[key], target_risks, color='red', marker='o')
+
+
+    plt.legend(fontsize=15)
+  
+    plt.xlabel("IMC and MC risks", fontsize=15)
+    plt.ylabel("Target risks", fontsize=15)
+    plt.tick_params(axis='both', labelsize=12)
+    plt.title(f'{args.mc}', fontsize=15)
+    plt.tight_layout()
     plt.savefig("/workspaces/premise/premise/analysis/rq_1_overestimation.pdf", dpi=300)
     plt.show()
-
 
 
 def main_imc(args: argparse.Namespace):
@@ -319,7 +322,7 @@ def build_learning_parser(parser: argparse.ArgumentParser):
     group = parser.add_argument_group("Learning Parameters")
 
     group.add_argument("--model_name", type=str, default="MC", help="Name of the model (first letters code).")
-    group.add_argument("-s", "--testing_samples", type=int, default = 100, help="Total number of samples used in learning")
+    group.add_argument("-s", "--testing_samples", type=int, default = 5, help="Total number of samples used in learning")
 
 
 def testing_argsparser():
