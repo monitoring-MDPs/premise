@@ -79,13 +79,11 @@ from premise.interval.interval import (
 
 def stats_true(horizon, initial_amount, testing_samples, suo): 
 
-    print(suo)
 
     target_risks = []
 
     for trace in tqdm(testing_samples):
         sub_trace: Trace = trace[:initial_amount]
-        print(len(sub_trace))
       
         target_risk = test_monitor(
                     suo.create_target_monitor(),
@@ -113,19 +111,30 @@ def aggregated_stats_imc(path, stats_path, initial_amount, horizon, args, testin
     imc_risks = {}
 
     imc_transition_counts = {}
+    imc_distances = {}
 
     for x in range(1,11):
 
         print(f'Experiment number {x}')
         statistics = np.load(f'{stats_path}-{x}.npy', allow_pickle=True)
-
         obj = statistics.item()     
         imc_transition_count = obj['transitions_learned']
+        stopping_threashold = obj['args']['stopping_threshold']
+        distances = obj['distances']
+        imc_distances[str(x)] = distances
         imc_transition_counts[str(x)]= imc_transition_count
 
         for y in range(1, len(imc_transition_count) +1): 
             initial_distribution = f'{path}-{x}-{y}-initial_interval.npy'
             transition_intervals = f'{path}-{x}-{y}-interval.npy'
+            #stats_path = /workspaces/premise/out/models/2025-07-17/
+            #airportA-7-10-10-coarse-comp-noref-2-4-initial_interval.npy
+            #airportA-7-10-10-coarse-comp-ref-1-3-interval.npy
+            #airportA-7-10-10-coarse-comp-refsplit-2-22-initial_interval.npy
+
+            #{args.mc}-{coarse_value}-comp-{method}
+
+
 
             args.trans_path = transition_intervals
             args.init_path = initial_distribution
@@ -162,7 +171,7 @@ def aggregated_stats_imc(path, stats_path, initial_amount, horizon, args, testin
                 
                 imc_risks[f'{x}-{y}'].append(float(risk))
 
-    return imc_risks, imc_transition_counts
+    return imc_risks, imc_transition_counts, stopping_threashold, imc_distances
 
 
 
@@ -261,22 +270,209 @@ def aggreagted_stats_conformal(new_noisy, se_path, error_path, rej_path, stats_p
 
     return conformal_risks, conformal_ys
 
+def find_first_triplet_below_threshold(distances, threshold):
+    for i in range(2, len(distances)):
+        if distances[i] < threshold and distances[i-1] < threshold and distances[i-2] < threshold:
+            return i 
 
 
+def roc_curve_per_threashold(current_threashold, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting):
 
-def plot_roc_curve(alarms, imc_risks, imc_risks_ref, regression_risks, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_risks, conformal_ys):
+    #REFINEMENT WITH SPLITTING
 
-    imc_final_risks = {}
+    index_ref_splitting = {}
 
-    ys = []
+    for x in range(1,11):
+        index_ref_splitting[str(x)] =  (find_first_triplet_below_threshold(imc_distances_ref_splitting[str(x)],current_threashold) +1)
+    
+    imc_risks_threashold_ref_split = {}
+
+    for key in imc_risks_ref_splitting.keys():
+        for i in index_ref_splitting.keys(): 
+            if i == key.split('-')[0]:
+                if key.split('-')[1] == str(index_ref_splitting[i]):
+                    imc_risks_threashold_ref_split[i] = imc_risks_ref_splitting[key]
+
+    #REFINEMENT
+
+    index_ref = {}
+
+    for x in range(1,11):
+        index_ref[str(x)] =  (find_first_triplet_below_threshold(imc_distances_ref[str(x)],current_threashold) +1)
+    
+    imc_risks_threashold_ref = {}
+
+    for key in imc_risks_ref.keys():
+        for i in index_ref.keys(): 
+            if i == key.split('-')[0]:
+                if key.split('-')[1] == str(index_ref[i]):
+                    imc_risks_threashold_ref[i] = imc_risks_ref[key]
+    
+    #NO REFINEMENT
+
+    index = {}
+
+    for x in range(1,11):
+        index[str(x)] =  (find_first_triplet_below_threshold(imc_distances[str(x)],current_threashold) +1)
+    
+
+    imc_risks_threashold = {}
+
     for key in imc_risks.keys():
-        ys.append(int(key.split('-')[1])) #IS IT THE SAME NUMBERS FOR ALL THE 10 RUNS? 
+        for i in index.keys(): 
+            if i == key.split('-')[0]:
+                if key.split('-')[1] == str(index[i]):
+                    imc_risks_threashold[i] = imc_risks[key]
+    
+    plt.figure()
+    fig, ax = plt.subplots(figsize=(16, 12))
+
+
+
+    #REFINEMENT WITH SPLITTING MEAN PERFORMANCE
+    ref_splitting_imc_roc_data_mean = {}
+    
+    for key in imc_risks_threashold_ref_split.keys(): 
+
+        fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_risks_threashold_ref_split[key])
+        roc_auc = metrics.auc(fpr, tpr)
+        ref_splitting_imc_roc_data_mean[key] = [fpr, tpr, roc_auc]
+
+    mean_fpr = np.linspace(0, 1, 100)
+
+    tprs = []
+    aucs = []
+
+    for key in ref_splitting_imc_roc_data_mean.keys(): 
+        interp_tpr = np.interp(mean_fpr, ref_splitting_imc_roc_data_mean[key][0], ref_splitting_imc_roc_data_mean[key][1])
+        aucs.append(ref_splitting_imc_roc_data_mean[key][2])
+        interp_tpr[0] = 0.0
+        tprs.append(interp_tpr)
+
+        
+    mean_tpr = np.mean(tprs, axis=0)
+    mean_tpr[-1] = 1.0  
+    mean_auc = np.mean(aucs)
+
+    plt.plot(mean_fpr, mean_tpr, color = 'aqua',  label = f'Refinement with splitting, (Mean AUC = {mean_auc:.2f})', linewidth=5, linestyle= '-.')
+
+    std_tpr = np.std(tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+    ax.fill_between(
+        mean_fpr,
+        tprs_lower,
+        tprs_upper,
+        color="blue",
+        alpha=0.2,
+    )
+
+
+    #REFINEMENT MEAN PERFORMANCE
+    ref_imc_roc_data_mean = {}
+    
+    for key in imc_risks_threashold_ref.keys(): 
+
+        fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_risks_threashold_ref[key])
+        roc_auc = metrics.auc(fpr, tpr)
+        ref_imc_roc_data_mean[key] = [fpr, tpr, roc_auc]
+
+    mean_fpr = np.linspace(0, 1, 100)
+    print(len(mean_fpr))
+
+    tprs = []
+    aucs = []
+
+    for key in ref_imc_roc_data_mean.keys(): 
+        interp_tpr = np.interp(mean_fpr, ref_imc_roc_data_mean[key][0], ref_imc_roc_data_mean[key][1])
+        aucs.append(ref_imc_roc_data_mean[key][2])
+        interp_tpr[0] = 0.0
+        tprs.append(interp_tpr)
+
+    print(len(ref_imc_roc_data_mean.keys()))
+    print(len(tprs))
+        
+    mean_tpr = np.mean(tprs, axis=0)
+    print(len(mean_tpr))
+    mean_tpr[-1] = 1.0  
+    print(len(mean_tpr))
+    mean_auc = np.mean(aucs)
+
+    plt.plot(mean_fpr, mean_tpr, color = 'blue',  label = f'Refinement, (Mean AUC = {mean_auc:.2f})', linewidth=5, linestyle= ':')
+
+    std_tpr = np.std(tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+    ax.fill_between(
+        mean_fpr,
+        tprs_lower,
+        tprs_upper,
+        color="blue",
+        alpha=0.2,
+    )
+
+
+    #NO REFINEMENT MEAN PERFORMANCE
+    imc_roc_data_mean = {}
+    
+    for key in imc_risks_threashold.keys(): 
+        fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_risks_threashold[key])
+        roc_auc = metrics.auc(fpr, tpr)
+        imc_roc_data_mean[key] = [fpr, tpr, roc_auc]
+
+    mean_fpr = np.linspace(0, 1, 100)
+    tprs = []
+    aucs = []
+
+    for key in imc_roc_data_mean.keys(): 
+        interp_tpr = np.interp(mean_fpr, imc_roc_data_mean[key][0], imc_roc_data_mean[key][1])
+        aucs.append(imc_roc_data_mean[key][2])
+        interp_tpr[0] = 0.0
+        tprs.append(interp_tpr)
 
     
-    for key in imc_risks.keys():
-        if key.split('-')[1] == str(max(ys)):
-            imc_final_risks[key.split('-')[0]] = imc_risks[key]
+    mean_tpr = np.mean(tprs, axis=0)
+    mean_tpr[-1] = 1.0  
+    mean_auc = np.mean(aucs)
 
+
+    plt.plot(mean_fpr, mean_tpr, color = 'red',  label = f'No Refinement, (Mean AUC = {mean_auc:.2f})', linewidth=5, linestyle= '--')
+
+    std_tpr = np.std(tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+    ax.fill_between(
+        mean_fpr,
+        tprs_lower,
+        tprs_upper,
+        color="red",
+        alpha=0.2,
+    )
+
+
+    fpr, tpr, threshold = metrics.roc_curve(alarms, target_risks)
+    roc_auc = metrics.auc(fpr, tpr)
+    target_auc = roc_auc
+
+    ax.plot(fpr, tpr, color = 'black', label = f'Target Monitor, AUC = {target_auc:.2f}', linewidth=5, linestyle='-', marker='D')
+
+    plt.plot([0, 1], [0, 1], "r--")
+    plt.xlim((0, 1))
+    plt.ylim((0, 1))
+    plt.xticks(fontsize=25)  
+    plt.yticks(fontsize=25)
+    plt.ylabel("True Positive Rate", fontsize=35)
+    plt.xlabel("False Positive Rate", fontsize=35)
+    plt.legend(loc="lower right", fontsize=30)
+    plt.tick_params(axis="both")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.title(f'{args.mc} coarse, stopping threashold: {current_threashold}', fontsize=35)
+    plt.savefig(f"/workspaces/premise/premise/analysis/rq2_{args.mc}_coarse_ROC_threashold_comparison_{current_threashold}.pdf", dpi=300,  bbox_inches='tight')
+    plt.show()
+
+
+def plot_roc_curve(alarms, imc_risks_ref, regression_risks, regression_ys, conformal_risks, conformal_ys, target_risks):
 
     imc_ref_final_risks = {}
 
@@ -304,47 +500,15 @@ def plot_roc_curve(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
             if int(key.split('-')[1]) == max(conformal_ys[str(x)]): 
                 conformal_final_risks[str(x)] = conformal_risks[key]
 
+
+    fpr, tpr, threshold = metrics.roc_curve(alarms, target_risks)
+    roc_auc = metrics.auc(fpr, tpr)
+    target_auc = roc_auc
+
     
     plt.figure()
     fig, ax = plt.subplots(figsize=(16, 12))
-
-    #NO REFINEMENT MEAN PERFORMANCE
-    imc_roc_data = {}
     
-    for key in imc_final_risks.keys(): 
-
-        fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_final_risks[key])
-        roc_auc = metrics.auc(fpr, tpr)
-        imc_roc_data[key] = [fpr, tpr, roc_auc]
-
-    mean_fpr = np.linspace(0, 1, 100)
-    tprs = []
-    aucs = []
-
-    for key in imc_roc_data.keys(): 
-        interp_tpr = np.interp(mean_fpr, imc_roc_data[key][0], imc_roc_data[key][1])
-        aucs.append(imc_roc_data[key][2])
-        interp_tpr[0] = 0.0
-        tprs.append(interp_tpr)
-
-        
-    mean_tpr = np.mean(tprs, axis=0)
-    mean_tpr[-1] = 1.0  
-    mean_auc = np.mean(aucs)
-
-    plt.plot(mean_fpr, mean_tpr, color = 'red',  label = f'No Refinement, (Mean AUC = {mean_auc:.2f})', linewidth=5, linestyle='--')
-
-    std_tpr = np.std(tprs, axis=0)
-    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
-    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
-    ax.fill_between(
-        mean_fpr,
-        tprs_lower,
-        tprs_upper,
-        color="red",
-        alpha=0.2,
-    )
-
     #REFINEMENT MEAN PERFORMANCE
     ref_imc_roc_data = {}
     
@@ -456,22 +620,27 @@ def plot_roc_curve(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
         alpha=0.2,
     )
 
+    ax.plot(target_risks, mean_tpr, color = 'black', label = f'Target Monitor, AUC = {target_auc:.2f}', linewidth=5, linestyle='-', marker='D')
+
     plt.plot([0, 1], [0, 1], "r--")
     plt.xlim((0, 1))
     plt.ylim((0, 1))
-    plt.ylabel("True Positive Rate", fontsize=30)
-    plt.xlabel("False Positive Rate", fontsize=30)
-    plt.legend(loc="lower right")
+    plt.xticks(fontsize=25)  
+    plt.yticks(fontsize=25)
+    plt.ylabel("True Positive Rate", fontsize=35)
+    plt.xlabel("False Positive Rate", fontsize=35)
+    plt.legend(loc="lower right", fontsize=30)
     plt.tick_params(axis="both")
     plt.grid(True)
-    plt.title(f'{args.mc}', fontsize=30)
-    plt.savefig("/workspaces/premise/premise/analysis/SnL_ROC_test.pdf", dpi=300)
+    plt.title(f'{args.mc} coarse', fontsize=35)
+    plt.tight_layout()
+    plt.savefig(f"/workspaces/premise/premise/analysis/rq_3_{args.mc}_coarse_model_based_model_free_ROC.pdf", dpi=300,  bbox_inches='tight')
     plt.show()
 
 
 
 
-def auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_risks, conformal_ys, target_risks, horizon, initial_amount): 
+def auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transition_counts_ref, imc_risks_ref_splitting, imc_transition_counts_ref_splitting): 
 
     fpr, tpr, threshold = metrics.roc_curve(alarms, target_risks)
     roc_auc = metrics.auc(fpr, tpr)
@@ -491,7 +660,15 @@ def auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
         roc_auc = metrics.auc(fpr, tpr)
         imc_ref_auc[imc_ref_key] = roc_auc
 
-    reg_auc = {}
+    imc_ref_splitting_auc = {}
+
+    for imc_ref_key_splitting in imc_risks_ref_splitting.keys(): 
+        fpr, tpr, threshold = metrics.roc_curve(alarms, imc_risks_ref_splitting[imc_ref_key_splitting])
+        roc_auc = metrics.auc(fpr, tpr)
+        imc_ref_splitting_auc[imc_ref_key_splitting] = roc_auc
+
+    
+    """ reg_auc = {}
 
     for reg_key in regression_risks.keys(): 
         fpr, tpr, threshold = metrics.roc_curve(alarms, regression_risks[reg_key])
@@ -503,7 +680,7 @@ def auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
     for conformal_key in conformal_risks.keys():
         fpr, tpr, threshold = metrics.roc_curve(alarms, conformal_risks[conformal_key])
         roc_auc = metrics.auc(fpr, tpr)
-        conformal_auc[conformal_key] = roc_auc
+        conformal_auc[conformal_key] = roc_auc """
 
 
     imc_results = {}
@@ -516,7 +693,7 @@ def auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
             x = key.split('-')[0]
             if x == entry:
                 imc_results[x].append(imc_auc[key])
-
+ 
 
     imc_ref_results = {}
 
@@ -529,8 +706,20 @@ def auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
             if x == entry:
                 imc_ref_results[x].append(imc_ref_auc[key])
 
+
+    imc_ref_splitting_results = {}
+
+    for x in range(1,11):
+        imc_ref_splitting_results[str(x)] = []
+
+    for key in imc_ref_splitting_auc.keys():
+        for entry in imc_ref_splitting_results.keys():
+            x = key.split('-')[0]
+            if x == entry:
+                imc_ref_splitting_results[x].append(imc_ref_splitting_auc[key])
+
     
-    reg_results = {}
+    """ reg_results = {}
 
     for x in range(1,11):
         reg_results[str(x)] = []
@@ -551,18 +740,30 @@ def auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_trans
         for entry in conformal_results.keys():
             x = key.split('-')[0]
             if x == entry: 
-                conformal_results[x].append(conformal_auc[key])
+                conformal_results[x].append(conformal_auc[key]) """
 
 
-    return target_auc, imc_results, imc_ref_results, reg_results, conformal_results, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_ys
+    return target_auc, imc_results, imc_ref_results, imc_transition_counts_ref,  imc_ref_splitting_results, imc_transition_counts_ref_splitting
 
 
-def plotting(target_auc, imc_results, imc_ref_results, reg_results, conformal_results, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_ys, horizon, initial_amount): 
+def plotting(target_auc, imc_results, imc_transition_counts, imc_ref_results, imc_transition_counts_ref, horizon, initial_amount, imc_ref_splitting_results, imc_transition_counts_ref_splitting): 
 
+    RS_sets = []
     R_sets = []
     NR_sets = []
-    REG_sets = []
-    CONF_sets = []
+
+    #REG_sets = []
+    #CONF_sets = []
+
+    for key in imc_ref_splitting_results.keys(): 
+        total_state_count = []
+        total = 0
+        for val in imc_transition_counts_ref_splitting[key]:
+            total += val
+            total_state_count.append(total)
+        
+        RS_sets.append((total_state_count, imc_ref_splitting_results[key]))
+
 
     for key in imc_ref_results.keys(): 
         total_state_count = []
@@ -581,9 +782,9 @@ def plotting(target_auc, imc_results, imc_ref_results, reg_results, conformal_re
             total += val
             total_state_count.append(total)
 
-        NR_sets.append((total_state_count, imc_results[key]))
+        NR_sets.append((total_state_count, imc_results[key])) 
 
-
+    """
     for key in reg_results.keys():
         total_state_count = []
   
@@ -599,11 +800,15 @@ def plotting(target_auc, imc_results, imc_ref_results, reg_results, conformal_re
         for val in conformal_ys[key]:
             total_state_count.append(val*(horizon+initial_amount))
 
-        CONF_sets.append((total_state_count, conformal_results[key]))
-            
+        CONF_sets.append((total_state_count, conformal_results[key])) 
+    """        
 
     #log = True
     log = False
+
+    
+
+
 
     #REFINEMENT AVERAGE PERFORMANCE
     transitions_data = []
@@ -640,6 +845,8 @@ def plotting(target_auc, imc_results, imc_ref_results, reg_results, conformal_re
 
     plt.figure()
     fig, ax = plt.subplots(figsize=(20, 10))
+    y = np.full_like(x_values, target_auc) 
+    ax.plot(x_values, y, color = 'black', label = 'Target Monitor', linewidth=5, linestyle='-', marker='D')
 
     #Plot mean line
     ax.plot(
@@ -658,6 +865,59 @@ def plotting(target_auc, imc_results, imc_ref_results, reg_results, conformal_re
             mean_auc + std_auc,
             alpha=0.2,
             color='blue',
+        )
+
+    #REFINEMENT WITH SPLITTING AVERAGE PERFORMANCE
+    transitions_data = []
+    auc_data = []
+
+    for entry in RS_sets:
+        transitions = entry[0]
+        auc_daum = entry[1]
+
+        transitions_data.append(transitions)
+        auc_data.append(auc_daum)
+
+    # Find common x range for interpolation
+    min_x = max(min(transitions) for transitions in transitions_data)
+    max_x = min(max(transitions) for transitions in transitions_data)
+    x_values = np.linspace(min_x, max_x, 500)
+
+    # Interpolate all runs to common x values
+    interpolated_auc = []
+    for auc, transitions in zip(auc_data, transitions_data):
+        if log:
+            auc = np.log10(auc)
+        interpolated = np.interp(x_values, transitions, auc)
+        if log:
+            interpolated = np.power(10, interpolated)
+        interpolated_auc.append(interpolated)
+
+    # Calculate mean and std for interpolated y values
+    auc_array = np.array(interpolated_auc)
+    mean_auc = np.mean(auc_array, axis=0)
+    std_auc = np.std(auc_array, axis=0)
+    min_auc = np.min(auc_array, axis=0)
+    max_auc = np.max(auc_array, axis=0)
+ 
+
+    #Plot mean line
+    ax.plot(
+        x_values,
+        mean_auc,
+        color='aqua',
+        label = 'Refinement with splitting',
+        linewidth=5,
+        linestyle='-.',
+        )
+
+    #Add shaded area for spread
+    ax.fill_between(
+            x_values,
+            mean_auc - std_auc,
+            mean_auc + std_auc,
+            alpha=0.2,
+            color='aqua',
         )
 
     #NO REFINEMENT AVERAGE PERFORMANCE
@@ -714,7 +974,7 @@ def plotting(target_auc, imc_results, imc_ref_results, reg_results, conformal_re
             color='red',
         )
 
-    #REGRESSION MODEL AVERAGE PERFORMANCE
+    """ #REGRESSION MODEL AVERAGE PERFORMANCE
 
     REG_transitions_data = []
     REG_auc_data = []
@@ -817,38 +1077,27 @@ def plotting(target_auc, imc_results, imc_ref_results, reg_results, conformal_re
             CONF_mean_auc + CONF_std_auc,
             alpha=0.2,
             color='yellow',
-        )
-    
-    #plt.plot(REG_sets[0][0], REG_sets[0][1], color='green')
-    #plt.plot(REG_sets[1][0], REG_sets[1][1], color='green')
-    #plt.plot(REG_sets[2][0], REG_sets[2][1], color='green')
-    #plt.plot(REG_sets[3][0], REG_sets[3][1], color='green')
-    #plt.plot(REG_sets[4][0], REG_sets[4][1], color='green')
-    #plt.plot(REG_sets[5][0], REG_sets[5][1], color='green')
-    #plt.plot(REG_sets[6][0], REG_sets[6][1], color='green')
-    #plt.plot(REG_sets[7][0], REG_sets[7][1], color='green')
-    #plt.plot(REG_sets[8][0], REG_sets[8][1], color='green')
-    #plt.plot(REG_sets[9][0], REG_sets[9][1], color='green')
-
+        ) 
+ """
     formatter = ticker.ScalarFormatter(useMathText=True)
     formatter.set_powerlimits((4, 4))  # Force 10^4 scale
     ax.xaxis.set_major_formatter(formatter)
-    ax.tick_params(axis='both', labelsize=20)
-    ax.xaxis.get_offset_text().set_size(20)
+    ax.tick_params(axis='both', labelsize=30)
+    ax.xaxis.get_offset_text().set_size(30)
 
 
-    ax.set_xlabel("State count", fontsize=30)
-    ax.set_ylabel("AUC", fontsize=30)
-    ax.legend(loc="lower right")
+    ax.set_xlabel("State count", fontsize=35)
+    ax.set_ylabel("AUC", fontsize=35)
+    ax.legend(loc="lower right", fontsize = 30)
     if log:
         plt.yscale("log")
     else:
         plt.ylim(bottom=0)
     ax.grid(True)
     plt.subplots_adjust(bottom=0.25)
-    plt.title(f'{args.mc}', fontsize=30)
-
-    plt.savefig("/workspaces/premise/premise/analysis/SnL_AUC_test.pdf", dpi=300)
+    plt.title(f'{args.mc} coarse', fontsize=35)
+    plt.tight_layout()
+    plt.savefig(f"/workspaces/premise/premise/analysis/rq_2_{args.mc}_coarse_AUC_ref_no_ref.pdf", dpi=300, bbox_inches='tight')
     plt.show()
 
 
@@ -873,21 +1122,29 @@ def main_imc(args: argparse.Namespace):
     alarms = aggregted_alarms(testing_samples)
     target_risks = stats_true(horizon, initial_amount, testing_samples, suo)
 
-    imc_risks, imc_transition_counts = aggregated_stats_imc(args.imc_model, args.imc_stats, initial_amount, horizon, args, testing_samples)
-    imc_risks_ref, imc_transition_counts_ref = aggregated_stats_imc(args.imc_model_ref, args.imc_stats_ref, initial_amount, horizon, args, testing_samples)
-    regression_risks, regression_ys = aggregated_stats_regression(args.regression_model, args.regression_stats, testing_samples, horizon, initial_amount)
-    conformal_risks, conformal_ys = aggreagted_stats_conformal(noisy_measurements, args.se_path, args.error_path, args.rej_path, args.stats_path, args.cp_classification_path)              
-    target_auc, imc_results, imc_ref_results, reg_results, conformal_results, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_ys = auc_graph_prep(alarms, imc_risks, imc_risks_ref, regression_risks, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_risks, conformal_ys,target_risks, horizon, initial_amount)
+    imc_risks, imc_transition_counts, imc_stopping_threashold, imc_distances = aggregated_stats_imc(args.imc_model, args.imc_stats, initial_amount, horizon, args, testing_samples)
+    imc_risks_ref, imc_transition_counts_ref, imc_stopping_threashold_ref, imc_distances_ref = aggregated_stats_imc(args.imc_model_ref, args.imc_stats_ref, initial_amount, horizon, args, testing_samples)
+    imc_risks_ref_splitting, imc_transition_counts_ref_splitting, imc_stopping_threashold_ref_splitting, imc_distances_ref_splitting = aggregated_stats_imc(args.imc_model_ref_splitting, args.imc_stats_ref_splitting, initial_amount, horizon, args, testing_samples)
 
-    plotting(target_auc, imc_results, imc_ref_results, reg_results, conformal_results, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_ys, horizon, initial_amount)
-    plot_roc_curve(alarms, imc_risks, imc_risks_ref, regression_risks, imc_transition_counts, imc_transition_counts_ref, regression_ys, conformal_risks, conformal_ys)
+    roc_curve_per_threashold(0.005, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
+    roc_curve_per_threashold(0.01, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
+    roc_curve_per_threashold(0.025, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
+    roc_curve_per_threashold(0.05, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
+
+    #regression_risks, regression_ys = aggregated_stats_regression(args.regression_model, args.regression_stats, testing_samples, horizon, initial_amount)
+    #conformal_risks, conformal_ys = aggreagted_stats_conformal(noisy_measurements, args.se_path, args.error_path, args.rej_path, args.stats_path, args.cp_classification_path)      
+            
+    #target_auc, imc_results, imc_ref_results, imc_transition_counts_ref = auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transition_counts_ref)
+    #plotting(target_auc, imc_results, imc_transition_counts, imc_ref_results, imc_transition_counts_ref, horizon, initial_amount)
+
+    #plot_roc_curve(alarms, imc_risks_ref, regression_risks, regression_ys, conformal_risks, conformal_ys, target_risks)
 
 
 def build_learning_parser(parser: argparse.ArgumentParser):
     group = parser.add_argument_group("Learning Parameters")
 
     group.add_argument("--model_name", type=str, default="MC", help="Name of the model (first letters code).")
-    group.add_argument("-s", "--testing_samples", type=int, default = 25, help="Total number of samples used in learning")
+    group.add_argument("-s", "--testing_samples", type=int, default = 100, help="Total number of samples used in learning")
     group.add_argument("--no-target", action="store_true", default=False, help="Do not use the target monitor" )
 
 
@@ -946,6 +1203,15 @@ def testing_argsparser():
                         type = str, 
                         help = 'Path imc stats'
     )
+    parser.add_argument('--imc_model_ref_splitting',
+                        type = str, 
+                        help = 'Path imc models'
+                        )
+    parser.add_argument('--imc_stats_ref_splitting',
+                        type = str, 
+                        help = 'Path imc stats'
+    )
+
     parser.add_argument('--regression_model',
                         type = str,
                         help = 'Path regression model'
@@ -964,7 +1230,7 @@ if __name__ == "__main__":
     main_imc(args)
     
     
-#python -m premise.interval.batch_testing_AUC --mc SnL-10x10 --imc_model /workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10-comp-no-ref --imc_stats /workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10-comp-noref-stats --regression_model /workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10-comp-reg --regression_stats /workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10-comp-reg-stats --imc_model_ref /workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10-comp-ref --imc_stats_ref /workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10-comp-ref-stats --se_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_state_estimator' --error_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_label_estimator' --rej_path '/workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_rejection_classifier' --stats_path '/workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_conformal_stats' --cp_classification_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_cp_classification'
+#python -m premise.interval.rq_3 --mc airportA-7-10-10 --imc_model /workspaces/premise/out/models/2025-07-17/airportA-7-10-10-coarse-comp-noref --imc_stats /workspaces/premise/out/stats/2025-07-17/airportA-7-10-10-coarse_norefinement-stats --imc_model_ref /workspaces/premise/out/models/2025-07-17/airportA-7-10-10-coarse-comp-ref --imc_stats_ref /workspaces/premise/out/stats/2025-07-17/airportA-7-10-10-coarse_refinement-stats --regression_model /workspaces/premise/out/models/2025-07-17/airportA-7-10-10-coarse-comp-reg --regression_stats /workspaces/premise/out/stats/2025-07-17/airportA-7-10-10-coarse-comp-reg-stats --se_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_state_estimator' --error_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_label_estimator' --rej_path '/workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_rejection_classifier' --stats_path '/workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_conformal_stats' --cp_classification_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_cp_classification' --imc_model_ref_splitting /workspaces/premise/out/models/2025-07-17/airportA-7-10-10-coarse-comp-refsplit --imc_stats_ref_splitting /workspaces/premise/out/stats/2025-07-17/airportA-7-10-10-coarse_refsplitinement-stats
 
 
 

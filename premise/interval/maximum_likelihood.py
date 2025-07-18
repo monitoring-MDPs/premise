@@ -101,7 +101,9 @@ def dict_to_pomdp(
         transitions[s_index][d_index] = prob
 
     if use_exact:
-        builder = sp.storage.RationalSparseMatrixBuilder(0, 0, 0, False, True)
+        #builder = sp.storage.RationalSparseMatrixBuilder(0, 0, 0, False, True) 
+        builder = sp.storage.ExactSparseMatrixBuilder(0, 0, 0, False, True) 
+
     else:
         builder = sp.storage.SparseMatrixBuilder(0, 0, 0, False, True)
 
@@ -128,7 +130,7 @@ def dict_to_pomdp(
             labeling.add_label_to_state("target", i)
 
     if use_exact:
-        components = SparseExactModelComponents(matrix, labeling)
+        components = SparseExactModelComponents(matrix, labeling) 
     else:
         components = SparseModelComponents(matrix, labeling)
     components.observability_classes = [0] + [
@@ -136,13 +138,14 @@ def dict_to_pomdp(
     ]
 
     if use_exact:
-        return SparseExactPomdp(components), observation_map, state_index_map
+        return SparseExactPomdp(components), observation_map, state_index_map 
     else:
         return SparsePomdp(components), observation_map, state_index_map
 
 
 def create_mle_monitor(horizon: int, storm_model: SparsePomdp | SparseExactPomdp):
-    prop_string = f'P=? [F<={horizon} "target"]'
+    #prop_string = f'P=? [F<={horizon} "target"]'
+    prop_string = f'Pmax=? [F<={horizon} "target"]'
     prop = sp.parse_properties(prop_string)[0]
     risk = _analyse_model(storm_model, prop).get_values()
     expr_manager = stormpy.ExpressionManager()

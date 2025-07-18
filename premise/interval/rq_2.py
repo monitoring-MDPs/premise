@@ -5,7 +5,7 @@ import matplotlib.ticker as ticker
 import argparse
 from premise.interval.loading import build_suo_args_parser
 
-def probelm_statement(imc_path, ref_path):
+def probelm_statement(imc_path, ref_path, ref_split_path):
 
     imc_data = {}
     imc_final_distances = []
@@ -22,8 +22,6 @@ def probelm_statement(imc_path, ref_path):
         for s in states_vistited: 
             total += s
             states_aggreagted.append(total)
-
-        print(states_aggreagted)
         
         imc_data[x] = [distances, states_aggreagted]
 
@@ -41,11 +39,29 @@ def probelm_statement(imc_path, ref_path):
         total = 0 
         for s in states_vistited: 
             total += s
-            ref_states_aggreagted.append(total)
-        
-        print(ref_states_aggreagted)
+            ref_states_aggreagted.append(total)   
 
         ref_data[x] = [distances, ref_states_aggreagted]
+
+    
+    split_ref_data = {}
+    split_ref_final_distances = []
+    
+    for x in range(1,11): 
+        split_ref_states_aggreagted = []
+        print(f'Experiment number {x}')
+        statistics = np.load(f'{ref_split_path}-{x}.npy', allow_pickle=True).item()
+
+        distances = statistics["distances"]
+        split_ref_final_distances.append(distances[-1])
+        states_vistited = statistics["transitions_learned"]
+        total = 0 
+        for s in states_vistited: 
+            total += s
+            split_ref_states_aggreagted.append(total)
+    
+        split_ref_data[x] = [distances, split_ref_states_aggreagted]
+
 
     
     log = True
@@ -121,7 +137,7 @@ def probelm_statement(imc_path, ref_path):
 
     # Interpolate all runs to common x values
     R_interpolated_data = []
-    for auc, transitions in zip(distance_data, transitions_data):
+    for auc, transitions in zip(R_distance_data, R_transitions_data):
         if log:
             auc = np.log10(auc)
         R_interpolated = np.interp(R_x_values, transitions, auc)
@@ -139,7 +155,7 @@ def probelm_statement(imc_path, ref_path):
         x_values,
         R_distance_mean,
         color='blue',
-        label = f'Refinement, (Mean final distance: {np.mean(ref_final_distances):.3f})',
+        label = f'Refinement, (Mean final width: {np.mean(ref_final_distances):.3f})',
         linewidth=3,
         linestyle=':',
         )
@@ -153,32 +169,82 @@ def probelm_statement(imc_path, ref_path):
             color='blue',
         )
     
+    #SPLITTING REFINEMENT AVERAGE PERFORMANCE
+    SR_transitions_data = []
+    SR_distance_data = []
+
+    for key in split_ref_data.keys():
+        sref_transitions = split_ref_data[key][1]
+        sref_distance = split_ref_data[key][0]
+
+        SR_transitions_data.append(sref_transitions)
+        SR_distance_data.append(sref_distance)
+
+    # Find common x range for interpolation
+    SR_min_x = max(min(transitions) for transitions in SR_transitions_data)
+    SR_max_x = min(max(transitions) for transitions in SR_transitions_data)
+    SR_x_values = np.linspace(SR_min_x, SR_max_x, 500)
+
+    # Interpolate all runs to common x values
+    SR_interpolated_data = []
+    for auc, transitions in zip(SR_distance_data, SR_transitions_data):
+        if log:
+            auc = np.log10(auc)
+        SR_interpolated = np.interp(SR_x_values, transitions, auc)
+        if log:
+            SR_interpolated = np.power(10, SR_interpolated)
+        SR_interpolated_data.append(SR_interpolated)
+
+    # Calculate mean and std for interpolated y values
+    SR_distance_array = np.array(SR_interpolated_data)
+    SR_distance_mean = np.mean(SR_distance_array, axis=0)
+    SR_distance_std = np.std(SR_distance_array, axis=0)
+
+    #Plot mean line
+    ax.plot(
+        x_values,
+        SR_distance_mean,
+        color='aqua',
+        label = f'Refinement with splitting, (Mean final width: {np.mean(ref_final_distances):.3f})',
+        linewidth=3,
+        linestyle='-.',
+        )
+
+    #Add shaded area for spread
+    ax.fill_between(
+            x_values,
+            SR_distance_mean - SR_distance_std,
+            SR_distance_mean + SR_distance_std,
+            alpha=0.2,
+            color='aqua',
+        )
+    
     formatter = ticker.ScalarFormatter(useMathText=True)
     formatter.set_powerlimits((4, 4))  # Force 10^4 scale
     ax.xaxis.set_major_formatter(formatter)
     ax.tick_params(axis='both', labelsize=15)
     ax.xaxis.get_offset_text().set_size(15)
 
-    ax.set_xlabel("State count", fontsize=20)
+    ax.set_xlabel("Explored states", fontsize=20)
     ax.set_ylabel("Interval Width", fontsize=20)
-    ax.legend(loc="upper right", fontsize=15)
+    ax.legend(loc="upper right", fontsize=13)
     if log:
         plt.yscale("log")
     else:
         plt.ylim(bottom=0)
     ax.grid(True)
     plt.subplots_adjust(bottom=0.25)
-    plt.title(f'{args.mc}', fontsize=20)
-
-    plt.savefig("/workspaces/premise/premise/analysis/Distance_test.pdf", dpi=300)
+    plt.title(f'{args.mc} coarse', fontsize=20)
+    plt.savefig(f"/workspaces/premise/premise/analysis/r2_{args.mc}_coarse_interval_width.pdf", dpi=300, bbox_inches='tight')
     plt.show()
 
 
 def main(args: argparse.Namespace):
     imc_stats = args.imc_stats
     imc_stats_ref = args.imc_stats_ref
+    ref_split_path = args.imc_stats_ref_split
 
-    probelm_statement(imc_stats, imc_stats_ref)
+    probelm_statement(imc_stats, imc_stats_ref, ref_split_path)
 
 def testing_argsparser():
     parser = argparse.ArgumentParser(description="Learn an IMC")
@@ -194,6 +260,11 @@ def testing_argsparser():
                         type = str, 
                         help = 'Path imc stats'
     )
+    parser.add_argument('--imc_stats_ref_split',
+                        type = str, 
+                        help = 'Path imc stats'
+    )
+
 
     return parser
 
@@ -204,5 +275,5 @@ if __name__ == "__main__":
     main(args)
 
 
-#python -m premise.interval.ref_vs_no_ref --mc SnL-10x10 --imc_stats /workspaces/premise/out/stats/2025-07-08_19-02-12/SnL-10x10-comp-noref-stats --imc_stats_ref /workspaces/premise/out/stats/2025-07-08_19-02-12/SnL-10x10-comp-ref-stats
+#python -m premise.interval.rq_2 --mc airportA-7-10-10 --imc_stats /workspaces/premise/out/stats/2025-07-17/airportA-7-10-10-coarse_norefinement-stats --imc_stats_ref  /workspaces/premise/out/stats/2025-07-17/airportA-7-10-10-coarse_refinement-stats --imc_stats_ref_split /workspaces/premise/out/stats/2025-07-17/airportA-7-10-10-coarse_refsplitinement-stats
 

@@ -45,6 +45,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     suo, initial_amount, horizon = build_suo(args)
+    print(suo)
     if args.sample_length is None:
         if initial_amount is not None:
             args.sample_length = initial_amount
@@ -78,6 +79,8 @@ if __name__ == "__main__":
             suo.generate_random_traces([], args.sample_length + args.horizon)
         )
         traces.append(trace)
+
+        print(trace)
        
 
     if args.dump:
@@ -97,11 +100,13 @@ if __name__ == "__main__":
             pickle.dump(traces, f)
 
 
+# python -m premise.interval.test_case_generation -mc airportA-7-10-10 -l 25 -ho 15 --no-target --dump premise/analysis/test_sets --existing-transitions
+# python -m premise.interval.test_case_generation -mc airportA-7-10-10 -sv d p pobs turn -l 25 -ho 15 --no-target --dump premise/analysis/test_sets --existing-transitions
 
 
 
 # python -m premise.interval.test_case_generation -mc SnL-10x10 -l 15 -ho 5 --no-target --dump premise/analysis/test_sets/ --existing-transitions
-# python -m premise.interval.test_case_generation -mc airportA-7-10-10 -l 25 -ho 15 --no-target --dump premise/analysis/test_sets --existing-transitions
+
 # python -m premise.interval.test_case_generation -mc airportA-7-40-20 -l 1 -ho 1 --no-target --dump premise/analysis/test_sets --existing-transitions
 # python -m premise.interval.test_case_generation -mc airportB-3-50-30 -l 1 -ho 2 --no-target --dump premise/analysis/test_sets --existing-transitions
 # python -m premise.interval.test_case_generation -mc airportB-7-40-20 -l 1 -ho 2 --no-target --dump premise/analysis/test_sets --existing-transitions
