@@ -3,6 +3,7 @@ from pathlib import Path
 import resource
 import sys
 from multiprocessing import Pool, TimeoutError
+import traceback
 
 import numpy as np
 
@@ -29,11 +30,6 @@ def split_args(args, delim):
 
 
 def run_with_timeout(func, args, timeout):
-    resource.setrlimit(
-        resource.RLIMIT_AS,
-        (1024 * 1024 * 1024 * 20, resource.RLIM_INFINITY),  # 20GiB limit
-    )
-
     with Pool(processes=1) as pool:
         async_result = pool.apply_async(func, args)
         try:
@@ -99,6 +95,9 @@ if __name__ == "__main__":
                 )
             else:
                 ref_trans_count = 0
+        except Exception as e:
+            logger.error(f"Error in refinement: {traceback.format_exc()}")
+            ref_trans_count = 0
 
         # NORMAL REFINEMENT with splitting
         ref_split_args = copy.deepcopy(ref_args)
@@ -118,6 +117,11 @@ if __name__ == "__main__":
                 )
             else:
                 ref_split_trans_count = 0
+        except Exception as e:
+            logger.error(
+                f"Error in refinement with splitting: {traceback.format_exc()}"
+            )
+            ref_split_trans_count = 0
 
         transition_count = max(ref_trans_count, ref_split_trans_count)
         if transition_count == 0:
@@ -138,7 +142,7 @@ if __name__ == "__main__":
         except TimeoutError:
             logger.warning("No-refinement timed out, continue to regression.")
         except Exception as e:
-            logger.error(f"Error in no-refinement: {e}")
+            logger.error(f"Error in no-refinement: {traceback.format_exc()}")
             logger.info("No-refinement failed, continuing to regression.")
 
         # REGRESSION
@@ -156,7 +160,7 @@ if __name__ == "__main__":
         except TimeoutError:
             logger.warning("Regression timed out.")
         except Exception as e:
-            logger.error(f"Error in regression: {e}")
+            logger.error(f"Error in regression: {traceback.format_exc()}")
             logger.info("Regression failed, continuing to MLE.")
 
         # MAXIMUM LIKELIHOOD ESTIMATION
@@ -169,7 +173,8 @@ if __name__ == "__main__":
         except TimeoutError:
             logger.warning("MLE timed out.")
         except Exception as e:
-            logger.error(f"Error in MLE: {e}")
+            logger.error(f"Error in MLE: {traceback.format_exc()}")
+
             logger.info("MLE failed, continuing to Conformal Prediction.")
 
         # CONFORMAL PREDICTION
