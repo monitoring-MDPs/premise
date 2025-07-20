@@ -5,7 +5,7 @@ import matplotlib.ticker as ticker
 import argparse
 from premise.interval.loading import build_suo_args_parser
 
-def probelm_statement(coarse, stats_path):
+def probelm_statement(imc_path, ref_path, ref_split_path):
 
     imc_data = {}
     imc_final_distances = []
@@ -14,11 +14,8 @@ def probelm_statement(coarse, stats_path):
     for x in range(5,7):
         states_aggreagted = []
         print(f'Experiment number {x}')
-        if coarse:
-            statistics = np.load(f'{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy', allow_pickle=True).item()
-        else:
-            statistics = np.load(f'{stats_path}/{args.mc}-comp-noref-stats-{x}.npy', allow_pickle=True).item() 
-
+        statistics = np.load(f'{imc_path}-{x}.npy', allow_pickle=True).item()
+    
         distances = statistics["distances"]
         imc_final_distances.append(distances[-1])
         states_vistited = statistics["transitions_learned"]
@@ -36,11 +33,7 @@ def probelm_statement(coarse, stats_path):
     for x in range(5,7):
         ref_states_aggreagted = []
         print(f'Experiment number {x}')
-        if coarse:
-            statistics = np.load(f'{stats_path}/{args.mc}-coarse_refinement-stats-{x}.npy', allow_pickle=True).item()
-        else: 
-            statistics = np.load(f'{stats_path}/{args.mc}-comp-ref-stats-{x}.npy', allow_pickle=True).item()
-
+        statistics = np.load(f'{ref_path}-{x}.npy', allow_pickle=True).item()
 
         distances = statistics["distances"]
         ref_final_distances.append(distances[-1])
@@ -60,11 +53,7 @@ def probelm_statement(coarse, stats_path):
     for x in range(5,7): 
         split_ref_states_aggreagted = []
         print(f'Experiment number {x}')
-        if coarse:
-            statistics = np.load(f'{stats_path}/{args.mc}-coarse_refsplitinement-stats-{x}.npy', allow_pickle=True).item()
-        else: 
-            statistics = np.load(f'{stats_path}/{args.mc}-comp-refsplit-stats-{x}.npy', allow_pickle=True).item()
-
+        statistics = np.load(f'{ref_split_path}-{x}.npy', allow_pickle=True).item()
 
         distances = statistics["distances"]
         split_ref_final_distances.append(distances[-1])
@@ -248,37 +237,37 @@ def probelm_statement(coarse, stats_path):
         plt.ylim(bottom=0)
     ax.grid(True)
     plt.subplots_adjust(bottom=0.25)
-    if coarse:
-        plt.title(f'{args.mc} coarse', fontsize=20)
-    else: 
-        plt.title(f'{args.mc}', fontsize=20)
-
-    if coarse:
-        plt.savefig(f"/workspaces/premise/premise/analysis/r2_{args.mc}_coarse_interval_width.pdf", dpi=300, bbox_inches='tight')
-    else: 
-        plt.savefig(f"/workspaces/premise/premise/analysis/r2_{args.mc}_interval_width.pdf", dpi=300, bbox_inches='tight')
-
+    plt.title(f'{args.mc}', fontsize=20)
+    plt.savefig(f"/workspaces/premise/premise/analysis/r2_{args.mc}_interval_width.pdf", dpi=300, bbox_inches='tight')
     plt.show()
 
 
 def main(args: argparse.Namespace):
+    imc_stats = args.imc_stats
+    imc_stats_ref = args.imc_stats_ref
+    ref_split_path = args.imc_stats_ref_split
 
-    if args.sys_vars != None: 
-        coarse = True
-    else:
-        coarse = False
-
-    stats_path = args.stats_path 
-    probelm_statement(coarse, stats_path)
+    probelm_statement(imc_stats, imc_stats_ref, ref_split_path)
 
 def testing_argsparser():
     parser = argparse.ArgumentParser(description="Learn an IMC")
     build_suo_args_parser(parser)
 
-    parser.add_argument('--stats_path',
+
+    parser.add_argument('--imc_stats',
                         type = str, 
-                        help = 'Path to stats'
+                        help = 'Path imc stats'
     )
+   
+    parser.add_argument('--imc_stats_ref',
+                        type = str, 
+                        help = 'Path imc stats'
+    )
+    parser.add_argument('--imc_stats_ref_split',
+                        type = str, 
+                        help = 'Path imc stats'
+    )
+
 
     return parser
 
@@ -289,8 +278,10 @@ if __name__ == "__main__":
     main(args)
 
 
+#python -m premise.interval.rq_2 --mc airportA-7-10-10 --imc_stats /workspaces/premise/out/stats/2025-07-17/airportA-7-10-10-coarse_norefinement-stats --imc_stats_ref  /workspaces/premise/out/stats/2025-07-17/airportA-7-10-10-coarse_refinement-stats --imc_stats_ref_split /workspaces/premise/out/stats/2025-07-17/airportA-7-10-10-coarse_refsplitinement-stats
 
 
-#python -m premise.interval.rq_2_new --mc airportA-7-10-10 --stats_path /workspaces/premise/out/stats/2025-07-19
 
-#python -m premise.interval.rq_2_new --mc airportA-7-10-10 -sv d p pobs turn --stats_path /workspaces/premise/out/stats/2025-07-17
+#python -m premise.interval.rq_2 --mc evadeV-5-3 --imc_stats /workspaces/premise/out/stats/2025-07-17/evadeV-5-3-comp-noref-stats --imc_stats_ref /workspaces/premise/out/stats/2025-07-17/evadeV-5-3-comp-ref-stats --imc_stats_ref_split /workspaces/premise/out/stats/2025-07-17/evadeV-5-3-comp-refsplit-stats
+#python -m premise.interval.rq_2 --mc airportA-7-10-10 --imc_stats /workspaces/premise/out/stats/2025-07-19/airportA-7-10-10-comp-noref-stats --imc_stats_ref /workspaces/premise/out/stats/2025-07-19/airportA-7-10-10-comp-ref-stats --imc_stats_ref_split /workspaces/premise/out/stats/2025-07-19/airportA-7-10-10-comp-refsplit-stats
+

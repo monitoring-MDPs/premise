@@ -50,27 +50,22 @@ def stats_true(horizon, initial_amount, testing_samples, suo):
 
     return target_risks
 
-
 def aggregated_stats_imc(
-    coarse, path, stats_path, initial_amount, horizon, args, testing_samples
+    path, stats_path, initial_amount, horizon, args, testing_samples
 ):
+
     imc_risks = {}
 
     imc_transition_counts = {}
 
     #for x in range(1,11):
     for x in range(5,7):
+
         print(f"Experiment number {x}")
-        if coarse: 
-            if not os.path.exists(f"{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy"):
-                print(f"Statistics file for experiment {x} does not exist.")
-                continue
-            statistics = np.load(f"{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy", allow_pickle=True)
-        else:
-            if not os.path.exists(f"{stats_path}/{args.mc}-comp-noref-stats-{x}.npy"):
-                print(f"Statistics file for experiment {x} does not exist.")
-                continue
-            statistics = np.load(f"{stats_path}/{args.mc}-comp-noref-stats-{x}.npy", allow_pickle=True)
+        if not os.path.exists(f"{stats_path}-{x}.npy"):
+            print(f"Statistics file for experiment {x} does not exist.")
+            continue
+        statistics = np.load(f"{stats_path}-{x}.npy", allow_pickle=True)
 
         obj = statistics.item()
         imc_transition_count = obj["transitions_learned"]
@@ -84,13 +79,8 @@ def aggregated_stats_imc(
         imc_transition_counts[str(x)] = total_imc_transition_count
 
         for y in trange(1, len(imc_transition_count) + 1):
-            if coarse:
-                initial_distribution = f"{path}/{args.mc}-coarse-comp-noref-{x}-{y}-initial_interval.npy"
-                transition_intervals = f"{path}/{args.mc}-coarse-comp-noref-{x}-{y}-interval.npy"
-            else: 
-                initial_distribution = f"{path}/{args.mc}-comp-noref-{x}-{y}-initial_interval.npy"
-                transition_intervals = f"{path}/{args.mc}-comp-noref-{x}-{y}-interval.npy"
-
+            initial_distribution = f"{path}-{x}-{y}-initial_interval.npy"
+            transition_intervals = f"{path}-{x}-{y}-interval.npy"
 
             args.trans_path = transition_intervals
             args.init_path = initial_distribution
@@ -128,9 +118,8 @@ def aggregated_stats_imc(
 
     return imc_risks, imc_transition_counts
 
-
 def aggregated_stats_mc(
- coarse, path, stats_path, initial_amount, horizon, args, testing_samples
+ suo, path, stats_path, initial_amount, horizon, args, testing_samples
 ):
     mc_risks = {}
 
@@ -138,18 +127,12 @@ def aggregated_stats_mc(
 
     #for x in range(1, 11):
     for x in range(5,7):
-        print(f"Experiment number {x}")
-        if coarse: 
-            if not os.path.exists(f"{stats_path}/{args.mc}-coarse-comp-mle-stats-{x}.npy"):
-                print(f"Statistics file for experiment {x} does not exist.")
-                continue
-            statistics = np.load(f"{stats_path}/{args.mc}-coarse-comp-mle-stats-{x}.npy", allow_pickle=True)
-        else:
-            if not os.path.exists(f"{stats_path}/{args.mc}-comp-mle-stats-{x}.npy"):
-                print(f"Statistics file for experiment {x} does not exist.")
-                continue
-            statistics = np.load(f"{stats_path}/{args.mc}-comp-mle-stats-{x}.npy", allow_pickle=True)
 
+        print(f"Experiment number {x}")
+        if not os.path.exists(f"{stats_path}-{x}.npy"):
+            print(f"Statistics file for experiment {x} does not exist.")
+            continue
+        statistics = np.load(f"{stats_path}-{x}.npy", allow_pickle=True)
 
         mc_sample_count = statistics["sample_counts"]
     
@@ -161,14 +144,12 @@ def aggregated_stats_mc(
         mc_transition_counts[str(x)] = mc_transition_count
 
         for y in trange(0, len(mc_transition_count)):
-            if coarse:
-                model = f"{path}/{args.mc}-coarse-comp-mle-{x}-{y}.pickl"
-            else: 
-                model = f"{path}/{args.mc}-comp-mle-{x}-{y}.pickl"
+            model = f"{path}-{x}-{y}.pickl"
 
             with open(model, 'rb') as file:
                 data = pickle.load(file)
             
+
             #model, observation_map, state_index_map = dict_to_pomdp(data[1], data[0], True) 
             model, observation_map, state_index_map = dict_to_pomdp(data[1], data[0], target_label =True, use_exact=True) 
 
@@ -192,9 +173,12 @@ def aggregated_stats_mc(
     return mc_risks, mc_transition_counts
 
 
-def distance_graph(coarse,target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts, testing_samples_weights):
+def distance_graph(
+    target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts, testing_samples_weights
+):
 
     #IMC 
+
     distance_stats = {}
 
     for key in imc_risks.keys():
@@ -392,22 +376,13 @@ def distance_graph(coarse,target_risks, imc_risks, imc_transition_counts, mc_ris
         plt.ylim(bottom=0)
     ax.grid(True)
     plt.subplots_adjust(bottom=0.25)
-    if coarse: 
-        plt.title(f'{args.mc} coarse', fontsize=30)
-    else: 
-        plt.title(f'{args.mc}', fontsize=30)
-
+    plt.title(f'{args.mc}', fontsize=30)
     plt.tight_layout()
-    if coarse: 
-        plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_{args.mc}_coarse_distance_to_RRF.pdf", dpi=300,  bbox_inches='tight')
-    else: 
-        plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_{args.mc}_distance_to_RRF.pdf", dpi=300,  bbox_inches='tight')
-
-
+    plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_{args.mc}_distance_to_RRF.pdf", dpi=300,  bbox_inches='tight')
     plt.show()
 
 
-def overestimation_graph(coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts):
+def overestimation_graph(target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts):
 
     plt.figure()
     plt.plot([0, 1], [0, 1], "--", color = 'black')
@@ -453,17 +428,9 @@ def overestimation_graph(coarse, target_risks, imc_risks, imc_transition_counts,
     plt.xlabel("IMC and MC risks", fontsize=15)
     plt.ylabel("Target risks", fontsize=15)
     plt.tick_params(axis='both', labelsize=12)
-    if coarse:
-        plt.title(f'{args.mc} coarse', fontsize=15)
-    else:
-        plt.title(f'{args.mc}', fontsize=15)
-
+    plt.title(f'{args.mc}', fontsize=15)
     plt.tight_layout()
-    if coarse:
-        plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_{args.mc}_coarse_overestimation.pdf", dpi=300)
-    else: 
-        plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_{args.mc}_overestimation.pdf", dpi=300)
-
+    plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_{args.mc}_overestimation.pdf", dpi=300)
     plt.show()
 
 
@@ -480,19 +447,17 @@ def main_imc(args: argparse.Namespace):
         path = suo.generate_random_traces_with_prob([], length)
         testing_samples.append(tuple(path[0][0]))
         testing_samples_weights.append(float(path[0][1])) 
-    
-    if args.sys_vars != None: 
-        coarse = True
-    else:
-        coarse = False
-
 
     target_risks = stats_true(horizon, initial_amount, testing_samples, suo)
-    imc_risks, imc_transition_counts = aggregated_stats_imc(coarse, args.model_path, args.stats_path, initial_amount, horizon, args, testing_samples)
-    mc_risks, mc_transition_counts = aggregated_stats_mc(coarse, args.model_path, args.stats_path, initial_amount, horizon, args, testing_samples)
+    imc_risks, imc_transition_counts = aggregated_stats_imc(args.imc_model, args.imc_stats, initial_amount, horizon, args, testing_samples)
+
+    mc_risks, mc_transition_counts = aggregated_stats_mc(suo, args.mc_model, args.mc_stats, initial_amount, horizon, args, testing_samples)
     
-    distance_graph(coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts, testing_samples_weights)
-    overestimation_graph(coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts)
+
+    distance_graph(
+        target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts, testing_samples_weights
+    )
+    overestimation_graph(target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts)
 
 
 def build_learning_parser(parser: argparse.ArgumentParser):
@@ -514,9 +479,10 @@ def testing_argsparser():
         default=0,
         help="Increase verbosity level (can be used multiple times)",
     )
-
-    parser.add_argument("--model_path", type=str, help="Path models")
-    parser.add_argument("--stats_path", type=str, help="Path stats")
+    parser.add_argument("--imc_model", type=str, help="Path imc models")
+    parser.add_argument("--imc_stats", type=str, help="Path imc stats")
+    parser.add_argument("--mc_model", type=str, help="Path mc models")
+    parser.add_argument("--mc_stats", type=str, help="Path mc stats")
 
     return parser
 
@@ -527,5 +493,21 @@ if __name__ == "__main__":
     main_imc(args)
 
 
+#coarse = True
+#{args.mc}-coarse-comp-noref #imc_model
+#{args.mc}-coarse_norefinement-stats #imc_stats
+#{args.mc}-coarse-comp-mle #mc_model 
+#{args.mc}-coarse-comp-mle-stats #mc_stats
 
-# python -m premise.interval.rq_1 --mc airportA-7-10-10 -sv d p pobs turn --model_path /workspaces/premise/out/models/2025-07-17 --stats_path /workspaces/premise/out/stats/2025-07-17 
+#coarse = False
+#{args.mc}-comp-noref #imc_model
+#{args.mc}-comp-noref-stats #imc_stats 
+#{args.mc}-comp-mle #mc_model 
+#{args.mc}-comp-mle-stats #mc_stats
+
+
+# python -m premise.interval.rq_1 --mc airportA-7-10-10 -sv d p pobs turn  --imc_model /workspaces/premise/out/models/2025-07-17/airportA-7-10-10-coarse-comp-noref --imc_stats /workspaces/premise/out/stats/2025-07-17/airportA-7-10-10-coarse_norefinement-stats --mc_model /workspaces/premise/out/models/2025-07-17/airportA-7-10-10-coarse-comp-mle --mc_stats /workspaces/premise/out/stats/2025-07-17/airportA-7-10-10-coarse-comp-mle-stats
+
+# python -m premise.interval.rq_1 --mc SnL-10x10 --imc_model /workspaces/premise/out/models/2025-07-17/SnL-10x10-comp-noref --imc_stats /workspaces/premise/out/stats/2025-07-17/SnL-10x10-comp-noref-stats --mc_model /workspaces/premise/out/models/2025-07-17/SnL-10x10-comp-mle --mc_stats /workspaces/premise/out/stats/2025-07-17/SnL-10x10-comp-mle-stats
+
+# python -m premise.interval.rq_1 --mc airportA-7-10-10 --imc_model /workspaces/premise/out/models/2025-07-19/airportA-7-10-10-comp-noref --imc_stats /workspaces/premise/out/stats/2025-07-19/airportA-7-10-10-comp-noref-stats --mc_model /workspaces/premise/out/models/2025-07-19/airportA-7-10-10-comp-mle --mc_stats /workspaces/premise/out/stats/2025-07-19/airportA-7-10-10-comp-mle-stats

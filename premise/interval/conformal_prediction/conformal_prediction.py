@@ -550,31 +550,59 @@ def conformal_prediction_main(args: argparse.Namespace):
 
         # SAVING REJECTION CLASSIFIER
 
-        rej_filename = os.path.join(
-            args.dump_stats,
-            f"{args.mc}_comp_conformal_pred_rejection_classifier_{args.run_id}_{amount}.pickle",
-        )
-        with open(rej_filename, "wb") as handle:
-            pickle.dump(results_dict, handle)
+        if args.sys_vars != None:
+            rej_filename = os.path.join(
+                args.dump_stats,
+                f"{args.mc}_coarse_comp_conformal_pred_rejection_classifier_{args.run_id}_{amount}.pickle",
+            )
+            with open(rej_filename, "wb") as handle:
+                pickle.dump(results_dict, handle)
 
-        nn_filename = os.path.join(
-            args.dump_model,
-            f"{args.mc}_comp_conformal_pred_state_estimator_{args.run_id}_{amount}.pt",
-        )
-        torch.save(active_comb_ponsc.seq_se, nn_filename)
+            nn_filename = os.path.join(
+                args.dump_model,
+                f"{args.mc}_coarse_comp_conformal_pred_state_estimator_{args.run_id}_{amount}.pt",
+            )
+            torch.save(active_comb_ponsc.seq_se, nn_filename)
 
-        nn_filename = os.path.join(
-            args.dump_model,
-            f"{args.mc}_comp_conformal_pred_label_estimator_{args.run_id}_{amount}.pt",
-        )
-        torch.save(active_comb_ponsc.seq_nsc, nn_filename)
+            nn_filename = os.path.join(
+                args.dump_model,
+                f"{args.mc}_coarse_comp_conformal_pred_label_estimator_{args.run_id}_{amount}.pt",
+            )
+            torch.save(active_comb_ponsc.seq_nsc, nn_filename)
 
-        nn_filename = os.path.join(
-            args.dump_model,
-            f"{args.mc}_comp_conformal_pred_cp_classification_{args.run_id}_{amount}.pt",
-        )
+            nn_filename = os.path.join(
+                args.dump_model,
+                f"{args.mc}_coarse_comp_conformal_pred_cp_classification_{args.run_id}_{amount}.pt",
+            )
 
-        torch.save(active_cp_comb_class, nn_filename, pickle_module=dill)
+            torch.save(active_cp_comb_class, nn_filename, pickle_module=dill)
+        else: 
+            rej_filename = os.path.join(
+                args.dump_stats,
+                f"{args.mc}_comp_conformal_pred_rejection_classifier_{args.run_id}_{amount}.pickle",
+            )
+            with open(rej_filename, "wb") as handle:
+                pickle.dump(results_dict, handle)
+
+            nn_filename = os.path.join(
+                args.dump_model,
+                f"{args.mc}_comp_conformal_pred_state_estimator_{args.run_id}_{amount}.pt",
+            )
+            torch.save(active_comb_ponsc.seq_se, nn_filename)
+
+            nn_filename = os.path.join(
+                args.dump_model,
+                f"{args.mc}_comp_conformal_pred_label_estimator_{args.run_id}_{amount}.pt",
+            )
+            torch.save(active_comb_ponsc.seq_nsc, nn_filename)
+
+            nn_filename = os.path.join(
+                args.dump_model,
+                f"{args.mc}_comp_conformal_pred_cp_classification_{args.run_id}_{amount}.pt",
+            )
+
+            torch.save(active_cp_comb_class, nn_filename, pickle_module=dill)
+
 
         sample_count = (
             n_ref_points
@@ -592,10 +620,16 @@ def conformal_prediction_main(args: argparse.Namespace):
             "horizon": horizon,
         }
 
-        stats_filename = os.path.join(
-            args.dump_stats,
-            f"{args.mc}_comp_conformal_pred_conformal_stats_{args.run_id}_{amount}.pickle",
-        )
+        if args.sys_vars != None:
+            stats_filename = os.path.join(
+                args.dump_stats,
+                    f"{args.mc}_coarse_comp_conformal_pred_conformal_stats_{args.run_id}_{amount}.pickle",
+            )
+        else: 
+            stats_filename = os.path.join(
+                args.dump_stats,
+                    f"{args.mc}_comp_conformal_pred_conformal_stats_{args.run_id}_{amount}.pickle",
+            )
 
         with open(stats_filename, "wb") as handle:
             pickle.dump(dataset_stats, handle)
@@ -729,7 +763,7 @@ def conformal_prediction_argsparser():
         default=0,
         help="Run ID to use for the experiment. Used to distinguish between different runs in the same model path.",
     )
-
+    
     return parser
 
 
@@ -739,4 +773,5 @@ if __name__ == "__main__":
     conformal_prediction_main(args)
 
 
-# python -m premise.interval.conformal_prediction.conformal_prediction --mc airportA-7-10-10 -a 55 --no-target --dump-stats /workspaces/premise/premise/analysis/test_sets --dump-model /workspaces/premise/premise/analysis/test_sets
+# python -m premise.interval.conformal_prediction.conformal_prediction --mc airportA-7-10-10  -sv d p pobs turn -a 500 --no-target --dump-stats /workspaces/premise/premise/analysis/test_sets --dump-model /workspaces/premise/premise/analysis/test_sets
+#-sv d p pobs turn

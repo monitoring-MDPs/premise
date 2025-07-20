@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
 
     all_states, all_transitions, initial_states = suo.get_states_and_transitions(
-        all_transitions=not args.existing_transitions
+        all_transitions= not args.existing_transitions
     )
     print("State count")
     print(len(all_states))

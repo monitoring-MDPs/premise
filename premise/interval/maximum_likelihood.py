@@ -129,6 +129,7 @@ def dict_to_pomdp(
         if s[-1] == target_label:  # target label (Change between models)
             labeling.add_label_to_state("target", i)
 
+
     if use_exact:
         components = SparseExactModelComponents(matrix, labeling) 
     else:
