@@ -46,6 +46,8 @@ def run_with_timeout(func, args, timeout):
 
 def get_transition_count(stats_path: str, model_def_name: str):
     transition_stats = []
+    high_st_transition_stats = []
+
     path = Path(stats_path)
     if path.is_dir():
         paths = path.iterdir()
@@ -60,17 +62,25 @@ def get_transition_count(stats_path: str, model_def_name: str):
                 except AttributeError:
                     data = pickle.load(stat_path.open("rb"))
                 try:
-                    transition_stats.append(data["transition_count"])
+                    if "high-st" in str(stat_path):
+                        high_st_transition_stats.append(data["transition_count"])
+                    else:
+                        transition_stats.append(data["transition_count"])
                 except Exception as e:
                     print(f"Error processing {stat_path}: {e} ({data})")
 
     if len(transition_stats) == 0:
         logger.error(
-            f"No transition stats found for model {model_def_name} in {stats_path}"
+            f"No transition stats found for model {model_def_name} in {stats_path} for regular st."
+        )
+        sys.exit(1)
+    if len(high_st_transition_stats) == 0:
+        logger.error(
+            f"No transition stats found for model {model_def_name} in {stats_path} for high st."
         )
         sys.exit(1)
 
-    return max(transition_stats)
+    return max(transition_stats), max(high_st_transition_stats)
 
 
 if __name__ == "__main__":
@@ -111,9 +121,25 @@ if __name__ == "__main__":
     horizon = model_def.horizon
     initial_amount = model_def.initial_amount
 
-    transition_count = get_transition_count(sys.argv[2], conformal_args.mc)
+    transition_count, high_st_transition_count = get_transition_count(
+        sys.argv[2], conformal_args.mc
+    )
+
+    high_st_args = copy.deepcopy(conformal_args)
 
     conformal_args.amount = transition_count // (horizon + initial_amount)
+
+    high_st_args.amount = high_st_transition_count // (horizon + initial_amount)
+    high_st_args.dump_model += "high-st-"
+    high_st_args.dump_stats += "high-st-"
+
+    try:
+        run_with_timeout(conformal_prediction_main, (high_st_args,), timeout)
+    except TimeoutError:
+        logger.warning("High st Conformal Prediction timed out.")
+    except Exception as e:
+        logger.error(f"Error in Conformal Prediction: {e}")
+        logger.info("Conformal Prediction failed, exiting.")
 
     try:
         run_with_timeout(conformal_prediction_main, (conformal_args,), timeout)
@@ -122,6 +148,5 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Error in Conformal Prediction: {e}")
         logger.info("Conformal Prediction failed, exiting.")
-        sys.exit(1)
 
 # python -m premise.interval.run_conformal_prediction 10m out/stats/2025-07-15_15-11-51 -mc SnL-10x10 --dump-model out/tmp/test17/ --dump-stats out/tmp/test17/ --no-target
