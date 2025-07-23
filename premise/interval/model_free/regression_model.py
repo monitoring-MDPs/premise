@@ -23,6 +23,7 @@ def prep_trace_for_regression(trace, observations):
 
 
 def learn_regression_model(train_samples, observations, testing_samples, args):
+    logger.info("Preparing data for regression model training.")
     num_steps = args.length
 
     column_names = [f"Step{s}_Obs{o}" for s in range(num_steps) for o in observations]
@@ -34,13 +35,16 @@ def learn_regression_model(train_samples, observations, testing_samples, args):
         row = prep_trace_for_regression(sub_trace, observations)
         binary_data.append(row)
 
-        # y.append(1 if any(x[2] == True for x in sub_trace) else 0)
         y.append(1 if any(x[2] == True for x in trace[num_steps:]) else 0)
 
     X = pd.DataFrame(binary_data, columns=column_names)
+    logger.info(
+        f"Training data prepared with {len(X)} samples and {len(column_names)} features."
+    )
 
     model = LogisticRegression(n_jobs=1)
     model.fit(X, y)
+    logger.info("Regression model training completed.")
 
     binary_test_data = []
     for trace in testing_samples:
@@ -49,14 +53,16 @@ def learn_regression_model(train_samples, observations, testing_samples, args):
         binary_test_data.append(row)
 
     X_test = pd.DataFrame(binary_test_data, columns=column_names)
+    logger.info(f"Testing data prepared with {len(X_test)} samples.")
 
     prob = model.predict_proba(X_test)
-
     risks = prob[:, 1]
 
     regression_risks = {}
     for sample, risk in zip(testing_samples, risks):
         regression_risks[tuple(sample)] = risk
+
+    logger.info("Regression risks computed for testing samples.")
 
     return testing_samples, regression_risks, model  # dictionary trace + risk
 
@@ -109,6 +115,7 @@ def reg_main(args: argparse.Namespace):
     os.environ["OPENBLAS_NUM_THREADS"] = "1"
     os.environ["MKL_NUM_THREADS"] = "1"
     os.environ["BLIS_NUM_THREADS"] = "1"
+    os.environ["OMP_NUM_THREADS"] = "1"
 
     setup_logging()
 
@@ -165,10 +172,13 @@ def reg_main(args: argparse.Namespace):
         testing_samples, regression_risks, model = learn_regression_model(
             currrent_train_samples, observations, testing_samples, args
         )
+
+        logger.info(f"Testing regression model with {len(testing_samples)} samples.")
         target_risks, target_dist, target_all_dist = regression_distance(
             testing_samples, regression_risks, distance, test_weights, suo, args
         )
 
+        logger.info(f"Target distance: {target_dist}")
         sampled_risks = random_sample_monitor_test(
             suo, testing_samples, args.horizon, args.conformence_amount
         )

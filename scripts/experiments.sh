@@ -8,6 +8,8 @@ mkdir -p out/logs/$now
 mkdir -p out/stats/$now
 mkdir -p out/models/$now
 
+export OPENBLAS_NUM_THREADS=1
+
 # Generate repeated commands with run_id replaced
 sed "s/date/${now}/g" scripts/commands.sh | sed '/^#/d' | \
 while read -r cmd; do
