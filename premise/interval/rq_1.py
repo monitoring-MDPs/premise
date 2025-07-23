@@ -6,18 +6,9 @@ from tqdm import tqdm, trange
 import os
 import matplotlib.ticker as ticker
 import pickle
-
-import stormpy as sp
-import stormpy
 import numpy as np
-import argparse
-
-import argparse
-
-import numpy as np
-from tqdm import tqdm
-import os
 from premise.models import *
+from premise.interval.maximum_likelihood import *
 
 
 from premise.interval.loading import (
@@ -30,7 +21,8 @@ from premise.interval.interval import (
     Trace,
     create_monitor,
 )
-from premise.interval.maximum_likelihood import dict_to_pomdp, create_mle_monitor, test_mle_monitor
+from premise.interval.maximum_likelihood import dict_to_pomdp, create_mle_monitor
+
 
 def stats_true(horizon, initial_amount, testing_samples, suo):
 
@@ -51,15 +43,13 @@ def stats_true(horizon, initial_amount, testing_samples, suo):
     return target_risks
 
 
-def aggregated_stats_imc(
-    coarse, path, stats_path, initial_amount, horizon, args, testing_samples
-):
+def aggregated_stats_imc(coarse, path, stats_path, initial_amount, horizon, args, testing_samples):
     imc_risks = {}
 
     imc_transition_counts = {}
 
-    #for x in range(1,11):
-    for x in range(5,7):
+    for x in range(1,11):
+    #for x in range(5,7):
         print(f"Experiment number {x}")
         if coarse: 
             if not os.path.exists(f"{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy"):
@@ -103,14 +93,11 @@ def aggregated_stats_imc(
             mon, mon_comps = create_monitor(
                 transition_intervals,
                 initial_distribution,
-                "min", 
+                "min",
                 True,
                 horizon,
-                args.dump,
-                args.verbose,
-                use_exact=args.exact,
-                precision=args.precision,
-            )
+                args.dump
+                )
 
             imc_risks[f'{x}-{y}'] = []
 
@@ -129,15 +116,14 @@ def aggregated_stats_imc(
     return imc_risks, imc_transition_counts
 
 
-def aggregated_stats_mc(
- coarse, path, stats_path, initial_amount, horizon, args, testing_samples
-):
+
+def aggregated_stats_mc(coarse, path, stats_path, initial_amount, horizon, args, testing_samples):
     mc_risks = {}
 
     mc_transition_counts = {}
 
-    #for x in range(1, 11):
-    for x in range(5,7):
+    for x in range(1, 11):
+    #for x in range(5,7):
         print(f"Experiment number {x}")
         if coarse: 
             if not os.path.exists(f"{stats_path}/{args.mc}-coarse-comp-mle-stats-{x}.npy"):
@@ -150,9 +136,8 @@ def aggregated_stats_mc(
                 continue
             statistics = np.load(f"{stats_path}/{args.mc}-comp-mle-stats-{x}.npy", allow_pickle=True)
 
-
         mc_sample_count = statistics["sample_counts"]
-    
+
         mc_transition_count = []
 
         for a in mc_sample_count: 
@@ -168,8 +153,10 @@ def aggregated_stats_mc(
 
             with open(model, 'rb') as file:
                 data = pickle.load(file)
-            
-            #model, observation_map, state_index_map = dict_to_pomdp(data[1], data[0], True) 
+
+            #initial = {(0, 22, False): 1.0}
+            #initial = {((3, 7, 7, 0), 25, False) 1.0}
+
             model, observation_map, state_index_map = dict_to_pomdp(data[1], data[0], target_label =True, use_exact=True) 
 
             monitor = create_mle_monitor(horizon, model)
@@ -186,8 +173,11 @@ def aggregated_stats_mc(
                     skip_initial=True,
                     with_tqdm=False,
                     )[subtrace]
-    
+             
                 mc_risks[f"{x}-{y}"].append(float(risk))
+
+        mc_transition = data[1] 
+
 
     return mc_risks, mc_transition_counts
 
@@ -209,26 +199,26 @@ def distance_graph(coarse,target_risks, imc_risks, imc_transition_counts, mc_ris
         distance_stats[key] = total_distance / args.testing_samples
 
     distance_graph_data = {}
-    #for x in range(1, 11):
-    for x in range(5,7):
+    for x in range(1, 11):
+    #for x in range(5,7):
         distance_graph_data[x] = []
 
     for key in distance_stats.keys():
-        #for x in range(1, 11):
-        for x in range(5,7):
+        for x in range(1, 11):
+        #for x in range(5,7):
             if key.split("-")[0] == str(x):
                 distance_graph_data[x].append(distance_stats[key])
 
 
     final_distances = []
-    #for x in range(1,11):
-    for x in range(5,7):
+    for x in range(1,11):
+    #for x in range(5,7):
         final_distances.append(distance_graph_data[x][-1]) 
 
 
     graph_data = []
-    #for x in range(1,11):
-    for x in range(5,7):
+    for x in range(1,11):
+    #for x in range(5,7):
         graph_data.append([distance_graph_data[x], imc_transition_counts[str(x)]])
 
   
@@ -247,34 +237,36 @@ def distance_graph(coarse,target_risks, imc_risks, imc_transition_counts, mc_ris
             )
         mc_distance_stats[key] = total_distance / args.testing_samples
 
+
     mc_distance_graph_data = {}
-    #for x in range(1, 11):
-    for x in range(5,7):
+    for x in range(1, 11):
+    #for x in range(5,7):
         mc_distance_graph_data[x] = []
 
     for key in mc_distance_stats.keys():
-        #for x in range(1, 11):
-        for x in range(5,7):
+        for x in range(1, 11):
+        #for x in range(5,7):
             if key.split("-")[0] == str(x):
                 mc_distance_graph_data[x].append(mc_distance_stats[key])
-
+    
 
     mc_final_distances = []
-    #for x in range(1,11):
-    for x in range(5,7):
+    for x in range(1,11):
+    #for x in range(5,7):
         mc_final_distances.append(mc_distance_graph_data[x][-1]) 
 
 
     mc_graph_data = []
-    #for x in range(1,11):
-    for x in range(5,7):
+    for x in range(1,11):
+    #for x in range(5,7):
         mc_graph_data.append([mc_distance_graph_data[x], mc_transition_counts[str(x)]])
-
 
     log = False
     plt.figure()
     fig, ax = plt.subplots(figsize=(16, 8))
 
+    print('mc_graph_data')
+    print(mc_graph_data)
 
     #MC AVERAGE PERFORMANCE
 
@@ -314,7 +306,7 @@ def distance_graph(coarse,target_risks, imc_risks, imc_transition_counts, mc_ris
         mc_mean_distance,
         color='chartreuse',
         label = f'MC, (Average final distance: {np.mean(mc_final_distances):.3f})',
-        linewidth=5,
+        linewidth=7,
         linestyle=':',
         )
 
@@ -360,22 +352,22 @@ def distance_graph(coarse,target_risks, imc_risks, imc_transition_counts, mc_ris
 
     # Plot mean line
     ax.plot(
-        x_values,
-        mean_distance,
-        color='red',
-        label = f'IMC, (Average final distance: {np.mean(final_distances):.3f})',
-        linewidth=5,
-        linestyle='--',
-        )
+            x_values,
+            mean_distance,
+            color='red',
+            label = f'IMC, (Average final distance: {np.mean(final_distances):.3f})',
+            linewidth=7,
+            linestyle='--',
+            )
 
     # Add shaded area for spread
     ax.fill_between(
-            x_values,
-            mean_distance - std_distance,
-            mean_distance + std_distance,
-            alpha=0.2,
-            color='red',
-        )
+                x_values,
+                mean_distance - std_distance,
+                mean_distance + std_distance,
+                alpha=0.2,
+                color='red',
+            ) 
     
     formatter = ticker.ScalarFormatter(useMathText=True)
     formatter.set_powerlimits((4, 4))  # Force 10^4 scale
@@ -402,7 +394,6 @@ def distance_graph(coarse,target_risks, imc_risks, imc_transition_counts, mc_ris
         plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_{args.mc}_coarse_distance_to_RRF.pdf", dpi=300,  bbox_inches='tight')
     else: 
         plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_{args.mc}_distance_to_RRF.pdf", dpi=300,  bbox_inches='tight')
-
 
     plt.show()
 
@@ -488,9 +479,9 @@ def main_imc(args: argparse.Namespace):
 
 
     target_risks = stats_true(horizon, initial_amount, testing_samples, suo)
+    mc_risks, mc_transition_counts = stats_true(coarse, args.model_path, args.stats_path, initial_amount, horizon, args, testing_samples)
     imc_risks, imc_transition_counts = aggregated_stats_imc(coarse, args.model_path, args.stats_path, initial_amount, horizon, args, testing_samples)
-    mc_risks, mc_transition_counts = aggregated_stats_mc(coarse, args.model_path, args.stats_path, initial_amount, horizon, args, testing_samples)
-    
+
     distance_graph(coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts, testing_samples_weights)
     overestimation_graph(coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts)
 
@@ -499,7 +490,7 @@ def build_learning_parser(parser: argparse.ArgumentParser):
     group = parser.add_argument_group("Learning Parameters")
 
     group.add_argument("--model_name", type=str, default="MC", help="Name of the model (first letters code).")
-    group.add_argument("-s", "--testing_samples", type=int, default = 10, help="Total number of samples used in learning")
+    group.add_argument("-s", "--testing_samples", type=int, default = 50, help="Total number of samples used in learning")
 
 
 def testing_argsparser():
@@ -528,4 +519,7 @@ if __name__ == "__main__":
 
 
 
-# python -m premise.interval.rq_1 --mc airportA-7-10-10 -sv d p pobs turn --model_path /workspaces/premise/out/models/2025-07-17 --stats_path /workspaces/premise/out/stats/2025-07-17 
+#python -m premise.interval.rq_1 --mc airportA-7-10-10 -sv d p pobs turn --model_path /workspaces/premise/out/models/2025-07-17 --stats_path /workspaces/premise/out/stats/2025-07-17 
+#python -m premise.interval.rq_1 --mc airportA-7-10-10 --model_path /workspaces/premise/out/models/2025-07-19 --stats_path /workspaces/premise/out/stats/2025-07-19 
+
+#python -m premise.interval.rq_1 --mc SnL-10x10 --model_path /workspaces/premise/out/models/2025-07-17 --stats_path /workspaces/premise/out/stats/2025-07-17

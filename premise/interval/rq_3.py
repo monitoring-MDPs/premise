@@ -104,20 +104,34 @@ def aggregted_alarms(testing_samples):
     alarms = np.array(alarms).astype(int) 
     
     return alarms
- 
 
-def aggregated_stats_imc(path, stats_path, initial_amount, horizon, args, testing_samples): 
+
+def aggregated_stats_imc(coarse, method, mc, model_path, stats_path, initial_amount, horizon, args, testing_samples): 
 
     imc_risks = {}
 
     imc_transition_counts = {}
     imc_distances = {}
 
-    #for x in range(1,11):
-    for x in range(5,7):
-
+    for x in range(1,11):
+    #for x in range(5,7):
         print(f'Experiment number {x}')
-        statistics = np.load(f'{stats_path}-{x}.npy', allow_pickle=True)
+        if coarse: 
+            if method == 'noref':
+                statistics = np.load(f'{stats_path}/{mc}-coarse_norefinement-stats-{x}.npy', allow_pickle=True)
+            elif method == 'ref':
+                statistics = np.load(f'{stats_path}/{mc}-coarse_refinement-stats-{x}.npy', allow_pickle=True)
+            elif method == 'refsplit':
+                statistics = np.load(f'{stats_path}/{mc}-coarse_refsplitinement-stats-{x}.npy', allow_pickle=True)
+        else: 
+            if method == 'noref':
+                statistics = np.load(f'{stats_path}/{mc}-comp-noref-stats-{x}.npy', allow_pickle=True)
+            elif method == 'ref':
+                statistics = np.load(f'{stats_path}/{mc}-comp-ref-stats-{x}.npy', allow_pickle=True)
+            elif method == 'refsplit':
+                statistics = np.load(f'{stats_path}/{mc}-comp-refsplit-stats-{x}.npy', allow_pickle=True)
+
+
         obj = statistics.item()     
         imc_transition_count = obj['transitions_learned']
         stopping_threashold = obj['args']['stopping_threshold']
@@ -125,15 +139,29 @@ def aggregated_stats_imc(path, stats_path, initial_amount, horizon, args, testin
         imc_distances[str(x)] = distances
         imc_transition_counts[str(x)]= imc_transition_count
 
-        for y in range(1, len(imc_transition_count) +1): 
-            initial_distribution = f'{path}-{x}-{y}-initial_interval.npy'
-            transition_intervals = f'{path}-{x}-{y}-interval.npy'
-            #stats_path = /workspaces/premise/out/models/2025-07-17/
-            #airportA-7-10-10-coarse-comp-noref-2-4-initial_interval.npy
-            #airportA-7-10-10-coarse-comp-ref-1-3-interval.npy
-            #airportA-7-10-10-coarse-comp-refsplit-2-22-initial_interval.npy
 
-            #{args.mc}-{coarse_value}-comp-{method}
+        for y in range(1, len(imc_transition_count) +1): 
+            if coarse:
+                if method == 'noref':
+                    initial_distribution = f'{model_path}/{mc}-coarse-comp-noref-{x}-{y}-initial_interval.npy'
+                    transition_intervals = f'{model_path}/{mc}-coarse-comp-noref-{x}-{y}-interval.npy'
+                elif method == 'ref':
+                    initial_distribution = f'{model_path}/{mc}-coarse-comp-ref-{x}-{y}-initial_interval.npy'
+                    transition_intervals = f'{model_path}/{mc}-coarse-comp-ref-{x}-{y}-interval.npy'
+                elif method == 'refsplit':
+                    initial_distribution = f'{model_path}/{mc}-coarse-comp-refsplit-{x}-{y}-initial_interval.npy'
+                    transition_intervals = f'{model_path}/{mc}-coarse-comp-refsplit-{x}-{y}-interval.npy'
+            else: 
+                if method == 'noref':
+                    initial_distribution = f'{model_path}/{mc}-comp-noref-{x}-{y}-initial_interval.npy'
+                    transition_intervals = f'{model_path}/{mc}-comp-noref-{x}-{y}-interval.npy'
+                elif method == 'ref':
+                    initial_distribution = f'{model_path}/{mc}-comp-ref-{x}-{y}-initial_interval.npy'
+                    transition_intervals = f'{model_path}/{mc}-comp-ref-{x}-{y}-interval.npy'
+                elif method == 'refsplit':
+                    initial_distribution = f'{model_path}/{mc}-comp-refsplit-{x}-{y}-initial_interval.npy'
+                    transition_intervals = f'{model_path}/{mc}-comp-refsplit-{x}-{y}-interval.npy'
+
 
             args.trans_path = transition_intervals
             args.init_path = initial_distribution
@@ -174,16 +202,17 @@ def aggregated_stats_imc(path, stats_path, initial_amount, horizon, args, testin
     return imc_risks, imc_transition_counts, stopping_threashold, imc_distances
 
 
-
-
-def aggregated_stats_regression(regression_model, regression_stats, testing_samples, horizon, initial_amount): 
+def aggregated_stats_regression(coarse, mc, model_path, stats_path, testing_samples, horizon, initial_amount): 
 
     regression_risks = {}
     regression_ys = {}
 
-    #for x in range(1,11):
-    for x in range(5,7):
-        paths = glob.glob(f'{regression_model}-{x}_*.npy')
+    for x in range(1,11):
+    #for x in range(5,7):
+        if coarse: 
+            paths = glob.glob(f'{model_path}/{mc}-coarse-comp-reg-{x}_*.npy')
+        else: 
+            paths = glob.glob(f'{model_path}/{mc}-comp-reg-{x}_*.npy')
         
         regression_ys[str(x)] = []
 
@@ -198,8 +227,13 @@ def aggregated_stats_regression(regression_model, regression_stats, testing_samp
         for y in regression_ys[str(x)]:
             regression_risks[f'{x}-{y}'] = []
 
-            reg_model = np.load(f'{regression_model}-{x}_{y}.npy', allow_pickle=True).item()
-            observations = np.load(f'{regression_stats}-{x}.npy', allow_pickle=True).item()["observations"]
+            if coarse:
+                reg_model = np.load(f'{model_path}/{mc}-coarse-comp-reg-{x}_{y}.npy', allow_pickle=True).item()
+                observations = np.load(f'{stats_path}/{mc}-coarse-comp-reg-stats-{x}.npy', allow_pickle=True).item()["observations"]
+            else: 
+                reg_model = np.load(f'{model_path}/{mc}-comp-reg-{x}_{y}.npy', allow_pickle=True).item()
+                observations = np.load(f'{stats_path}/{mc}-comp-reg-stats-{x}.npy', allow_pickle=True).item()["observations"]
+
             column_names = [f"Step{s}_Obs{o}" for s in range(initial_amount) for o in observations]
 
             for t in testing_samples: 
@@ -211,13 +245,18 @@ def aggregated_stats_regression(regression_model, regression_stats, testing_samp
 
     return regression_risks, regression_ys
 
-def aggreagted_stats_conformal(new_noisy, se_path, error_path, rej_path, stats_path, cp_classification_path):
+
+
+def aggreagted_stats_conformal(new_noisy, coarse, mc, model_path, stats_path):
 
     conformal_risks = {}
     conformal_ys = {}
 
     for x in range(8,9):
-        paths = glob.glob(f'{se_path}_{x}_*.pt')
+        if coarse: 
+            paths = glob.glob(f'{model_path}/{mc}_coarse_comp_conformal_pred_state_estimator_{x}_*.pt')
+        else: 
+            paths = glob.glob(f'{model_path}/{mc}_comp_conformal_pred_state_estimator_{x}_*.pt')
 
         conformal_ys[str(x)] = []
 
@@ -232,17 +271,31 @@ def aggreagted_stats_conformal(new_noisy, se_path, error_path, rej_path, stats_p
         for y in conformal_ys[str(x)]:
             conformal_risks[f'{x}-{y}'] = [] 
 
-            state_estimator = torch.load(f'{se_path}_{x}_{y}.pt', weights_only=False)
-            label_estimator = torch.load(f'{error_path}_{x}_{y}.pt', weights_only=False)
-            cp_classification = torch.load(f'{cp_classification_path}_{x}_{y}.pt', weights_only=False)
+            if coarse: 
+                state_estimator = torch.load(f'{model_path}/{mc}_coarse_comp_conformal_pred_state_estimator_{x}_{y}.pt', weights_only=False)
+                label_estimator = torch.load(f'{model_path}/{mc}_coarse_comp_conformal_pred_label_estimator_{x}_{y}.pt', weights_only=False)
+                cp_classification = torch.load(f'{model_path}/{mc}_coarse_comp_conformal_pred_cp_classification_{x}_{y}.pt', weights_only=False)
 
-            with open(f'{rej_path}_{x}_{y}.pickle', 'rb') as f:
-                rej_classifier = pickle.load(f)
-    
-            rejection_classifier = rej_classifier['rej_rule']
+                with open(f'{stats_path}/{mc}_coarse_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle', 'rb') as f:
+                    rej_classifier = pickle.load(f)
+        
+                rejection_classifier = rej_classifier['rej_rule']
 
-            with open(f'{stats_path}_{x}_{y}.pickle', 'rb') as f:
-                conformal_stats = pickle.load(f)
+                with open(f'{stats_path}/{mc}_coarse_comp_conformal_pred_conformal_stats_{x}_{y}.pickle', 'rb') as f:
+                    conformal_stats = pickle.load(f)
+            else: 
+                state_estimator = torch.load(f'{model_path}/{mc}_comp_conformal_pred_state_estimator_{x}_{y}.pt', weights_only=False)
+                label_estimator = torch.load(f'{model_path}/{mc}_comp_conformal_pred_label_estimator_{x}_{y}.pt', weights_only=False)
+                cp_classification = torch.load(f'{model_path}/{mc}_comp_conformal_pred_cp_classification_{x}_{y}.pt', weights_only=False)
+
+                with open(f'{stats_path}/{mc}_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle', 'rb') as f:
+                    rej_classifier = pickle.load(f)
+        
+                rejection_classifier = rej_classifier['rej_rule']
+
+                with open(f'{stats_path}/{mc}_comp_conformal_pred_conformal_stats_{x}_{y}.pickle', 'rb') as f:
+                    conformal_stats = pickle.load(f)
+
 
             new_noisy_scaled = -1+2*(new_noisy - conformal_stats['dataset.MIN[1]'])/(conformal_stats['dataset.MAX[1]']-conformal_stats['dataset.MIN[1]'])
             Y1 = np.transpose(new_noisy_scaled, (0,2,1))
@@ -277,7 +330,7 @@ def find_first_triplet_below_threshold(distances, threshold):
             return i 
 
 
-def roc_curve_per_threashold(current_threashold, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting):
+def roc_curve_per_threashold(coarse, current_threashold, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting):
 
     #REFINEMENT WITH SPLITTING
 
@@ -299,8 +352,8 @@ def roc_curve_per_threashold(current_threashold, alarms, imc_risks, imc_risks_re
 
     index_ref = {}
 
-    #for x in range(1,11):
-    for x in range(5,7):
+    for x in range(1,11):
+    #for x in range(5,7):
         index_ref[str(x)] =  (find_first_triplet_below_threshold(imc_distances_ref[str(x)],current_threashold) +1)
     
     imc_risks_threashold_ref = {}
@@ -315,13 +368,10 @@ def roc_curve_per_threashold(current_threashold, alarms, imc_risks, imc_risks_re
 
     index = {}
 
-    #for x in range(1,11):
-    for x in range(5,7):
+    for x in range(1,11):
+    #for x in range(5,7):
         index[str(x)] =  (find_first_triplet_below_threshold(imc_distances[str(x)],current_threashold) +1)
     
-
-    print(index)
-
     imc_risks_threashold = {}
 
     for key in imc_risks.keys():
@@ -469,12 +519,19 @@ def roc_curve_per_threashold(current_threashold, alarms, imc_risks, imc_risks_re
     plt.tick_params(axis="both")
     plt.grid(True)
     plt.tight_layout()
-    plt.title(f'{args.mc}, stopping threashold: {current_threashold}', fontsize=35)
-    plt.savefig(f"/workspaces/premise/premise/analysis/rq2_{args.mc}_ROC_threashold_comparison_{current_threashold}.pdf", dpi=300,  bbox_inches='tight')
+    if coarse:
+        plt.title(f'{args.mc} coarse, stopping threashold: {current_threashold}', fontsize=35)
+    else: 
+        plt.title(f'{args.mc}, stopping threashold: {current_threashold}', fontsize=35)
+    if coarse:
+        plt.savefig(f"/workspaces/premise/premise/analysis/rq2_{args.mc}_coarse_ROC_threashold_comparison_{current_threashold}.pdf", dpi=300,  bbox_inches='tight')
+    else:
+        plt.savefig(f"/workspaces/premise/premise/analysis/rq2_{args.mc}_ROC_threashold_comparison_{current_threashold}.pdf", dpi=300,  bbox_inches='tight')
     plt.show()
 
 
-def plot_roc_curve(alarms, imc_risks_ref, regression_risks, regression_ys, conformal_risks, conformal_ys, target_risks):
+#def plot_roc_curve(coarse, alarms, imc_risks_ref, regression_risks, regression_ys, conformal_risks, conformal_ys, target_risks):
+def plot_roc_curve(coarse, alarms, imc_risks_ref, regression_risks, regression_ys, target_risks):  
 
     imc_ref_final_risks = {}
 
@@ -486,11 +543,24 @@ def plot_roc_curve(alarms, imc_risks_ref, regression_risks, regression_ys, confo
         if key.split('-')[1] == str(max(ys)):
             imc_ref_final_risks[key.split('-')[0]] = imc_risks_ref[key]
 
+    
+
+    imc_ref_split_final_risks = {}  
+
+    ys_splitting = []
+    for key in imc_risks_ref_splitting.keys():
+        ys_splitting(int(key.split('-')[1]))
+    
+    for key in imc_risks_ref_splitting.keys():
+        if key.split('-')[1] == str(max(ys_splitting)):
+            imc_ref_split_final_risks[key.split('-')[0]] = imc_risks_ref_splitting[key]
+
+
 
     reg_final_risks = {}
 
-    #for x in range(1,11):
-    for x in range(5,7): 
+    for x in range(1,11):
+    #for x in range(5,7): 
         for key in regression_risks.keys(): 
             if int(key.split('-')[1]) == max(regression_ys[str(x)]): 
                 reg_final_risks[str(x)] = regression_risks[key]
@@ -504,11 +574,8 @@ def plot_roc_curve(alarms, imc_risks_ref, regression_risks, regression_ys, confo
                 conformal_final_risks[str(x)] = conformal_risks[key]
 
 
-    fpr, tpr, threshold = metrics.roc_curve(alarms, target_risks)
-    roc_auc = metrics.auc(fpr, tpr)
-    target_auc = roc_auc
 
-    
+
     plt.figure()
     fig, ax = plt.subplots(figsize=(16, 12))
     
@@ -549,6 +616,43 @@ def plot_roc_curve(alarms, imc_risks_ref, regression_risks, regression_ys, confo
         alpha=0.2,
     )
 
+    #REFINEMENT WITH SPLITTING MEAN PERFORMANCE
+    ref_splitting_imc_roc_data = {}
+    
+    for key in imc_ref_split_final_risks.keys(): 
+
+        fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_ref_split_final_risks[key])
+        roc_auc = metrics.auc(fpr, tpr)
+        ref_splitting_imc_roc_data[key] = [fpr, tpr, roc_auc]
+
+    mean_fpr = np.linspace(0, 1, 100)
+    tprs = []
+    aucs = []
+
+    for key in ref_splitting_imc_roc_data.keys(): 
+        interp_tpr = np.interp(mean_fpr, ref_splitting_imc_roc_data[key][0], ref_splitting_imc_roc_data[key][1])
+        aucs.append(ref_splitting_imc_roc_data[key][2])
+        interp_tpr[0] = 0.0
+        tprs.append(interp_tpr)
+
+        
+    mean_tpr = np.mean(tprs, axis=0)
+    mean_tpr[-1] = 1.0  
+    mean_auc = np.mean(aucs)
+
+    plt.plot(mean_fpr, mean_tpr, color = 'aqua',  label = f'Refinement with splitting, (Mean AUC = {mean_auc:.2f})', linewidth=5, linestyle= '-.')
+
+    std_tpr = np.std(tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+    ax.fill_between(
+        mean_fpr,
+        tprs_lower,
+        tprs_upper,
+        color="aqua",
+        alpha=0.2,
+    )
+
     #REGRESSION MEAN PERFORMANCE
     regression_roc_data = {}
     
@@ -573,7 +677,7 @@ def plot_roc_curve(alarms, imc_risks_ref, regression_risks, regression_ys, confo
     mean_tpr[-1] = 1.0  
     mean_auc = np.mean(aucs)
 
-    plt.plot(mean_fpr, mean_tpr, color = 'green',  label = f'Regression, (Mean AUC = {mean_auc:.2f})', linewidth=5, linestyle='-.')
+    plt.plot(mean_fpr, mean_tpr, color = 'green',  label = f'Regression, (Mean AUC = {mean_auc:.2f})', linewidth=5, linestyle='--')
 
     std_tpr = np.std(tprs, axis=0)
     tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
@@ -623,7 +727,11 @@ def plot_roc_curve(alarms, imc_risks_ref, regression_risks, regression_ys, confo
         alpha=0.2,
     )
 
-    ax.plot(target_risks, mean_tpr, color = 'black', label = f'Target Monitor, AUC = {target_auc:.2f}', linewidth=5, linestyle='-', marker='D')
+    fpr, tpr, threshold = metrics.roc_curve(alarms, target_risks)
+    roc_auc = metrics.auc(fpr, tpr)
+    target_auc = roc_auc
+
+    ax.plot(fpr, tpr, color = 'black', label = f'Target Monitor, AUC = {target_auc:.2f}', linewidth=5, linestyle='-', marker='D')
 
     plt.plot([0, 1], [0, 1], "r--")
     plt.xlim((0, 1))
@@ -635,11 +743,17 @@ def plot_roc_curve(alarms, imc_risks_ref, regression_risks, regression_ys, confo
     plt.legend(loc="lower right", fontsize=30)
     plt.tick_params(axis="both")
     plt.grid(True)
-    plt.title(f'{args.mc}', fontsize=35)
+    if coarse:
+        plt.title(f'{args.mc} coarse', fontsize=35)
+    else: 
+        plt.title(f'{args.mc}', fontsize=35)
     plt.tight_layout()
-    plt.savefig(f"/workspaces/premise/premise/analysis/rq_3_{args.mc}_model_based_model_free_ROC.pdf", dpi=300,  bbox_inches='tight')
-    plt.show()
+    if coarse:
+        plt.savefig(f"/workspaces/premise/premise/analysis/rq_3_{args.mc}_coarse_model_based_model_free_ROC.pdf", dpi=300,  bbox_inches='tight')
+    else: 
+        plt.savefig(f"/workspaces/premise/premise/analysis/rq_3_{args.mc}_model_based_model_free_ROC.pdf", dpi=300,  bbox_inches='tight')
 
+    plt.show()
 
 
 
@@ -656,8 +770,6 @@ def auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transitio
         roc_auc = metrics.auc(fpr, tpr)
         imc_auc[imc_key] = roc_auc
 
-    print(imc_auc)
-
     imc_ref_auc = {}
 
     for imc_ref_key in imc_risks_ref.keys(): 
@@ -665,16 +777,12 @@ def auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transitio
         roc_auc = metrics.auc(fpr, tpr)
         imc_ref_auc[imc_ref_key] = roc_auc
 
-    print(imc_ref_auc)
-
     imc_ref_splitting_auc = {}
 
     for imc_ref_key_splitting in imc_risks_ref_splitting.keys(): 
         fpr, tpr, threshold = metrics.roc_curve(alarms, imc_risks_ref_splitting[imc_ref_key_splitting])
         roc_auc = metrics.auc(fpr, tpr)
         imc_ref_splitting_auc[imc_ref_key_splitting] = roc_auc
-
-    print(imc_ref_splitting_auc)
 
     
     """ reg_auc = {}
@@ -695,8 +803,8 @@ def auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transitio
 
     imc_results = {}
 
-    #for x in range(1,11):
-    for x in range(5,7):
+    for x in range(1,11):
+    #for x in range(5,7):
         imc_results[str(x)] = []
 
     for key in imc_auc.keys():
@@ -708,8 +816,8 @@ def auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transitio
 
     imc_ref_results = {}
 
-    #for x in range(1,11):
-    for x in range(5,7):
+    for x in range(1,11):
+    #for x in range(5,7):
         imc_ref_results[str(x)] = []
 
     for key in imc_ref_auc.keys():
@@ -721,8 +829,8 @@ def auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transitio
 
     imc_ref_splitting_results = {}
 
-    #for x in range(1,11):
-    for x in range(5,7):
+    for x in range(1,11):
+    #for x in range(5,7):
         imc_ref_splitting_results[str(x)] = []
 
     for key in imc_ref_splitting_auc.keys():
@@ -760,7 +868,7 @@ def auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transitio
     return target_auc, imc_results, imc_ref_results, imc_transition_counts_ref,  imc_ref_splitting_results, imc_transition_counts_ref_splitting
 
 
-def plotting(target_auc, imc_results, imc_transition_counts, imc_ref_results, imc_transition_counts_ref, horizon, initial_amount, imc_ref_splitting_results, imc_transition_counts_ref_splitting): 
+def plotting(coarse, target_auc, imc_results, imc_transition_counts, imc_ref_results, imc_transition_counts_ref, horizon, initial_amount, imc_ref_splitting_results, imc_transition_counts_ref_splitting): 
 
     RS_sets = []
     R_sets = []
@@ -819,10 +927,6 @@ def plotting(target_auc, imc_results, imc_transition_counts, imc_ref_results, im
 
     #log = True
     log = False
-
-    
-
-
 
     #REFINEMENT AVERAGE PERFORMANCE
     transitions_data = []
@@ -1110,9 +1214,16 @@ def plotting(target_auc, imc_results, imc_transition_counts, imc_ref_results, im
         plt.ylim(bottom=0)
     ax.grid(True)
     plt.subplots_adjust(bottom=0.25)
-    plt.title(f'{args.mc}', fontsize=35)
+    if coarse: 
+        plt.title(f'{args.mc} coarse', fontsize=35)
+    else:
+        plt.title(f'{args.mc}', fontsize=35) 
     plt.tight_layout()
-    plt.savefig(f"/workspaces/premise/premise/analysis/rq_2_{args.mc}_AUC_ref_no_ref.pdf", dpi=300, bbox_inches='tight')
+    if coarse:
+        plt.savefig(f"/workspaces/premise/premise/analysis/rq_2_{args.mc}_coarse_AUC_ref_no_ref.pdf", dpi=300, bbox_inches='tight')
+    else: 
+        plt.savefig(f"/workspaces/premise/premise/analysis/rq_2_{args.mc}_AUC_ref_no_ref.pdf", dpi=300, bbox_inches='tight')
+
     plt.show()
 
 
@@ -1137,33 +1248,40 @@ def main_imc(args: argparse.Namespace):
     alarms = aggregted_alarms(testing_samples)
     target_risks = stats_true(horizon, initial_amount, testing_samples, suo)
 
-    imc_risks_ref_splitting, imc_transition_counts_ref_splitting, imc_stopping_threashold_ref_splitting, imc_distances_ref_splitting = aggregated_stats_imc(args.imc_model_ref_splitting, args.imc_stats_ref_splitting, initial_amount, horizon, args, testing_samples)
-    imc_risks, imc_transition_counts, imc_stopping_threashold, imc_distances = aggregated_stats_imc(args.imc_model, args.imc_stats, initial_amount, horizon, args, testing_samples)
-    imc_risks_ref, imc_transition_counts_ref, imc_stopping_threashold_ref, imc_distances_ref = aggregated_stats_imc(args.imc_model_ref, args.imc_stats_ref, initial_amount, horizon, args, testing_samples)
+    coarse = args.coarse
+    mc = args.mc
+    model_path = args.model_path
+    stats_path = args.stats_path
 
-    regression_risks, regression_ys = aggregated_stats_regression(args.regression_model, args.regression_stats, testing_samples, horizon, initial_amount)
-    #conformal_risks, conformal_ys = aggreagted_stats_conformal(noisy_measurements, args.se_path, args.error_path, args.rej_path, args.stats_path, args.cp_classification_path)      
+
+    imc_risks_ref_splitting, imc_transition_counts_ref_splitting, imc_stopping_threashold_ref_splitting, imc_distances_ref_splitting = aggregated_stats_imc(coarse, 'refsplit', mc, model_path, stats_path, initial_amount, horizon, args, testing_samples)
+    imc_risks, imc_transition_counts, imc_stopping_threashold, imc_distances = aggregated_stats_imc(coarse, 'noref', mc, model_path, stats_path, initial_amount, horizon, args, testing_samples)
+    imc_risks_ref, imc_transition_counts_ref, imc_stopping_threashold_ref, imc_distances_ref = aggregated_stats_imc(coarse, 'ref', mc, model_path, stats_path, initial_amount, horizon, args, testing_samples)
+
+    regression_risks, regression_ys = aggregated_stats_regression(coarse, mc, model_path, stats_path, testing_samples, horizon, initial_amount)
+    #conformal_risks, conformal_ys = aggreagted_stats_conformal(new_noisy, coarse, mc, model_path, stats_path)      
             
     target_auc, imc_results, imc_ref_results, imc_transition_counts_ref,  imc_ref_splitting_results, imc_transition_counts_ref_splitting = auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transition_counts_ref, imc_risks_ref_splitting, imc_transition_counts_ref_splitting)
-    plotting(target_auc, imc_results, imc_transition_counts, imc_ref_results, imc_transition_counts_ref, horizon, initial_amount, imc_ref_splitting_results, imc_transition_counts_ref_splitting)
-
-
-    roc_curve_per_threashold(0.2, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
-    roc_curve_per_threashold(0.1, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
-    roc_curve_per_threashold(0.05, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
-    roc_curve_per_threashold(0.025, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
-    roc_curve_per_threashold(0.015, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
-    roc_curve_per_threashold(0.01, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
-    roc_curve_per_threashold(0.005, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
+    plotting(coarse, target_auc, imc_results, imc_transition_counts, imc_ref_results, imc_transition_counts_ref, horizon, initial_amount, imc_ref_splitting_results, imc_transition_counts_ref_splitting)
     
-    #plot_roc_curve(alarms, imc_risks_ref, regression_risks, regression_ys, conformal_risks, conformal_ys, target_risks)
+    plot_roc_curve(coarse, alarms, imc_risks_ref, regression_risks, regression_ys, target_risks)
 
+    roc_curve_per_threashold(coarse, 0.2, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
+    roc_curve_per_threashold(coarse, 0.1, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
+    roc_curve_per_threashold(coarse, 0.05, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
+    roc_curve_per_threashold(coarse, 0.025, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
+    roc_curve_per_threashold(coarse, 0.015, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
+    roc_curve_per_threashold(coarse, 0.01, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
+    roc_curve_per_threashold(coarse, 0.005, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
+    
+    #plot_roc_curve(coarse, alarms, imc_risks_ref, regression_risks, regression_ys, conformal_risks, conformal_ys, target_risks)
+    
 
 def build_learning_parser(parser: argparse.ArgumentParser):
     group = parser.add_argument_group("Learning Parameters")
 
-    group.add_argument("--model_name", type=str, default="MC", help="Name of the model (first letters code).")
-    group.add_argument("-s", "--testing_samples", type=int, default = 500, help="Total number of samples used in learning")
+    group.add_argument("--model_name", type=str, default="MC", help="Name of the conformal prediction model (first letters code).")
+    group.add_argument("-s", "--testing_samples", type=int, default = 200, help="Total number of samples used in learning")
     group.add_argument("--no-target", action="store_true", default=False, help="Do not use the target monitor" )
 
 
@@ -1180,65 +1298,20 @@ def testing_argsparser():
         help="Increase verbosity level (can be used multiple times)",
     )
 
-    parser.add_argument('--se_path', 
+    parser.add_argument('--model_path', 
                         type = str, 
-                        help = 'Path to state estimator',
+                        help = 'Path to models',
     )
 
-    parser.add_argument('--error_path', 
+    parser.add_argument('--stats_path', 
                         type = str, 
-                        help ='Path to error estimator',
+                        help ='Path to stats',
     )
 
-    parser.add_argument('--rej_path', 
-                        type = str, 
-                        help ='Path to rejection classifier',
-    )
-
-    parser.add_argument('--stats_path',
-                        type = str, 
-                        help = 'Path to dataset statistics',
-    )
-
-    parser.add_argument('--cp_classification_path',
-                        type = str, 
-                        help = 'Path to CP classifier'
-    )
-
-    parser.add_argument('--imc_model',
-                        type = str, 
-                        help = 'Path imc models'
-                        )
-    
-    parser.add_argument('--imc_stats',
-                        type = str, 
-                        help = 'Path imc stats'
-    )
-    parser.add_argument('--imc_model_ref',
-                        type = str, 
-                        help = 'Path imc models'
-                        )
-    parser.add_argument('--imc_stats_ref',
-                        type = str, 
-                        help = 'Path imc stats'
-    )
-    parser.add_argument('--imc_model_ref_splitting',
-                        type = str, 
-                        help = 'Path imc models'
-                        )
-    parser.add_argument('--imc_stats_ref_splitting',
-                        type = str, 
-                        help = 'Path imc stats'
-    )
-
-    parser.add_argument('--regression_model',
-                        type = str,
-                        help = 'Path regression model'
-    )
-    parser.add_argument('--regression_stats', 
-                        type = str,
-                        help = 'Path regression stats'
-    )
+    parser.add_argument("--coarse",
+                        type = bool, 
+                        default= False, 
+                        help = "If the leared model is coarse or not")
 
     return parser
 
@@ -1247,10 +1320,47 @@ if __name__ == "__main__":
     parser = testing_argsparser()
     args = parser.parse_args()
     main_imc(args)
-    
-    
-#python -m premise.interval.rq_3 --mc airportA-7-10-10 --imc_model /workspaces/premise/out/models/2025-07-17/airportA-7-10-10-coarse-comp-noref --imc_stats /workspaces/premise/out/stats/2025-07-17/airportA-7-10-10-coarse_norefinement-stats --imc_model_ref /workspaces/premise/out/models/2025-07-17/airportA-7-10-10-coarse-comp-ref --imc_stats_ref /workspaces/premise/out/stats/2025-07-17/airportA-7-10-10-coarse_refinement-stats --regression_model /workspaces/premise/out/models/2025-07-17/airportA-7-10-10-coarse-comp-reg --regression_stats /workspaces/premise/out/stats/2025-07-17/airportA-7-10-10-coarse-comp-reg-stats --se_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_state_estimator' --error_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_label_estimator' --rej_path '/workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_rejection_classifier' --stats_path '/workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_conformal_stats' --cp_classification_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_cp_classification' --imc_model_ref_splitting /workspaces/premise/out/models/2025-07-17/airportA-7-10-10-coarse-comp-refsplit --imc_stats_ref_splitting /workspaces/premise/out/stats/2025-07-17/airportA-7-10-10-coarse_refsplitinement-stats
 
-#python -m premise.interval.rq_3 --mc evadeV-5-3 --imc_model /workspaces/premise/out/models/2025-07-17/evadeV-5-3-comp-noref --imc_stats /workspaces/premise/out/stats/2025-07-17/evadeV-5-3-comp-noref-stats --imc_model_ref /workspaces/premise/out/models/2025-07-17/evadeV-5-3-comp-ref --imc_stats_ref /workspaces/premise/out/stats/2025-07-17/evadeV-5-3-comp-ref-stats --regression_model /workspaces/premise/out/models/2025-07-17/evadeV-5-3-comp-reg --regression_stats /workspaces/premise/out/stats/2025-07-17/evadeV-5-3-comp-reg-stats --se_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_state_estimator' --error_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_label_estimator' --rej_path '/workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_rejection_classifier' --stats_path '/workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_conformal_stats' --cp_classification_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_cp_classification' --imc_model_ref_splitting /workspaces/premise/out/models/2025-07-17/evadeV-5-3-comp-refsplit --imc_stats_ref_splitting /workspaces/premise/out/stats/2025-07-17/evadeV-5-3-comp-refsplit-stats
 
-#python -m premise.interval.rq_3 --mc airportA-7-10-10 --imc_model /workspaces/premise/out/models/2025-07-19/airportA-7-10-10-comp-noref --imc_stats /workspaces/premise/out/stats/2025-07-19/airportA-7-10-10-comp-noref-stats --imc_model_ref /workspaces/premise/out/models/2025-07-19/airportA-7-10-10-comp-ref --imc_stats_ref /workspaces/premise/out/stats/2025-07-19/airportA-7-10-10-comp-ref-stats --regression_model /workspaces/premise/out/models/2025-07-19/airportA-7-10-10-comp-reg --regression_stats /workspaces/premise/out/stats/2025-07-19/airportA-7-10-10-comp-reg-stats --se_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_state_estimator' --error_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_label_estimator' --rej_path '/workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_rejection_classifier' --stats_path '/workspaces/premise/out/stats/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_conformal_stats' --cp_classification_path '/workspaces/premise/out/models/2025-07-10_07-55-18/SnL-10x10_comp_conformal_pred_cp_classification' --imc_model_ref_splitting /workspaces/premise/out/models/2025-07-19/airportA-7-10-10-comp-refsplit --imc_stats_ref_splitting /workspaces/premise/out/stats/2025-07-19/airportA-7-10-10-comp-refsplit-stats
+# python -m premise.interval.rq_3 --mc airportA-7-10-10 --model_path /workspaces/premise/out/models/2025-07-19 --stats_path /workspaces/premise/out/stats/2025-07-19 
+# python -m premise.interval.rq_3 --mc evadeV-5-3 --model_path /workspaces/premise/out/models/2025-07-17 --stats_path /workspaces/premise/out/stats/2025-07-17
+
+
+#coarse = True 
+
+    #imc_model {model_path}/{mc}-coarse-comp-noref
+    #imc_stats {stats_path}/{mc}-coarse_norefinement-stats
+    #imc_model_ref {model_path}/{mc}-coarse-comp-ref
+    #imc_stats_ref {stats_path}/{mc}-coarse_refinement-stats
+    #imc_model_ref_splitting {model_path}/{mc}-coarse-comp-refsplit
+    #imc_stats_ref_splitting {stats_path}/{mc}-coarse_refsplitinement-stats
+
+    #regression_model {model_path}/{mc}-coarse-comp-reg
+    #regression_stats {stats_path}/{mc}-coarse-comp-reg-stats
+
+    #se_path {model_path}/{mc}_coarse_comp_conformal_pred_state_estimator
+    #error_path {model_path}/{mc}_coarse_comp_conformal_pred_label_estimator
+    #rej_path {stats_path}/{mc}_coarse_comp_conformal_pred_label_estimator 
+    #stats_path {stats_path}/{mc}_coarse_comp_conformal_pred_rejection_classifier
+    #cp_classification_path {model_path}/{mc}_coarse_comp_conformal_pred_cp_classification
+
+
+#coarse = False 
+
+    #imc_model {model_path}/{mc}-comp-noref
+    #imc_stats {stats_path}/{mc}-comp-noref-stats
+    #imc_model_ref {model_path}/{mc}-comp-ref
+    #imc_stats_ref {stats_path}/{mc}-comp-ref-stats
+    #imc_model_ref_splitting {model_path}/{mc}-comp-refsplit
+    #imc_stats_ref_splitting  {stats_path}/{mc}-comp-refsplit-stats
+
+    #regression_model {model_path}/{mc}-comp-reg
+    #regression_stats {stats_path}/{mc}-comp-reg-stats
+
+    #se_path {model_path}/{mc}_comp_conformal_pred_state_estimator
+    #error_path {model_path}/{mc}_comp_conformal_pred_label_estimator
+    #rej_path {stats_path}/{mc}_comp_conformal_pred_label_estimator 
+    #stats_path {stats_path}/{mc}_comp_conformal_pred_rejection_classifier
+    #cp_classification_path {model_path}/{mc}_comp_conformal_pred_cp_classification
+
+    

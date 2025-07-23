@@ -184,14 +184,31 @@ def maximum_likelihood_estimation(
         else:
             transition_probabilities[src, dest] = 0.0
 
-    # Compute initial state probabilities
+    #ANTONINA
     initial_state_probabilities = {}
+    initial_state_count = {}
     for state in all_initial_states:
-        count = visit_state_count.get(state, 0)
-        if count > 0:
-            initial_state_probabilities[state] = count / len(samples)
-        else:
-            initial_state_probabilities[state] = 0.0
+        initial_state_count[state] = 0 
+        for trace in samples:
+            if trace[0] == state:
+                initial_state_count[state] += 1
+
+    for key in initial_state_count.keys():
+        initial_state_probabilities[key] = 0
+    
+    for key in initial_state_count.keys():
+        initial_state_probabilities[key] = initial_state_count[key] / len(samples)
+
+    """ 
+        # Compute initial state probabilities
+        initial_state_probabilities = {}
+        for state in all_initial_states:
+            count = visit_state_count.get(state, 0)
+            if count > 0:
+                initial_state_probabilities[state] = count / len(samples)
+            else:
+                initial_state_probabilities[state] = 0.0
+    """
 
     return initial_state_probabilities, transition_probabilities
 
@@ -260,20 +277,21 @@ def mle_learning(
         sample_subset = samples[: samples_per_iteration * (i + 1)]
         sample_count_list.append(len(sample_subset))
 
-        model = maximum_likelihood_estimation(
+        model = maximum_likelihood_estimation( 
             all_states,
             all_transitions,
             all_initial_states,
             sample_subset,
         )
 
-        with open(f"{model_path}-{i}.pickl", "wb") as f:
+        with open(f"{model_path}-{i}.pickl", "wb") as f: 
             pickle.dump(model, f)
+    
+    return sample_count_list 
 
-    return sample_count_list
 
+def mle_learning_main(args):  
 
-def mle_learning_main(args):
     setup_logging()
 
     logger.info(f"Starting MLE learning with args: {args}")
