@@ -2,94 +2,110 @@ import os
 import numpy as np
 import pandas as pd
 from typing import Any
-from sklearn.linear_model import LogisticRegression
-from premise.interval.interval import Samples, Trace
-import tqdm
+from sklearn.linear_model import SGDRegressor
+from sklearn.preprocessing import OneHotEncoder
 import argparse
 
 from premise.interval.loading import build_suo, build_suo_args_parser
-from premise.interval.interval import Samples
-from premise.interval.loss import distance_measures
 from premise.interval.utils import setup_logging, logger
-from premise.interval.conformence import random_sample_monitor_test
-from premise.monitor import Monitor
+from premise.interval.conformence import test_monitor
 
 
-def prep_trace_for_regression(trace, observations):
-    row = []
-    for _, obs, _ in trace:
-        row.extend([1 if obs == o else 0 for o in observations])
-    return row
-
-
-def learn_regression_model(train_samples, observations, testing_samples, args):
-    logger.info("Preparing data for regression model training.")
-    num_steps = args.length
-
-    column_names = [f"Step{s}_Obs{o}" for s in range(num_steps) for o in observations]
-
-    binary_data = []
-    y = []
-    for trace in train_samples:
-        sub_trace = trace[:num_steps]
-        row = prep_trace_for_regression(sub_trace, observations)
-        binary_data.append(row)
-
-        y.append(1 if any(x[2] == True for x in trace[num_steps:]) else 0)
-
-    X = pd.DataFrame(binary_data, columns=column_names)
-    logger.info(
-        f"Training data prepared with {len(X)} samples and {len(column_names)} features."
+def create_onehot_encoder(possible_observations, num_steps):
+    possible_observations = np.array(sorted(possible_observations))
+    categories = [possible_observations] * num_steps
+    ohe = OneHotEncoder(
+        categories=categories,
+        dtype=np.int8,
+        drop="first",
     )
-
-    model = LogisticRegression(n_jobs=1)
-    model.fit(X, y)
-    logger.info("Regression model training completed.")
-
-    binary_test_data = []
-    for trace in testing_samples:
-        sub_trace = trace[:num_steps]
-        row = prep_trace_for_regression(sub_trace, observations)
-        binary_test_data.append(row)
-
-    X_test = pd.DataFrame(binary_test_data, columns=column_names)
-    logger.info(f"Testing data prepared with {len(X_test)} samples.")
-
-    prob = model.predict_proba(X_test)
-    risks = prob[:, 1]
-
-    regression_risks = {}
-    for sample, risk in zip(testing_samples, risks):
-        regression_risks[tuple(sample)] = risk
-
-    logger.info("Regression risks computed for testing samples.")
-
-    return testing_samples, regression_risks, model  # dictionary trace + risk
+    ohe.fit(
+        X=np.array([[possible_observations[0]] * num_steps])
+    )  # Fit with a dummy value
+    return ohe
 
 
-def test_monitor(
-    mon: Monitor,
-    samples: Samples,
-    obs_func=lambda x: x,
-    skip_initial=False,
-    with_tqdm=True,
+def prep_traces_onehot_encoder(ohe: OneHotEncoder, traces, num_steps):
+    """
+    Using sklearn's OneHotEncoder - good for categorical data.
+    """
+    # First, convert traces to a 2D array of observations
+    obs_array = []
+    for trace in traces:
+        trace_obs = [obs for _, obs, _ in trace[:num_steps]]
+        obs_array.append(trace_obs)
+
+    obs_array = np.array(obs_array)
+
+    # Fit and transform
+    encoded_flat = ohe.transform(obs_array).toarray()
+
+    # Reshape back to (n_traces, num_steps * n_features)
+    n_traces = len(traces)
+    encoded = encoded_flat.reshape(n_traces, -1)
+
+    return encoded
+
+
+def learn_regression_model(
+    train_samples_amount: int,
+    ohe: OneHotEncoder,
+    suo,
+    length: int,
+    horizon: int,
+    batch_size: int,
 ):
-    risks: dict[Trace, Any] = {}
-    it = tqdm.tqdm(samples) if with_tqdm else samples
-    for trace in it:
-        observations = [t[1] for t in trace]
+    logger.info("Preparing data for regression model training.")
 
-        if skip_initial:
-            mon.initialize(0)
+    num_steps = length
+
+    # Use SGDRegressor with partial_fit for incremental learning
+    model = SGDRegressor()
+
+    trained_sample_count = 0
+    iteration = 0
+    model_initialized = False
+
+    while trained_sample_count < train_samples_amount:
+        logger.info(f"Starting iteration {iteration} for regression model training.")
+        train_samples = suo.generate_random_traces(
+            [],
+            length + horizon,
+            min(batch_size, train_samples_amount - trained_sample_count),
+        )
+        trained_sample_count += len(train_samples)
+        logger.info(
+            f"Generated {len(train_samples)} samples in iteration {iteration}. Total trained samples: {trained_sample_count}."
+        )
+
+        # Use vectorized preprocessing - much faster than DataFrame operations
+        X = prep_traces_onehot_encoder(ohe, train_samples, num_steps)
+
+        # Vectorized label creation
+        y = np.array(
+            [
+                1 if any(x[2] == True for x in trace[num_steps:]) else 0
+                for trace in train_samples
+            ]
+        )
+
+        logger.info(
+            f"Prepared iteration {iteration} with {len(X)} samples ({sum(y)/len(y) * 100}% positive)."
+        )
+
+        # Use partial_fit for incremental learning (more memory efficient)
+        if not model_initialized:
+            model.fit(X, y)
+            model_initialized = True
         else:
-            mon.initialize(obs_func(observations[0]))
+            model.partial_fit(X, y)
 
-        for obs in observations[0 if skip_initial else 1 : -1]:
-            mon.step(obs_func(obs), compute_risk=False)
+        logger.info(f"Iteration {iteration} regression model trained.")
 
-        last_risk = mon.step(obs_func(observations[-1]), compute_risk=True)
-        risks[tuple(trace)] = last_risk
-    return risks
+        iteration += 1
+
+    logger.info("Regression model training completed.")
+    return model
 
 
 def regression_distance(
@@ -139,10 +155,6 @@ def reg_main(args: argparse.Namespace):
                 "Either horizon must be specified or it must be provided by the model."
             )
 
-    train_samples = suo.generate_random_traces(
-        [], args.length + args.horizon, args.amount
-    )
-
     all_states = suo.get_states_and_transitions()[0]
 
     observations = []
@@ -150,61 +162,30 @@ def reg_main(args: argparse.Namespace):
         if x[1] not in observations:
             observations.append(x[1])
 
-    samples_with_prob = suo.generate_random_traces_with_prob(
-        [], args.length, args.test_samples
+    one_hot_encoder = create_onehot_encoder(observations, args.length)
+
+    model = learn_regression_model(
+        args.amount,
+        one_hot_encoder,
+        suo,
+        args.length,
+        args.horizon,
+        args.batch_size,
     )
 
-    total_prob = sum(p for _, p in samples_with_prob)
-    test_weights = {s: float(p / total_prob) for s, p in samples_with_prob}
-    testing_samples = [s[0] for s in samples_with_prob]
-
-    logger.info(
-        f"Generated {len(train_samples)} training samples and {len(testing_samples)} testing samples."
-    )
-
-    distance = distance_measures[args.distance]()
-
-    for i in range(8, 9):
-        logger.info(f"Running regression for {i} steps...")
-        end_index = int((i / 8) * len(train_samples))
-        currrent_train_samples = train_samples[:end_index]
-
-        testing_samples, regression_risks, model = learn_regression_model(
-            currrent_train_samples, observations, testing_samples, args
+    if args.dump_stats:
+        np.save(
+            args.dump_stats,
+            {
+                "args": vars(args),
+                "observations": observations,
+                "one_hot_encoder": one_hot_encoder,
+            },  # type: ignore
+            allow_pickle=True,
         )
 
-        logger.info(f"Testing regression model with {len(testing_samples)} samples.")
-        target_risks, target_dist, target_all_dist = regression_distance(
-            testing_samples, regression_risks, distance, test_weights, suo, args
-        )
-
-        logger.info(f"Target distance: {target_dist}")
-        sampled_risks = random_sample_monitor_test(
-            suo, testing_samples, args.horizon, args.conformence_amount
-        )
-
-        if args.dump_stats:
-            stats_path = f"{args.dump_stats}_{end_index}"
-            np.save(
-                args.dump_stats,
-                {
-                    "target_dist": target_dist,
-                    "target_all_dist": target_all_dist,
-                    "weights": {s: float(w) for s, w in test_weights.items()},
-                    "target_risks": {s: float(r) for s, r in target_risks.items()},
-                    "regression_risks": {
-                        s: float(r) for s, r in regression_risks.items()
-                    },
-                    "sampled_risks": sampled_risks,
-                    "samples": testing_samples,
-                    "args": vars(args),
-                    "observations": observations,
-                },  # type: ignore
-            )
-
-        if args.model_path:
-            path = f"{args.model_path}_{end_index}"
-            np.save(path, model)
+    if args.model_path:
+        np.save(args.model_path, model, allow_pickle=True)  # type: ignore
 
 
 def build_learning_args_parser(parser: argparse.ArgumentParser):
@@ -219,7 +200,7 @@ def build_learning_args_parser(parser: argparse.ArgumentParser):
         "-l", "--length", type=int, help="Length of the samples to generate"
     )
     group.add_argument(
-        "-t", "--test_samples", type=int, default=50, help="Amount of test samples"
+        "-b", "--batch-size", type=int, default=5000, help="Batch size for training"
     )
     group.add_argument("--model", type=bool, default=False, help="If a model exists")
     group.add_argument("--horizon", type=int, help="Length horizon")
@@ -235,20 +216,6 @@ def reg_argsparser():
         action="count",
         default=0,
         help="Increase verbosity level (can be used multiple times)",
-    )
-    parser.add_argument(
-        "-d",
-        "--distance",
-        choices=distance_measures.keys(),
-        default="umse",
-        help="Distance measure to use",
-    )
-    parser.add_argument(
-        "-ca",
-        "--conformence-amount",
-        type=int,
-        default=500,
-        help="Amount of extensions to generate for a sample",
     )
 
     parser.add_argument("--dump-model", type=str, help="Path to dump the model to")

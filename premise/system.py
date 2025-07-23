@@ -27,7 +27,7 @@ class SystemUnderObservation(ABC):
     model_name: str
 
     def get_states_and_transitions(
-        self, all_transitions: bool = True
+        self, all_transitions: bool = False
     ) -> tuple[list[State], list[tuple[State, State]], list[State]]:
         raise NotImplementedError("This method should be overridden by subclasses")
 
@@ -91,7 +91,7 @@ class MCSystemUnderObservation(SystemUnderObservation):
         self._sample_count = 0
         self._transition_count = 0
 
-    def get_states_and_transitions(self, all_transitions: bool = True, **kwargs):
+    def get_states_and_transitions(self, all_transitions: bool = False, **kwargs):
         return build_state_and_transition_list(
             self._model, self._model_def.target_label, all_transitions, **kwargs
         )

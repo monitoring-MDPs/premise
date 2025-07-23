@@ -381,7 +381,7 @@ def ref_args_parser():
         "-ra",
         "--refinement-amount",
         type=int,
-        default=2,
+        default=5,
         help="Amount of refinement samples to learn on per prefix",
     )
     learning_group.add_argument(
@@ -453,8 +453,8 @@ def ref_args_parser():
         "-ca",
         "--conformence-amount",
         type=int,
-        default=100,
-        help="Amount of samples to test on in each refimement iteration",
+        default=150,
+        help="Amount of samples to test on in each refinement iteration",
     )
     conformence_group.add_argument(
         "-cl",
