@@ -25,3 +25,7 @@ coverage.xml
 dist/
 build/
 out/
+
+*.zip
+*.tar.gz
+memray*
