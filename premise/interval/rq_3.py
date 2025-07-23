@@ -1322,7 +1322,7 @@ if __name__ == "__main__":
     main_imc(args)
 
 
-# python -m premise.interval.rq_3 --mc airportA-7-10-10 --model_path /workspaces/premise/out/models/2025-07-19 --stats_path /workspaces/premise/out/stats/2025-07-19 
+# python -m premise.interval.rq_3 --mc airportA-7-10-10 --model_path /workspaces/premise/out/models/2025-07-17 --stats_path /workspaces/premise/out/stats/2025-07-17 --coarse 
 # python -m premise.interval.rq_3 --mc evadeV-5-3 --model_path /workspaces/premise/out/models/2025-07-17 --stats_path /workspaces/premise/out/stats/2025-07-17
 
 
