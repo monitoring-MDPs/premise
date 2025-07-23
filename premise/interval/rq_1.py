@@ -43,7 +43,7 @@ def stats_true(horizon, initial_amount, testing_samples, suo):
     return target_risks
 
 
-def aggregated_stats_imc(coarse, path, stats_path, initial_amount, horizon, args, testing_samples):
+def aggregated_stats_imc(high_st, coarse, path, stats_path, initial_amount, horizon, args, testing_samples):
     imc_risks = {}
 
     imc_transition_counts = {}
@@ -52,15 +52,15 @@ def aggregated_stats_imc(coarse, path, stats_path, initial_amount, horizon, args
     #for x in range(5,7):
         print(f"Experiment number {x}")
         if coarse: 
-            if not os.path.exists(f"{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy"):
-                print(f"Statistics file for experiment {x} does not exist.")
-                continue
-            statistics = np.load(f"{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy", allow_pickle=True)
+            if high_st: 
+                statistics = np.load(f"{stats_path}/high-st-{args.mc}-coarse_norefinement-stats-{x}.npy", allow_pickle=True)
+            else:
+                statistics = np.load(f"{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy", allow_pickle=True)
         else:
-            if not os.path.exists(f"{stats_path}/{args.mc}-comp-noref-stats-{x}.npy"):
-                print(f"Statistics file for experiment {x} does not exist.")
-                continue
-            statistics = np.load(f"{stats_path}/{args.mc}-comp-noref-stats-{x}.npy", allow_pickle=True)
+            if high_st: 
+                statistics = np.load(f"{stats_path}/high-st-{args.mc}-comp-noref-stats-{x}.npy", allow_pickle=True)
+            else:
+                statistics = np.load(f"{stats_path}/{args.mc}-comp-noref-stats-{x}.npy", allow_pickle=True)
 
         obj = statistics.item()
         imc_transition_count = obj["transitions_learned"]
@@ -75,12 +75,20 @@ def aggregated_stats_imc(coarse, path, stats_path, initial_amount, horizon, args
 
         for y in trange(1, len(imc_transition_count) + 1):
             if coarse:
-                initial_distribution = f"{path}/{args.mc}-coarse-comp-noref-{x}-{y}-initial_interval.npy"
-                transition_intervals = f"{path}/{args.mc}-coarse-comp-noref-{x}-{y}-interval.npy"
+                if high_st:
+                    initial_distribution = f"{path}/high-st-{args.mc}-coarse-comp-noref-{x}-{y}-initial_interval.npy"
+                    transition_intervals = f"{path}/high-st-{args.mc}-coarse-comp-noref-{x}-{y}-interval.npy"
+                else:
+                    initial_distribution = f"{path}/{args.mc}-coarse-comp-noref-{x}-{y}-initial_interval.npy"
+                    transition_intervals = f"{path}/{args.mc}-coarse-comp-noref-{x}-{y}-interval.npy"
             else: 
-                initial_distribution = f"{path}/{args.mc}-comp-noref-{x}-{y}-initial_interval.npy"
-                transition_intervals = f"{path}/{args.mc}-comp-noref-{x}-{y}-interval.npy"
-
+                if high_st: 
+                    initial_distribution = f"{path}/high-st-{args.mc}-comp-noref-{x}-{y}-initial_interval.npy"
+                    transition_intervals = f"{path}/high-st-{args.mc}-comp-noref-{x}-{y}-interval.npy"
+                else: 
+                    initial_distribution = f"{path}/{args.mc}-comp-noref-{x}-{y}-initial_interval.npy"
+                    transition_intervals = f"{path}/{args.mc}-comp-noref-{x}-{y}-interval.npy"
+                
 
             args.trans_path = transition_intervals
             args.init_path = initial_distribution
@@ -117,7 +125,7 @@ def aggregated_stats_imc(coarse, path, stats_path, initial_amount, horizon, args
 
 
 
-def aggregated_stats_mc(coarse, path, stats_path, initial_amount, horizon, args, testing_samples):
+def aggregated_stats_mc(high_st, coarse, path, stats_path, initial_amount, horizon, args, testing_samples):
     mc_risks = {}
 
     mc_transition_counts = {}
@@ -126,15 +134,15 @@ def aggregated_stats_mc(coarse, path, stats_path, initial_amount, horizon, args,
     #for x in range(5,7):
         print(f"Experiment number {x}")
         if coarse: 
-            if not os.path.exists(f"{stats_path}/{args.mc}-coarse-comp-mle-stats-{x}.npy"):
-                print(f"Statistics file for experiment {x} does not exist.")
-                continue
-            statistics = np.load(f"{stats_path}/{args.mc}-coarse-comp-mle-stats-{x}.npy", allow_pickle=True)
+            if high_st:
+                statistics = np.load(f"{stats_path}/high-st-{args.mc}-coarse-comp-mle-stats-{x}.npy", allow_pickle=True)
+            else:
+                statistics = np.load(f"{stats_path}/{args.mc}-coarse-comp-mle-stats-{x}.npy", allow_pickle=True)
         else:
-            if not os.path.exists(f"{stats_path}/{args.mc}-comp-mle-stats-{x}.npy"):
-                print(f"Statistics file for experiment {x} does not exist.")
-                continue
-            statistics = np.load(f"{stats_path}/{args.mc}-comp-mle-stats-{x}.npy", allow_pickle=True)
+            if high_st: 
+                statistics = np.load(f"{stats_path}/high-st-{args.mc}-comp-mle-stats-{x}.npy", allow_pickle=True)
+            else:
+                statistics = np.load(f"{stats_path}/{args.mc}-comp-mle-stats-{x}.npy", allow_pickle=True)
 
         mc_sample_count = statistics["sample_counts"]
 
@@ -147,15 +155,18 @@ def aggregated_stats_mc(coarse, path, stats_path, initial_amount, horizon, args,
 
         for y in trange(0, len(mc_transition_count)):
             if coarse:
-                model = f"{path}/{args.mc}-coarse-comp-mle-{x}-{y}.pickl"
+                if high_st:
+                    model = f"{path}/high-st-{args.mc}-coarse-comp-mle-{x}-{y}.pickl"
+                else:
+                    model = f"{path}/{args.mc}-coarse-comp-mle-{x}-{y}.pickl"
             else: 
-                model = f"{path}/{args.mc}-comp-mle-{x}-{y}.pickl"
+                if high_st:
+                    model = f"{path}/high-st-{args.mc}-comp-mle-{x}-{y}.pickl"
+                else:
+                    model = f"{path}/{args.mc}-comp-mle-{x}-{y}.pickl"
 
             with open(model, 'rb') as file:
                 data = pickle.load(file)
-
-            #initial = {(0, 22, False): 1.0}
-            #initial = {((3, 7, 7, 0), 25, False) 1.0}
 
             model, observation_map, state_index_map = dict_to_pomdp(data[1], data[0], target_label =True, use_exact=True) 
 
@@ -176,13 +187,16 @@ def aggregated_stats_mc(coarse, path, stats_path, initial_amount, horizon, args,
              
                 mc_risks[f"{x}-{y}"].append(float(risk))
 
-        mc_transition = data[1] 
-
+        
+    print("MC TRANSITIONS")
+    if y == 9:
+        print(f'BATCH {x}-{y}')
+        print(data[1])
 
     return mc_risks, mc_transition_counts
 
 
-def distance_graph(coarse,target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts, testing_samples_weights):
+def distance_graph(high_st, coarse,target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts, testing_samples_weights):
 
     #IMC 
     distance_stats = {}
@@ -264,9 +278,6 @@ def distance_graph(coarse,target_risks, imc_risks, imc_transition_counts, mc_ris
     log = False
     plt.figure()
     fig, ax = plt.subplots(figsize=(16, 8))
-
-    print('mc_graph_data')
-    print(mc_graph_data)
 
     #MC AVERAGE PERFORMANCE
 
@@ -385,20 +396,32 @@ def distance_graph(coarse,target_risks, imc_risks, imc_transition_counts, mc_ris
     ax.grid(True)
     plt.subplots_adjust(bottom=0.25)
     if coarse: 
-        plt.title(f'{args.mc} coarse', fontsize=30)
+        if high_st: 
+            plt.title(f'{args.mc} coarse high st', fontsize=30)
+        else:
+            plt.title(f'{args.mc} coarse', fontsize=30)
     else: 
-        plt.title(f'{args.mc}', fontsize=30)
+        if high_st:
+            plt.title(f'{args.mc} high st', fontsize=30)
+        else:
+            plt.title(f'{args.mc}', fontsize=30)
 
     plt.tight_layout()
     if coarse: 
-        plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_{args.mc}_coarse_distance_to_RRF.pdf", dpi=300,  bbox_inches='tight')
+        if high_st:
+            plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_high-st-{args.mc}_coarse_distance_to_RRF.pdf", dpi=300,  bbox_inches='tight')
+        else: 
+            plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_{args.mc}_coarse_distance_to_RRF.pdf", dpi=300,  bbox_inches='tight')
     else: 
-        plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_{args.mc}_distance_to_RRF.pdf", dpi=300,  bbox_inches='tight')
+        if high_st:
+            plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_high-st-{args.mc}_distance_to_RRF.pdf", dpi=300,  bbox_inches='tight')
+        else:
+            plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_{args.mc}_distance_to_RRF.pdf", dpi=300,  bbox_inches='tight')
 
     plt.show()
 
 
-def overestimation_graph(coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts):
+def overestimation_graph(high_st, coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts):
 
     plt.figure()
     plt.plot([0, 1], [0, 1], "--", color = 'black')
@@ -412,10 +435,6 @@ def overestimation_graph(coarse, target_risks, imc_risks, imc_transition_counts,
         if key.split('-')[1] == str(max(mc_ys)):
             if key.split('-')[0] == str(5):
                 plt.scatter(mc_risks[key], target_risks, color='chartreuse', marker='s', label = "MC")
-                print('TARGET vs MC risk')
-                print(key)
-                print(target_risks)
-                print(mc_risks[key])
             else: 
                 plt.scatter(mc_risks[key], target_risks, color='chartreuse', marker='s')
 
@@ -430,11 +449,6 @@ def overestimation_graph(coarse, target_risks, imc_risks, imc_transition_counts,
         if key.split('-')[1] == str(max(imc_ys)):
             if key.split('-')[0] == str(5):
                 plt.scatter(imc_risks[key], target_risks, color='red', marker='o', label = "IMC")
-                print('TARGET vs IMC risk')
-                print(key)
-                print(target_risks)
-                print(imc_risks[key])
-
             else: 
                 plt.scatter(imc_risks[key], target_risks, color='red', marker='o')
 
@@ -445,15 +459,27 @@ def overestimation_graph(coarse, target_risks, imc_risks, imc_transition_counts,
     plt.ylabel("Target risks", fontsize=15)
     plt.tick_params(axis='both', labelsize=12)
     if coarse:
-        plt.title(f'{args.mc} coarse', fontsize=15)
+        if high_st:
+            plt.title(f'{args.mc} coarse high st', fontsize=15)
+        else:
+            plt.title(f'{args.mc} coarse', fontsize=15)
     else:
-        plt.title(f'{args.mc}', fontsize=15)
+        if high_st:
+            plt.title(f'{args.mc} high st', fontsize=15)
+        else: 
+            plt.title(f'{args.mc}', fontsize=15)
 
     plt.tight_layout()
     if coarse:
-        plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_{args.mc}_coarse_overestimation.pdf", dpi=300)
+        if high_st:
+            plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_high-st{args.mc}_coarse_overestimation.pdf", dpi=300)
+        else:
+            plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_{args.mc}_coarse_overestimation.pdf", dpi=300)
     else: 
-        plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_{args.mc}_overestimation.pdf", dpi=300)
+        if high_st:
+            plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_high-st{args.mc}_overestimation.pdf", dpi=300)
+        else:
+            plt.savefig(f"/workspaces/premise/premise/analysis/rq_1_{args.mc}_overestimation.pdf", dpi=300)
 
     plt.show()
 
@@ -477,13 +503,15 @@ def main_imc(args: argparse.Namespace):
     else:
         coarse = False
 
+    
+
 
     target_risks = stats_true(horizon, initial_amount, testing_samples, suo)
-    mc_risks, mc_transition_counts = stats_true(coarse, args.model_path, args.stats_path, initial_amount, horizon, args, testing_samples)
-    imc_risks, imc_transition_counts = aggregated_stats_imc(coarse, args.model_path, args.stats_path, initial_amount, horizon, args, testing_samples)
+    imc_risks, imc_transition_counts = aggregated_stats_imc(args.high_st, coarse, args.model_path, args.stats_path, initial_amount, horizon, args, testing_samples)
+    mc_risks, mc_transition_counts = aggregated_stats_mc(args.high_st, coarse, args.model_path, args.stats_path, initial_amount, horizon, args, testing_samples)
 
-    distance_graph(coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts, testing_samples_weights)
-    overestimation_graph(coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts)
+    distance_graph(args.high_st, coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts, testing_samples_weights)
+    overestimation_graph(args.high_st, coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts)
 
 
 def build_learning_parser(parser: argparse.ArgumentParser):
@@ -508,6 +536,7 @@ def testing_argsparser():
 
     parser.add_argument("--model_path", type=str, help="Path models")
     parser.add_argument("--stats_path", type=str, help="Path stats")
+    parser.add_argument("--high_st", type = bool, default = False, help = "If higher stopping threashold is used")
 
     return parser
 

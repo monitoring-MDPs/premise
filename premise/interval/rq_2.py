@@ -5,7 +5,7 @@ import matplotlib.ticker as ticker
 import argparse
 from premise.interval.loading import build_suo_args_parser
 
-def probelm_statement(coarse, stats_path):
+def probelm_statement(high_st, coarse, stats_path):
 
     imc_data = {}
     imc_final_distances = []
@@ -15,9 +15,15 @@ def probelm_statement(coarse, stats_path):
         states_aggreagted = []
         print(f'Experiment number {x}')
         if coarse:
-            statistics = np.load(f'{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy', allow_pickle=True).item()
+            if high_st:
+                statistics = np.load(f'{stats_path}/high-st-{args.mc}-coarse_norefinement-stats-{x}.npy', allow_pickle=True).item()
+            else:
+                statistics = np.load(f'{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy', allow_pickle=True).item()
         else:
-            statistics = np.load(f'{stats_path}/{args.mc}-comp-noref-stats-{x}.npy', allow_pickle=True).item() 
+            if high_st:
+                statistics = np.load(f'{stats_path}/high-st-{args.mc}-comp-noref-stats-{x}.npy', allow_pickle=True).item() 
+            else:
+                statistics = np.load(f'{stats_path}/{args.mc}-comp-noref-stats-{x}.npy', allow_pickle=True).item() 
 
         distances = statistics["distances"]
         imc_final_distances.append(distances[-1])
@@ -37,9 +43,15 @@ def probelm_statement(coarse, stats_path):
         ref_states_aggreagted = []
         print(f'Experiment number {x}')
         if coarse:
-            statistics = np.load(f'{stats_path}/{args.mc}-coarse_refinement-stats-{x}.npy', allow_pickle=True).item()
+            if high_st:
+                statistics = np.load(f'{stats_path}/high-st-{args.mc}-coarse_refinement-stats-{x}.npy', allow_pickle=True).item()
+            else:
+                statistics = np.load(f'{stats_path}/{args.mc}-coarse_refinement-stats-{x}.npy', allow_pickle=True).item()
         else: 
-            statistics = np.load(f'{stats_path}/{args.mc}-comp-ref-stats-{x}.npy', allow_pickle=True).item()
+            if high_st:
+                statistics = np.load(f'{stats_path}/high-st-{args.mc}-comp-ref-stats-{x}.npy', allow_pickle=True).item()
+            else:
+                statistics = np.load(f'{stats_path}/{args.mc}-comp-ref-stats-{x}.npy', allow_pickle=True).item()
 
 
         distances = statistics["distances"]
@@ -61,9 +73,15 @@ def probelm_statement(coarse, stats_path):
         split_ref_states_aggreagted = []
         print(f'Experiment number {x}')
         if coarse:
-            statistics = np.load(f'{stats_path}/{args.mc}-coarse_refsplitinement-stats-{x}.npy', allow_pickle=True).item()
+            if high_st:
+                statistics = np.load(f'{stats_path}/high-st-{args.mc}-coarse_refsplitinement-stats-{x}.npy', allow_pickle=True).item()
+            else:
+                statistics = np.load(f'{stats_path}/{args.mc}-coarse_refsplitinement-stats-{x}.npy', allow_pickle=True).item()
         else: 
-            statistics = np.load(f'{stats_path}/{args.mc}-comp-refsplit-stats-{x}.npy', allow_pickle=True).item()
+            if high_st:
+                statistics = np.load(f'{stats_path}/high-st-{args.mc}-comp-refsplit-stats-{x}.npy', allow_pickle=True).item()
+            else:
+                statistics = np.load(f'{stats_path}/{args.mc}-comp-refsplit-stats-{x}.npy', allow_pickle=True).item()
 
 
         distances = statistics["distances"]
@@ -77,7 +95,6 @@ def probelm_statement(coarse, stats_path):
         split_ref_data[x] = [distances, split_ref_states_aggreagted]
 
 
-    
     log = True
 
     plt.figure()
@@ -249,14 +266,26 @@ def probelm_statement(coarse, stats_path):
     ax.grid(True)
     plt.subplots_adjust(bottom=0.25)
     if coarse:
-        plt.title(f'{args.mc} coarse', fontsize=20)
-    else: 
-        plt.title(f'{args.mc}', fontsize=20)
+        if high_st:
+            plt.title(f'{args.mc} coarse high st', fontsize=20)
+        else: 
+            plt.title(f'{args.mc} coarse', fontsize=20)
+    else:
+        if high_st:
+            plt.title(f'{args.mc} high st', fontsize=20)
+        else: 
+            plt.title(f'{args.mc}', fontsize=20)
 
     if coarse:
-        plt.savefig(f"/workspaces/premise/premise/analysis/r2_{args.mc}_coarse_interval_width.pdf", dpi=300, bbox_inches='tight')
+        if high_st:
+            plt.savefig(f"/workspaces/premise/premise/analysis/r2_high-st-{args.mc}_coarse_interval_width.pdf", dpi=300, bbox_inches='tight')
+        else:
+            plt.savefig(f"/workspaces/premise/premise/analysis/r2_{args.mc}_coarse_interval_width.pdf", dpi=300, bbox_inches='tight')
     else: 
-        plt.savefig(f"/workspaces/premise/premise/analysis/r2_{args.mc}_interval_width.pdf", dpi=300, bbox_inches='tight')
+        if high_st:
+            plt.savefig(f"/workspaces/premise/premise/analysis/r2_high-st-{args.mc}_interval_width.pdf", dpi=300, bbox_inches='tight')
+        else:
+            plt.savefig(f"/workspaces/premise/premise/analysis/r2_{args.mc}_interval_width.pdf", dpi=300, bbox_inches='tight')
 
     plt.show()
 
@@ -269,7 +298,7 @@ def main(args: argparse.Namespace):
         coarse = False
 
     stats_path = args.stats_path 
-    probelm_statement(coarse, stats_path)
+    probelm_statement(args.high_st, coarse, stats_path)
 
 def testing_argsparser():
     parser = argparse.ArgumentParser(description="Learn an IMC")
@@ -279,6 +308,7 @@ def testing_argsparser():
                         type = str, 
                         help = 'Path to stats'
     )
+    parser.add_argument("--high_st", type = bool, default = False, help = "If higher stopping threashold is used")
 
     return parser
 

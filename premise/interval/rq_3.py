@@ -106,7 +106,7 @@ def aggregted_alarms(testing_samples):
     return alarms
 
 
-def aggregated_stats_imc(coarse, method, mc, model_path, stats_path, initial_amount, horizon, args, testing_samples): 
+def aggregated_stats_imc(high_st, coarse, method, mc, model_path, stats_path, initial_amount, horizon, args, testing_samples): 
 
     imc_risks = {}
 
@@ -117,19 +117,35 @@ def aggregated_stats_imc(coarse, method, mc, model_path, stats_path, initial_amo
     #for x in range(5,7):
         print(f'Experiment number {x}')
         if coarse: 
-            if method == 'noref':
-                statistics = np.load(f'{stats_path}/{mc}-coarse_norefinement-stats-{x}.npy', allow_pickle=True)
-            elif method == 'ref':
-                statistics = np.load(f'{stats_path}/{mc}-coarse_refinement-stats-{x}.npy', allow_pickle=True)
-            elif method == 'refsplit':
-                statistics = np.load(f'{stats_path}/{mc}-coarse_refsplitinement-stats-{x}.npy', allow_pickle=True)
+            if high_st:
+                if method == 'noref':
+                    statistics = np.load(f'{stats_path}/high-st-{mc}-coarse_norefinement-stats-{x}.npy', allow_pickle=True)
+                elif method == 'ref':
+                    statistics = np.load(f'{stats_path}/high-st-{mc}-coarse_refinement-stats-{x}.npy', allow_pickle=True)
+                elif method == 'refsplit':
+                    statistics = np.load(f'{stats_path}/high-st-{mc}-coarse_refsplitinement-stats-{x}.npy', allow_pickle=True)
+            else:
+                if method == 'noref':
+                    statistics = np.load(f'{stats_path}/{mc}-coarse_norefinement-stats-{x}.npy', allow_pickle=True)
+                elif method == 'ref':
+                    statistics = np.load(f'{stats_path}/{mc}-coarse_refinement-stats-{x}.npy', allow_pickle=True)
+                elif method == 'refsplit':
+                    statistics = np.load(f'{stats_path}/{mc}-coarse_refsplitinement-stats-{x}.npy', allow_pickle=True)
         else: 
-            if method == 'noref':
-                statistics = np.load(f'{stats_path}/{mc}-comp-noref-stats-{x}.npy', allow_pickle=True)
-            elif method == 'ref':
-                statistics = np.load(f'{stats_path}/{mc}-comp-ref-stats-{x}.npy', allow_pickle=True)
-            elif method == 'refsplit':
-                statistics = np.load(f'{stats_path}/{mc}-comp-refsplit-stats-{x}.npy', allow_pickle=True)
+            if high_st:
+                if method == 'noref':
+                    statistics = np.load(f'{stats_path}/high-st-{mc}-comp-noref-stats-{x}.npy', allow_pickle=True)
+                elif method == 'ref':
+                    statistics = np.load(f'{stats_path}/high-st-{mc}-comp-ref-stats-{x}.npy', allow_pickle=True)
+                elif method == 'refsplit':
+                    statistics = np.load(f'{stats_path}/high-st-{mc}-comp-refsplit-stats-{x}.npy', allow_pickle=True)
+            else:
+                if method == 'noref':
+                    statistics = np.load(f'{stats_path}/{mc}-comp-noref-stats-{x}.npy', allow_pickle=True)
+                elif method == 'ref':
+                    statistics = np.load(f'{stats_path}/{mc}-comp-ref-stats-{x}.npy', allow_pickle=True)
+                elif method == 'refsplit':
+                    statistics = np.load(f'{stats_path}/{mc}-comp-refsplit-stats-{x}.npy', allow_pickle=True)
 
 
         obj = statistics.item()     
@@ -142,25 +158,47 @@ def aggregated_stats_imc(coarse, method, mc, model_path, stats_path, initial_amo
 
         for y in range(1, len(imc_transition_count) +1): 
             if coarse:
-                if method == 'noref':
-                    initial_distribution = f'{model_path}/{mc}-coarse-comp-noref-{x}-{y}-initial_interval.npy'
-                    transition_intervals = f'{model_path}/{mc}-coarse-comp-noref-{x}-{y}-interval.npy'
-                elif method == 'ref':
-                    initial_distribution = f'{model_path}/{mc}-coarse-comp-ref-{x}-{y}-initial_interval.npy'
-                    transition_intervals = f'{model_path}/{mc}-coarse-comp-ref-{x}-{y}-interval.npy'
-                elif method == 'refsplit':
-                    initial_distribution = f'{model_path}/{mc}-coarse-comp-refsplit-{x}-{y}-initial_interval.npy'
-                    transition_intervals = f'{model_path}/{mc}-coarse-comp-refsplit-{x}-{y}-interval.npy'
+                if high_st:
+                    if method == 'noref':
+                        initial_distribution = f'{model_path}/high-st-{mc}-coarse-comp-noref-{x}-{y}-initial_interval.npy'
+                        transition_intervals = f'{model_path}/high-st-{mc}-coarse-comp-noref-{x}-{y}-interval.npy'
+                    elif method == 'ref':
+                        initial_distribution = f'{model_path}/high-st-{mc}-coarse-comp-ref-{x}-{y}-initial_interval.npy'
+                        transition_intervals = f'{model_path}/high-st-{mc}-coarse-comp-ref-{x}-{y}-interval.npy'
+                    elif method == 'refsplit':
+                        initial_distribution = f'{model_path}/high-st-{mc}-coarse-comp-refsplit-{x}-{y}-initial_interval.npy'
+                        transition_intervals = f'{model_path}/high-st-{mc}-coarse-comp-refsplit-{x}-{y}-interval.npy'
+                else:
+                    if method == 'noref':
+                        initial_distribution = f'{model_path}/{mc}-coarse-comp-noref-{x}-{y}-initial_interval.npy'
+                        transition_intervals = f'{model_path}/{mc}-coarse-comp-noref-{x}-{y}-interval.npy'
+                    elif method == 'ref':
+                        initial_distribution = f'{model_path}/{mc}-coarse-comp-ref-{x}-{y}-initial_interval.npy'
+                        transition_intervals = f'{model_path}/{mc}-coarse-comp-ref-{x}-{y}-interval.npy'
+                    elif method == 'refsplit':
+                        initial_distribution = f'{model_path}/{mc}-coarse-comp-refsplit-{x}-{y}-initial_interval.npy'
+                        transition_intervals = f'{model_path}/{mc}-coarse-comp-refsplit-{x}-{y}-interval.npy'
             else: 
-                if method == 'noref':
-                    initial_distribution = f'{model_path}/{mc}-comp-noref-{x}-{y}-initial_interval.npy'
-                    transition_intervals = f'{model_path}/{mc}-comp-noref-{x}-{y}-interval.npy'
-                elif method == 'ref':
-                    initial_distribution = f'{model_path}/{mc}-comp-ref-{x}-{y}-initial_interval.npy'
-                    transition_intervals = f'{model_path}/{mc}-comp-ref-{x}-{y}-interval.npy'
-                elif method == 'refsplit':
-                    initial_distribution = f'{model_path}/{mc}-comp-refsplit-{x}-{y}-initial_interval.npy'
-                    transition_intervals = f'{model_path}/{mc}-comp-refsplit-{x}-{y}-interval.npy'
+                if high_st: 
+                    if method == 'noref':
+                        initial_distribution = f'{model_path}/high-st-{mc}-comp-noref-{x}-{y}-initial_interval.npy'
+                        transition_intervals = f'{model_path}/high-st-{mc}-comp-noref-{x}-{y}-interval.npy'
+                    elif method == 'ref':
+                        initial_distribution = f'{model_path}/high-st-{mc}-comp-ref-{x}-{y}-initial_interval.npy'
+                        transition_intervals = f'{model_path}/high-st-{mc}-comp-ref-{x}-{y}-interval.npy'
+                    elif method == 'refsplit':
+                        initial_distribution = f'{model_path}/high-st-{mc}-comp-refsplit-{x}-{y}-initial_interval.npy'
+                        transition_intervals = f'{model_path}/high-st-{mc}-comp-refsplit-{x}-{y}-interval.npy'
+                else:
+                    if method == 'noref':
+                        initial_distribution = f'{model_path}/{mc}-comp-noref-{x}-{y}-initial_interval.npy'
+                        transition_intervals = f'{model_path}/{mc}-comp-noref-{x}-{y}-interval.npy'
+                    elif method == 'ref':
+                        initial_distribution = f'{model_path}/{mc}-comp-ref-{x}-{y}-initial_interval.npy'
+                        transition_intervals = f'{model_path}/{mc}-comp-ref-{x}-{y}-interval.npy'
+                    elif method == 'refsplit':
+                        initial_distribution = f'{model_path}/{mc}-comp-refsplit-{x}-{y}-initial_interval.npy'
+                        transition_intervals = f'{model_path}/{mc}-comp-refsplit-{x}-{y}-interval.npy'
 
 
             args.trans_path = transition_intervals
@@ -202,7 +240,7 @@ def aggregated_stats_imc(coarse, method, mc, model_path, stats_path, initial_amo
     return imc_risks, imc_transition_counts, stopping_threashold, imc_distances
 
 
-def aggregated_stats_regression(coarse, mc, model_path, stats_path, testing_samples, horizon, initial_amount): 
+def aggregated_stats_regression(high_st, coarse, mc, model_path, stats_path, testing_samples, horizon, initial_amount): 
 
     regression_risks = {}
     regression_ys = {}
@@ -210,9 +248,15 @@ def aggregated_stats_regression(coarse, mc, model_path, stats_path, testing_samp
     for x in range(1,11):
     #for x in range(5,7):
         if coarse: 
-            paths = glob.glob(f'{model_path}/{mc}-coarse-comp-reg-{x}_*.npy')
+            if high_st:
+                paths = glob.glob(f'{model_path}/high-st-{mc}-coarse-comp-reg-{x}_*.npy')
+            else:
+                paths = glob.glob(f'{model_path}/{mc}-coarse-comp-reg-{x}_*.npy')
         else: 
-            paths = glob.glob(f'{model_path}/{mc}-comp-reg-{x}_*.npy')
+            if high_st:
+                paths = glob.glob(f'{model_path}/high-st-{mc}-comp-reg-{x}_*.npy')
+            else:
+                paths = glob.glob(f'{model_path}/{mc}-comp-reg-{x}_*.npy')
         
         regression_ys[str(x)] = []
 
@@ -228,11 +272,19 @@ def aggregated_stats_regression(coarse, mc, model_path, stats_path, testing_samp
             regression_risks[f'{x}-{y}'] = []
 
             if coarse:
-                reg_model = np.load(f'{model_path}/{mc}-coarse-comp-reg-{x}_{y}.npy', allow_pickle=True).item()
-                observations = np.load(f'{stats_path}/{mc}-coarse-comp-reg-stats-{x}.npy', allow_pickle=True).item()["observations"]
+                if high_st: 
+                    reg_model = np.load(f'{model_path}/high-st-{mc}-coarse-comp-reg-{x}_{y}.npy', allow_pickle=True).item()
+                    observations = np.load(f'{stats_path}/high-st-{mc}-coarse-comp-reg-stats-{x}.npy', allow_pickle=True).item()["observations"]
+                else:
+                    reg_model = np.load(f'{model_path}/{mc}-coarse-comp-reg-{x}_{y}.npy', allow_pickle=True).item()
+                    observations = np.load(f'{stats_path}/{mc}-coarse-comp-reg-stats-{x}.npy', allow_pickle=True).item()["observations"]
             else: 
-                reg_model = np.load(f'{model_path}/{mc}-comp-reg-{x}_{y}.npy', allow_pickle=True).item()
-                observations = np.load(f'{stats_path}/{mc}-comp-reg-stats-{x}.npy', allow_pickle=True).item()["observations"]
+                if high_st: 
+                    reg_model = np.load(f'{model_path}/high-st-{mc}-comp-reg-{x}_{y}.npy', allow_pickle=True).item()
+                    observations = np.load(f'{stats_path}/high-st-{mc}-comp-reg-stats-{x}.npy', allow_pickle=True).item()["observations"]
+                else: 
+                    reg_model = np.load(f'{model_path}/{mc}-comp-reg-{x}_{y}.npy', allow_pickle=True).item()
+                    observations = np.load(f'{stats_path}/{mc}-comp-reg-stats-{x}.npy', allow_pickle=True).item()["observations"]
 
             column_names = [f"Step{s}_Obs{o}" for s in range(initial_amount) for o in observations]
 
@@ -247,16 +299,22 @@ def aggregated_stats_regression(coarse, mc, model_path, stats_path, testing_samp
 
 
 
-def aggreagted_stats_conformal(new_noisy, coarse, mc, model_path, stats_path):
+def aggreagted_stats_conformal(high_st, new_noisy, coarse, mc, model_path, stats_path):
 
     conformal_risks = {}
     conformal_ys = {}
 
     for x in range(8,9):
         if coarse: 
-            paths = glob.glob(f'{model_path}/{mc}_coarse_comp_conformal_pred_state_estimator_{x}_*.pt')
+            if high_st:
+                paths = glob.glob(f'{model_path}/high-st-{mc}_coarse_comp_conformal_pred_state_estimator_{x}_*.pt')
+            else: 
+                paths = glob.glob(f'{model_path}/{mc}_coarse_comp_conformal_pred_state_estimator_{x}_*.pt')
         else: 
-            paths = glob.glob(f'{model_path}/{mc}_comp_conformal_pred_state_estimator_{x}_*.pt')
+            if high_st:
+                paths = glob.glob(f'{model_path}/high-st-{mc}_comp_conformal_pred_state_estimator_{x}_*.pt')
+            else:
+                paths = glob.glob(f'{model_path}/{mc}_comp_conformal_pred_state_estimator_{x}_*.pt')
 
         conformal_ys[str(x)] = []
 
@@ -272,29 +330,56 @@ def aggreagted_stats_conformal(new_noisy, coarse, mc, model_path, stats_path):
             conformal_risks[f'{x}-{y}'] = [] 
 
             if coarse: 
-                state_estimator = torch.load(f'{model_path}/{mc}_coarse_comp_conformal_pred_state_estimator_{x}_{y}.pt', weights_only=False)
-                label_estimator = torch.load(f'{model_path}/{mc}_coarse_comp_conformal_pred_label_estimator_{x}_{y}.pt', weights_only=False)
-                cp_classification = torch.load(f'{model_path}/{mc}_coarse_comp_conformal_pred_cp_classification_{x}_{y}.pt', weights_only=False)
+                if high_st:
+                    state_estimator = torch.load(f'{model_path}/high-st-{mc}_coarse_comp_conformal_pred_state_estimator_{x}_{y}.pt', weights_only=False)
+                    label_estimator = torch.load(f'{model_path}/high-st-{mc}_coarse_comp_conformal_pred_label_estimator_{x}_{y}.pt', weights_only=False)
+                    cp_classification = torch.load(f'{model_path}/high-st-{mc}_coarse_comp_conformal_pred_cp_classification_{x}_{y}.pt', weights_only=False)
 
-                with open(f'{stats_path}/{mc}_coarse_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle', 'rb') as f:
-                    rej_classifier = pickle.load(f)
-        
-                rejection_classifier = rej_classifier['rej_rule']
+                    with open(f'{stats_path}/high-st-{mc}_coarse_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle', 'rb') as f:
+                        rej_classifier = pickle.load(f)
+            
+                    rejection_classifier = rej_classifier['rej_rule']
 
-                with open(f'{stats_path}/{mc}_coarse_comp_conformal_pred_conformal_stats_{x}_{y}.pickle', 'rb') as f:
-                    conformal_stats = pickle.load(f)
+                    with open(f'{stats_path}/high-st-{mc}_coarse_comp_conformal_pred_conformal_stats_{x}_{y}.pickle', 'rb') as f:
+                        conformal_stats = pickle.load(f)
+                else:
+                    state_estimator = torch.load(f'{model_path}/{mc}_coarse_comp_conformal_pred_state_estimator_{x}_{y}.pt', weights_only=False)
+                    label_estimator = torch.load(f'{model_path}/{mc}_coarse_comp_conformal_pred_label_estimator_{x}_{y}.pt', weights_only=False)
+                    cp_classification = torch.load(f'{model_path}/{mc}_coarse_comp_conformal_pred_cp_classification_{x}_{y}.pt', weights_only=False)
+
+                    with open(f'{stats_path}/{mc}_coarse_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle', 'rb') as f:
+                        rej_classifier = pickle.load(f)
+            
+                    rejection_classifier = rej_classifier['rej_rule']
+
+                    with open(f'{stats_path}/{mc}_coarse_comp_conformal_pred_conformal_stats_{x}_{y}.pickle', 'rb') as f:
+                        conformal_stats = pickle.load(f)
+                
             else: 
-                state_estimator = torch.load(f'{model_path}/{mc}_comp_conformal_pred_state_estimator_{x}_{y}.pt', weights_only=False)
-                label_estimator = torch.load(f'{model_path}/{mc}_comp_conformal_pred_label_estimator_{x}_{y}.pt', weights_only=False)
-                cp_classification = torch.load(f'{model_path}/{mc}_comp_conformal_pred_cp_classification_{x}_{y}.pt', weights_only=False)
+                if high_st:
+                    state_estimator = torch.load(f'{model_path}/high-st-{mc}_comp_conformal_pred_state_estimator_{x}_{y}.pt', weights_only=False)
+                    label_estimator = torch.load(f'{model_path}/high-st-{mc}_comp_conformal_pred_label_estimator_{x}_{y}.pt', weights_only=False)
+                    cp_classification = torch.load(f'{model_path}/high-st-{mc}_comp_conformal_pred_cp_classification_{x}_{y}.pt', weights_only=False)
 
-                with open(f'{stats_path}/{mc}_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle', 'rb') as f:
-                    rej_classifier = pickle.load(f)
-        
-                rejection_classifier = rej_classifier['rej_rule']
+                    with open(f'{stats_path}/high-st-{mc}_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle', 'rb') as f:
+                        rej_classifier = pickle.load(f)
+            
+                    rejection_classifier = rej_classifier['rej_rule']
 
-                with open(f'{stats_path}/{mc}_comp_conformal_pred_conformal_stats_{x}_{y}.pickle', 'rb') as f:
-                    conformal_stats = pickle.load(f)
+                    with open(f'{stats_path}/high-st-{mc}_comp_conformal_pred_conformal_stats_{x}_{y}.pickle', 'rb') as f:
+                        conformal_stats = pickle.load(f)
+                else:
+                    state_estimator = torch.load(f'{model_path}/{mc}_comp_conformal_pred_state_estimator_{x}_{y}.pt', weights_only=False)
+                    label_estimator = torch.load(f'{model_path}/{mc}_comp_conformal_pred_label_estimator_{x}_{y}.pt', weights_only=False)
+                    cp_classification = torch.load(f'{model_path}/{mc}_comp_conformal_pred_cp_classification_{x}_{y}.pt', weights_only=False)
+
+                    with open(f'{stats_path}/{mc}_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle', 'rb') as f:
+                        rej_classifier = pickle.load(f)
+            
+                    rejection_classifier = rej_classifier['rej_rule']
+
+                    with open(f'{stats_path}/{mc}_comp_conformal_pred_conformal_stats_{x}_{y}.pickle', 'rb') as f:
+                        conformal_stats = pickle.load(f)
 
 
             new_noisy_scaled = -1+2*(new_noisy - conformal_stats['dataset.MIN[1]'])/(conformal_stats['dataset.MAX[1]']-conformal_stats['dataset.MIN[1]'])
@@ -519,10 +604,13 @@ def roc_curve_per_threashold(coarse, current_threashold, alarms, imc_risks, imc_
     plt.tick_params(axis="both")
     plt.grid(True)
     plt.tight_layout()
+
     if coarse:
         plt.title(f'{args.mc} coarse, stopping threashold: {current_threashold}', fontsize=35)
     else: 
         plt.title(f'{args.mc}, stopping threashold: {current_threashold}', fontsize=35)
+
+
     if coarse:
         plt.savefig(f"/workspaces/premise/premise/analysis/rq2_{args.mc}_coarse_ROC_threashold_comparison_{current_threashold}.pdf", dpi=300,  bbox_inches='tight')
     else:
@@ -531,7 +619,7 @@ def roc_curve_per_threashold(coarse, current_threashold, alarms, imc_risks, imc_
 
 
 #def plot_roc_curve(coarse, alarms, imc_risks_ref, regression_risks, regression_ys, conformal_risks, conformal_ys, target_risks):
-def plot_roc_curve(coarse, alarms, imc_risks_ref, regression_risks, regression_ys, target_risks):  
+def plot_roc_curve(high_st, coarse, alarms, imc_risks_ref, regression_risks, regression_ys, target_risks):  
 
     imc_ref_final_risks = {}
 
@@ -743,15 +831,29 @@ def plot_roc_curve(coarse, alarms, imc_risks_ref, regression_risks, regression_y
     plt.legend(loc="lower right", fontsize=30)
     plt.tick_params(axis="both")
     plt.grid(True)
+
     if coarse:
-        plt.title(f'{args.mc} coarse', fontsize=35)
+        if high_st:
+            plt.title(f'{args.mc} coarse high st', fontsize=35)
+        else: 
+            plt.title(f'{args.mc} coarse', fontsize=35)
     else: 
-        plt.title(f'{args.mc}', fontsize=35)
+        if high_st:
+            plt.title(f'{args.mc} high st', fontsize=35)
+        else:
+            plt.title(f'{args.mc}', fontsize=35)
     plt.tight_layout()
+
     if coarse:
-        plt.savefig(f"/workspaces/premise/premise/analysis/rq_3_{args.mc}_coarse_model_based_model_free_ROC.pdf", dpi=300,  bbox_inches='tight')
+        if high_st:
+            plt.savefig(f"/workspaces/premise/premise/analysis/rq_3_high-st-{args.mc}_coarse_model_based_model_free_ROC.pdf", dpi=300,  bbox_inches='tight')
+        else:
+            plt.savefig(f"/workspaces/premise/premise/analysis/rq_3_{args.mc}_coarse_model_based_model_free_ROC.pdf", dpi=300,  bbox_inches='tight')
     else: 
-        plt.savefig(f"/workspaces/premise/premise/analysis/rq_3_{args.mc}_model_based_model_free_ROC.pdf", dpi=300,  bbox_inches='tight')
+        if high_st:
+            plt.savefig(f"/workspaces/premise/premise/analysis/rq_3_high-st-{args.mc}_model_based_model_free_ROC.pdf", dpi=300,  bbox_inches='tight')
+        else:
+            plt.savefig(f"/workspaces/premise/premise/analysis/rq_3_{args.mc}_model_based_model_free_ROC.pdf", dpi=300,  bbox_inches='tight')
 
     plt.show()
 
@@ -1254,17 +1356,17 @@ def main_imc(args: argparse.Namespace):
     stats_path = args.stats_path
 
 
-    imc_risks_ref_splitting, imc_transition_counts_ref_splitting, imc_stopping_threashold_ref_splitting, imc_distances_ref_splitting = aggregated_stats_imc(coarse, 'refsplit', mc, model_path, stats_path, initial_amount, horizon, args, testing_samples)
-    imc_risks, imc_transition_counts, imc_stopping_threashold, imc_distances = aggregated_stats_imc(coarse, 'noref', mc, model_path, stats_path, initial_amount, horizon, args, testing_samples)
-    imc_risks_ref, imc_transition_counts_ref, imc_stopping_threashold_ref, imc_distances_ref = aggregated_stats_imc(coarse, 'ref', mc, model_path, stats_path, initial_amount, horizon, args, testing_samples)
+    imc_risks_ref_splitting, imc_transition_counts_ref_splitting, imc_stopping_threashold_ref_splitting, imc_distances_ref_splitting = aggregated_stats_imc(args.high_st, coarse, 'refsplit', mc, model_path, stats_path, initial_amount, horizon, args, testing_samples)
+    imc_risks, imc_transition_counts, imc_stopping_threashold, imc_distances = aggregated_stats_imc(args.high_st, coarse, 'noref', mc, model_path, stats_path, initial_amount, horizon, args, testing_samples)
+    imc_risks_ref, imc_transition_counts_ref, imc_stopping_threashold_ref, imc_distances_ref = aggregated_stats_imc(args.high_st, coarse, 'ref', mc, model_path, stats_path, initial_amount, horizon, args, testing_samples)
 
-    regression_risks, regression_ys = aggregated_stats_regression(coarse, mc, model_path, stats_path, testing_samples, horizon, initial_amount)
-    #conformal_risks, conformal_ys = aggreagted_stats_conformal(new_noisy, coarse, mc, model_path, stats_path)      
+    regression_risks, regression_ys = aggregated_stats_regression(args.high_st, coarse, mc, model_path, stats_path, testing_samples, horizon, initial_amount)
+    conformal_risks, conformal_ys = aggreagted_stats_conformal(args.high_st, new_noisy, coarse, mc, model_path, stats_path)      
             
     target_auc, imc_results, imc_ref_results, imc_transition_counts_ref,  imc_ref_splitting_results, imc_transition_counts_ref_splitting = auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transition_counts_ref, imc_risks_ref_splitting, imc_transition_counts_ref_splitting)
     plotting(coarse, target_auc, imc_results, imc_transition_counts, imc_ref_results, imc_transition_counts_ref, horizon, initial_amount, imc_ref_splitting_results, imc_transition_counts_ref_splitting)
     
-    plot_roc_curve(coarse, alarms, imc_risks_ref, regression_risks, regression_ys, target_risks)
+    plot_roc_curve(args.high_st, coarse, alarms, imc_risks_ref, regression_risks, regression_ys, target_risks)
 
     roc_curve_per_threashold(coarse, 0.2, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
     roc_curve_per_threashold(coarse, 0.1, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
@@ -1312,6 +1414,11 @@ def testing_argsparser():
                         type = bool, 
                         default= False, 
                         help = "If the leared model is coarse or not")
+    
+    parser.add_argument("--high_st", 
+                        type = bool, 
+                        default = False, 
+                        help = "If higher stopping threashold is used")
 
     return parser
 
