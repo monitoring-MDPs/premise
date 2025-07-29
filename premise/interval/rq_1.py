@@ -48,8 +48,8 @@ def aggregated_stats_imc(high_st, coarse, path, stats_path, initial_amount, hori
 
     imc_transition_counts = {}
 
-    for x in range(1,11):
-    #for x in range(5,7):
+    #for x in range(1,11):
+    for x in range(6,7):
         print(f"Experiment number {x}")
         if coarse: 
             if high_st: 
@@ -60,10 +60,12 @@ def aggregated_stats_imc(high_st, coarse, path, stats_path, initial_amount, hori
             if high_st: 
                 statistics = np.load(f"{stats_path}/high-st-{args.mc}-comp-noref-stats-{x}.npy", allow_pickle=True)
             else:
+                print(os.path.getsize(f"{stats_path}/{args.mc}-comp-noref-stats-{x}.npy.npy"))
                 statistics = np.load(f"{stats_path}/{args.mc}-comp-noref-stats-{x}.npy", allow_pickle=True)
 
         obj = statistics.item()
         imc_transition_count = obj["transitions_learned"]
+        stopping_threashold = obj['args']['stopping_threshold']
 
         sum = 0
         total_imc_transition_count = []
@@ -121,7 +123,7 @@ def aggregated_stats_imc(high_st, coarse, path, stats_path, initial_amount, hori
 
                 imc_risks[f'{x}-{y}'].append(float(risk))
 
-    return imc_risks, imc_transition_counts
+    return imc_risks, imc_transition_counts, stopping_threashold
 
 
 
@@ -130,8 +132,8 @@ def aggregated_stats_mc(high_st, coarse, path, stats_path, initial_amount, horiz
 
     mc_transition_counts = {}
 
-    for x in range(1, 11):
-    #for x in range(5,7):
+    #for x in range(1, 11):
+    for x in range(6,7):
         print(f"Experiment number {x}")
         if coarse: 
             if high_st:
@@ -187,16 +189,11 @@ def aggregated_stats_mc(high_st, coarse, path, stats_path, initial_amount, horiz
              
                 mc_risks[f"{x}-{y}"].append(float(risk))
 
-        
-    print("MC TRANSITIONS")
-    if y == 9:
-        print(f'BATCH {x}-{y}')
-        print(data[1])
 
     return mc_risks, mc_transition_counts
 
 
-def distance_graph(high_st, coarse,target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts, testing_samples_weights):
+def distance_graph(high_st, coarse,target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts, testing_samples_weights, stopping_threashold):
 
     #IMC 
     distance_stats = {}
@@ -213,26 +210,26 @@ def distance_graph(high_st, coarse,target_risks, imc_risks, imc_transition_count
         distance_stats[key] = total_distance / args.testing_samples
 
     distance_graph_data = {}
-    for x in range(1, 11):
-    #for x in range(5,7):
+    #for x in range(1, 11):
+    for x in range(6,7):
         distance_graph_data[x] = []
 
     for key in distance_stats.keys():
-        for x in range(1, 11):
-        #for x in range(5,7):
+        #for x in range(1, 11):
+        for x in range(6,7):
             if key.split("-")[0] == str(x):
                 distance_graph_data[x].append(distance_stats[key])
 
 
     final_distances = []
-    for x in range(1,11):
-    #for x in range(5,7):
+    #for x in range(1,11):
+    for x in range(6,7):
         final_distances.append(distance_graph_data[x][-1]) 
 
 
     graph_data = []
-    for x in range(1,11):
-    #for x in range(5,7):
+    #for x in range(1,11):
+    for x in range(6,7):
         graph_data.append([distance_graph_data[x], imc_transition_counts[str(x)]])
 
   
@@ -253,26 +250,26 @@ def distance_graph(high_st, coarse,target_risks, imc_risks, imc_transition_count
 
 
     mc_distance_graph_data = {}
-    for x in range(1, 11):
-    #for x in range(5,7):
+    #for x in range(1, 11):
+    for x in range(6,7):
         mc_distance_graph_data[x] = []
 
     for key in mc_distance_stats.keys():
-        for x in range(1, 11):
-        #for x in range(5,7):
+        #for x in range(1, 11):
+        for x in range(6,7):
             if key.split("-")[0] == str(x):
                 mc_distance_graph_data[x].append(mc_distance_stats[key])
     
 
     mc_final_distances = []
-    for x in range(1,11):
-    #for x in range(5,7):
+    #for x in range(1,11):
+    for x in range(6,7):
         mc_final_distances.append(mc_distance_graph_data[x][-1]) 
 
 
     mc_graph_data = []
-    for x in range(1,11):
-    #for x in range(5,7):
+    #for x in range(1,11):
+    for x in range(6,7):
         mc_graph_data.append([mc_distance_graph_data[x], mc_transition_counts[str(x)]])
 
     log = False
@@ -397,12 +394,12 @@ def distance_graph(high_st, coarse,target_risks, imc_risks, imc_transition_count
     plt.subplots_adjust(bottom=0.25)
     if coarse: 
         if high_st: 
-            plt.title(f'{args.mc} coarse high st', fontsize=30)
+            plt.title(f'{args.mc} coarse, stopping threashold: {stopping_threashold}', fontsize=30)
         else:
             plt.title(f'{args.mc} coarse', fontsize=30)
     else: 
         if high_st:
-            plt.title(f'{args.mc} high st', fontsize=30)
+            plt.title(f'{args.mc},  stopping threashold: {stopping_threashold}', fontsize=30)
         else:
             plt.title(f'{args.mc}', fontsize=30)
 
@@ -421,7 +418,7 @@ def distance_graph(high_st, coarse,target_risks, imc_risks, imc_transition_count
     plt.show()
 
 
-def overestimation_graph(high_st, coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts):
+def overestimation_graph(high_st, coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts, stopping_threashold):
 
     plt.figure()
     plt.plot([0, 1], [0, 1], "--", color = 'black')
@@ -460,12 +457,12 @@ def overestimation_graph(high_st, coarse, target_risks, imc_risks, imc_transitio
     plt.tick_params(axis='both', labelsize=12)
     if coarse:
         if high_st:
-            plt.title(f'{args.mc} coarse high st', fontsize=15)
+            plt.title(f'{args.mc} coarse, stopping threashold: {stopping_threashold}', fontsize=15)
         else:
             plt.title(f'{args.mc} coarse', fontsize=15)
     else:
         if high_st:
-            plt.title(f'{args.mc} high st', fontsize=15)
+            plt.title(f'{args.mc}, stopping threashold: {stopping_threashold}', fontsize=15)
         else: 
             plt.title(f'{args.mc}', fontsize=15)
 
@@ -507,11 +504,11 @@ def main_imc(args: argparse.Namespace):
 
 
     target_risks = stats_true(horizon, initial_amount, testing_samples, suo)
-    imc_risks, imc_transition_counts = aggregated_stats_imc(args.high_st, coarse, args.model_path, args.stats_path, initial_amount, horizon, args, testing_samples)
+    imc_risks, imc_transition_counts, stopping_threashold = aggregated_stats_imc(args.high_st, coarse, args.model_path, args.stats_path, initial_amount, horizon, args, testing_samples)
     mc_risks, mc_transition_counts = aggregated_stats_mc(args.high_st, coarse, args.model_path, args.stats_path, initial_amount, horizon, args, testing_samples)
 
-    distance_graph(args.high_st, coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts, testing_samples_weights)
-    overestimation_graph(args.high_st, coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts)
+    distance_graph(args.high_st, coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts, testing_samples_weights, stopping_threashold)
+    overestimation_graph(args.high_st, coarse, target_risks, imc_risks, imc_transition_counts, mc_risks, mc_transition_counts, stopping_threashold)
 
 
 def build_learning_parser(parser: argparse.ArgumentParser):
@@ -552,3 +549,6 @@ if __name__ == "__main__":
 #python -m premise.interval.rq_1 --mc airportA-7-10-10 --model_path /workspaces/premise/out/models/2025-07-19 --stats_path /workspaces/premise/out/stats/2025-07-19 
 
 #python -m premise.interval.rq_1 --mc SnL-10x10 --model_path /workspaces/premise/out/models/2025-07-17 --stats_path /workspaces/premise/out/stats/2025-07-17
+
+
+#python -m premise.interval.rq_1 --mc SnL-10x10 --model_path /workspaces/premise/out/models/2025-07-23_21-19-00 --stats_path /workspaces/premise/out/stats/2025-07-23_21-19-00

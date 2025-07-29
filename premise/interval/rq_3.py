@@ -415,7 +415,7 @@ def find_first_triplet_below_threshold(distances, threshold):
             return i 
 
 
-def roc_curve_per_threashold(coarse, current_threashold, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting):
+def roc_curve_model_based(coarse, current_threashold, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting):
 
     #REFINEMENT WITH SPLITTING
 
@@ -548,7 +548,6 @@ def roc_curve_per_threashold(coarse, current_threashold, alarms, imc_risks, imc_
         alpha=0.2,
     )
 
-
     #NO REFINEMENT MEAN PERFORMANCE
     imc_roc_data_mean = {}
     
@@ -619,7 +618,7 @@ def roc_curve_per_threashold(coarse, current_threashold, alarms, imc_risks, imc_
 
 
 #def plot_roc_curve(coarse, alarms, imc_risks_ref, regression_risks, regression_ys, conformal_risks, conformal_ys, target_risks):
-def plot_roc_curve(high_st, coarse, alarms, imc_risks_ref, regression_risks, regression_ys, target_risks):  
+def plot_roc_curve(stopping_threashold, high_st, coarse, alarms, imc_risks_ref, regression_risks, regression_ys, target_risks):  
 
     imc_ref_final_risks = {}
 
@@ -834,14 +833,14 @@ def plot_roc_curve(high_st, coarse, alarms, imc_risks_ref, regression_risks, reg
 
     if coarse:
         if high_st:
-            plt.title(f'{args.mc} coarse high st', fontsize=35)
+            plt.title(f'{args.mc} coarse, stopping threashold: {stopping_threashold}', fontsize=35)
         else: 
-            plt.title(f'{args.mc} coarse', fontsize=35)
+            plt.title(f'{args.mc} coarse, stopping threashold: {stopping_threashold}', fontsize=35)
     else: 
         if high_st:
-            plt.title(f'{args.mc} high st', fontsize=35)
+            plt.title(f'{args.mc} high st, stopping threashold: {stopping_threashold}', fontsize=35)
         else:
-            plt.title(f'{args.mc}', fontsize=35)
+            plt.title(f'{args.mc}, stopping threashold: {stopping_threashold}', fontsize=35)
     plt.tight_layout()
 
     if coarse:
@@ -1354,6 +1353,7 @@ def main_imc(args: argparse.Namespace):
     mc = args.mc
     model_path = args.model_path
     stats_path = args.stats_path
+    args.high_st
 
 
     imc_risks_ref_splitting, imc_transition_counts_ref_splitting, imc_stopping_threashold_ref_splitting, imc_distances_ref_splitting = aggregated_stats_imc(args.high_st, coarse, 'refsplit', mc, model_path, stats_path, initial_amount, horizon, args, testing_samples)
@@ -1361,24 +1361,17 @@ def main_imc(args: argparse.Namespace):
     imc_risks_ref, imc_transition_counts_ref, imc_stopping_threashold_ref, imc_distances_ref = aggregated_stats_imc(args.high_st, coarse, 'ref', mc, model_path, stats_path, initial_amount, horizon, args, testing_samples)
 
     regression_risks, regression_ys = aggregated_stats_regression(args.high_st, coarse, mc, model_path, stats_path, testing_samples, horizon, initial_amount)
-    conformal_risks, conformal_ys = aggreagted_stats_conformal(args.high_st, new_noisy, coarse, mc, model_path, stats_path)      
-            
-    target_auc, imc_results, imc_ref_results, imc_transition_counts_ref,  imc_ref_splitting_results, imc_transition_counts_ref_splitting = auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transition_counts_ref, imc_risks_ref_splitting, imc_transition_counts_ref_splitting)
-    plotting(coarse, target_auc, imc_results, imc_transition_counts, imc_ref_results, imc_transition_counts_ref, horizon, initial_amount, imc_ref_splitting_results, imc_transition_counts_ref_splitting)
-    
-    plot_roc_curve(args.high_st, coarse, alarms, imc_risks_ref, regression_risks, regression_ys, target_risks)
+    conformal_risks, conformal_ys = aggreagted_stats_conformal(args.high_st, noisy_measurements, coarse, mc, model_path, stats_path)   
 
-    roc_curve_per_threashold(coarse, 0.2, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
-    roc_curve_per_threashold(coarse, 0.1, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
-    roc_curve_per_threashold(coarse, 0.05, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
-    roc_curve_per_threashold(coarse, 0.025, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
-    roc_curve_per_threashold(coarse, 0.015, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
-    roc_curve_per_threashold(coarse, 0.01, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
-    roc_curve_per_threashold(coarse, 0.005, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
-    
-    #plot_roc_curve(coarse, alarms, imc_risks_ref, regression_risks, regression_ys, conformal_risks, conformal_ys, target_risks)
-    
+    roc_curve_model_based(coarse, imc_stopping_threashold_ref, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting)
+    plot_roc_curve(imc_stopping_threashold_ref ,args.high_st, coarse, alarms, imc_risks_ref, regression_risks, regression_ys, target_risks)
 
+    if args.high_st == False:     
+        target_auc, imc_results, imc_ref_results, imc_transition_counts_ref,  imc_ref_splitting_results, imc_transition_counts_ref_splitting = auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transition_counts_ref, imc_risks_ref_splitting, imc_transition_counts_ref_splitting)
+        plotting(coarse, target_auc, imc_results, imc_transition_counts, imc_ref_results, imc_transition_counts_ref, horizon, initial_amount, imc_ref_splitting_results, imc_transition_counts_ref_splitting)
+    
+    
+    
 def build_learning_parser(parser: argparse.ArgumentParser):
     group = parser.add_argument_group("Learning Parameters")
 

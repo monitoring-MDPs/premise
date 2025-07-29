@@ -298,7 +298,9 @@ def main(args: argparse.Namespace):
         coarse = False
 
     stats_path = args.stats_path 
-    probelm_statement(args.high_st, coarse, stats_path)
+    if args.high_st == False:
+        probelm_statement(args.high_st, coarse, stats_path)
+        
 
 def testing_argsparser():
     parser = argparse.ArgumentParser(description="Learn an IMC")
