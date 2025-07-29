@@ -48,8 +48,8 @@ def aggregated_stats_imc(high_st, coarse, path, stats_path, initial_amount, hori
 
     imc_transition_counts = {}
 
-    #for x in range(1,11):
-    for x in range(6,7):
+    for x in range(1,11):
+    #for x in range(6,7):
         print(f"Experiment number {x}")
         if coarse: 
             if high_st: 
@@ -132,8 +132,8 @@ def aggregated_stats_mc(high_st, coarse, path, stats_path, initial_amount, horiz
 
     mc_transition_counts = {}
 
-    #for x in range(1, 11):
-    for x in range(6,7):
+    for x in range(1, 11):
+    #for x in range(6,7):
         print(f"Experiment number {x}")
         if coarse: 
             if high_st:
@@ -210,26 +210,26 @@ def distance_graph(high_st, coarse,target_risks, imc_risks, imc_transition_count
         distance_stats[key] = total_distance / args.testing_samples
 
     distance_graph_data = {}
-    #for x in range(1, 11):
-    for x in range(6,7):
+    for x in range(1, 11):
+    #for x in range(6,7):
         distance_graph_data[x] = []
 
     for key in distance_stats.keys():
-        #for x in range(1, 11):
-        for x in range(6,7):
+        for x in range(1, 11):
+        #for x in range(6,7):
             if key.split("-")[0] == str(x):
                 distance_graph_data[x].append(distance_stats[key])
 
 
     final_distances = []
-    #for x in range(1,11):
-    for x in range(6,7):
+    for x in range(1,11):
+    #for x in range(6,7):
         final_distances.append(distance_graph_data[x][-1]) 
 
 
     graph_data = []
-    #for x in range(1,11):
-    for x in range(6,7):
+    for x in range(1,11):
+    #for x in range(6,7):
         graph_data.append([distance_graph_data[x], imc_transition_counts[str(x)]])
 
   
@@ -250,26 +250,26 @@ def distance_graph(high_st, coarse,target_risks, imc_risks, imc_transition_count
 
 
     mc_distance_graph_data = {}
-    #for x in range(1, 11):
-    for x in range(6,7):
+    for x in range(1, 11):
+    #for x in range(6,7):
         mc_distance_graph_data[x] = []
 
     for key in mc_distance_stats.keys():
-        #for x in range(1, 11):
-        for x in range(6,7):
+        for x in range(1, 11):
+        #for x in range(6,7):
             if key.split("-")[0] == str(x):
                 mc_distance_graph_data[x].append(mc_distance_stats[key])
     
 
     mc_final_distances = []
-    #for x in range(1,11):
-    for x in range(6,7):
+    for x in range(1,11):
+    #for x in range(6,7):
         mc_final_distances.append(mc_distance_graph_data[x][-1]) 
 
 
     mc_graph_data = []
-    #for x in range(1,11):
-    for x in range(6,7):
+    for x in range(1,11):
+    #for x in range(6,7):
         mc_graph_data.append([mc_distance_graph_data[x], mc_transition_counts[str(x)]])
 
     log = False
