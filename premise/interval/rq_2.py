@@ -310,11 +310,12 @@ def testing_argsparser():
     parser = argparse.ArgumentParser(description="Learn an IMC")
     build_suo_args_parser(parser)
 
-    parser.add_argument('--stats_path',
+    parser.add_argument('--stats-path',
                         type = str, 
                         help = 'Path to stats'
     )
-    parser.add_argument("--high_st",
+    parser.add_argument( "-ht",
+                        "--high-st",
                         type = bool, 
                         default = False, 
                         help = "If higher stopping threashold is used")

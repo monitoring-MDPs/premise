@@ -622,6 +622,7 @@ def testing_argsparser():
     )
 
     parser.add_argument("--stats-path", type=str, help="Path stats")
+    
     parser.add_argument(
         "-ht",
         "--high-st",

@@ -1330,9 +1330,9 @@ def main_imc(args: argparse.Namespace):
     args.high_st
 
 
-    imc_risks_ref_splitting, imc_transition_counts_ref_splitting, imc_stopping_threashold_ref_splitting, imc_distances_ref_splitting = aggregated_stats_imc(args.high_st, coarse, 'refsplit', mc, model_path, stats_path, initial_amount, horizon, args, testing_samples)
-    imc_risks, imc_transition_counts, imc_stopping_threashold, imc_distances = aggregated_stats_imc(args.high_st, coarse, 'noref', mc, model_path, stats_path, initial_amount, horizon, args, testing_samples)
-    imc_risks_ref, imc_transition_counts_ref, imc_stopping_threashold_ref, imc_distances_ref = aggregated_stats_imc(args.high_st, coarse, 'ref', mc, model_path, stats_path, initial_amount, horizon, args, testing_samples)
+    imc_risks_ref_splitting, imc_transition_counts_ref_splitting, imc_stopping_threashold_ref_splitting, imc_distances_ref_splitting = aggregated_stats_imc(args.high_st, coarse, 'refsplit', mc, stats_path, initial_amount, horizon, args, testing_samples)
+    imc_risks, imc_transition_counts, imc_stopping_threashold, imc_distances = aggregated_stats_imc(args.high_st, coarse, 'noref', mc, stats_path, initial_amount, horizon, args, testing_samples)
+    imc_risks_ref, imc_transition_counts_ref, imc_stopping_threashold_ref, imc_distances_ref = aggregated_stats_imc(args.high_st, coarse, 'ref', mc, stats_path, initial_amount, horizon, args, testing_samples)
 
     regression_risks, regression_ys = aggregated_stats_regression(args.high_st, coarse, mc, model_path, stats_path, testing_samples, horizon, initial_amount)
     conformal_risks, conformal_ys = aggreagted_stats_conformal(args.high_st, noisy_measurements, coarse, mc, model_path, stats_path)   
@@ -1367,22 +1367,24 @@ def testing_argsparser():
         help="Increase verbosity level (can be used multiple times)",
     )
 
-    parser.add_argument('--model_path', 
+    parser.add_argument('--model-path', 
                         type = str, 
                         help = 'Path to models',
     )
 
-    parser.add_argument('--stats_path', 
+    parser.add_argument('--stats-path', 
                         type = str, 
                         help ='Path to stats',
     )
 
-    parser.add_argument("--coarse",
+    parser.add_argument("-c",
+                        "--coarse",
                         type = bool, 
                         default= False, 
                         help = "If the leared model is coarse or not")
     
-    parser.add_argument("--high_st", 
+    parser.add_argument( "-ht",
+                        "--high-st", 
                         type = bool, 
                         default = False, 
                         help = "If higher stopping threashold is used")
