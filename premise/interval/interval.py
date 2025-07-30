@@ -451,8 +451,32 @@ def build_monitor_from_model(
 
     expr_manager = ExpressionManager()
 
-    prop_string = f'P{maxmin}=? [F<={horizon} "{target}"]'
-    prop = parse_properties(prop_string)
+    # prop_string = f'P{maxmin}=? [F<={horizon} "{target}"]'
+    # prop = parse_properties(prop_string)
+
+    # if ipomdp.is_exact:
+    #     task = ExactCheckTask(prop[0].raw_formula, False)
+    # else:
+    #     task = CheckTask(prop[0].raw_formula, False)
+
+    # imdp = stormpy_ipomdp_to_imdp(ipomdp)
+    # logger.info("Converted IPOMDP to IMDP")
+
+    # if ipomdp.is_exact:
+    #     result = check_exact_interval_mdp(imdp, task, stormpy_environment)
+    # else:
+    #     result = check_interval_mdp(imdp, task, stormpy_environment)
+
+    # logger.info(f"Checking {prop_string}")
+
+    # risks = []
+    # for i in range(len(ipomdp.states)):
+    #     if ipomdp.is_exact:
+    #         risks.append(RationalInterval(result.at(i)))
+    #     else:
+    #         risks.append(Interval(result.at(i)))
+
+    prop = parse_properties(f'P{maxmin}=? [F "{target}"]')
 
     if ipomdp.is_exact:
         task = ExactCheckTask(prop[0].raw_formula, False)
@@ -461,20 +485,21 @@ def build_monitor_from_model(
 
     imdp = stormpy_ipomdp_to_imdp(ipomdp)
     logger.info("Converted IPOMDP to IMDP")
+    imdp = stormpy_product_unroll(imdp, horizon)
+    logger.info("Unrolled IMDP to horizon")
 
     if ipomdp.is_exact:
         result = check_exact_interval_mdp(imdp, task, stormpy_environment)
     else:
         result = check_interval_mdp(imdp, task, stormpy_environment)
 
-    logger.info(f"Checking {prop_string}")
-
+    # Risks are the risks at the step 0 of every state, they are experimentally checked correct
     risks = []
     for i in range(len(ipomdp.states)):
         if ipomdp.is_exact:
-            risks.append(RationalInterval(result.at(i)))
+            risks.append(RationalInterval(result.at(i * (horizon + 1))))
         else:
-            risks.append(Interval(result.at(i)))
+            risks.append(Interval(result.at(i * (horizon + 1))))
 
     if verbose > 0:
         if state_index_map is None:

@@ -1,5 +1,4 @@
 import argparse
-import logging
 from pathlib import Path
 
 import numpy as np
@@ -7,7 +6,7 @@ import pandas as pd
 from tqdm import tqdm
 import os
 import pickle
-from stormpy import AddUncertaintyExact, Rational
+from stormpy import Rational
 from premise.interval.utils import logger
 
 
@@ -15,7 +14,6 @@ from premise.interval.interval import (
     stormpy_imdp_to_ipomdp,
     stormpy_exact_pomdp_to_mdp,
 )
-from premise.interval.model_free.regression_model import prep_trace_for_regression
 from premise.interval.loading import (
     build_imc_loading_args_parser,
     build_suo,
@@ -91,6 +89,7 @@ if __name__ == "__main__":
         "-e",
         "--exact",
         action="store_true",
+        default=True,
         help="Use exact conformance checking",
     )
     parser.add_argument(
@@ -132,7 +131,11 @@ if __name__ == "__main__":
     if args.stats_folder is not None:
         stats_path = Path(args.stats_folder)
         for stats_file in stats_path.iterdir():
-            data = np.load(stats_file, allow_pickle=True).item()
+            try:
+                data = np.load(stats_file, allow_pickle=True).item()
+            except Exception as e:
+                print(f"Error loading {stats_file}: {e}")
+                continue
             key = (
                 data["args"]["mc"] or "acas-" + str(data["args"]["acas"]),
                 (
@@ -144,7 +147,14 @@ if __name__ == "__main__":
                 data["args"]["sim"],
                 data["args"]["acas"],
                 data["args"]["distance"],
+                data["args"]["sys_vars"],
             )
+
+            if key[0] != "SnL-10x10":
+                continue
+
+            print(f"Loading stats for {key} from {stats_file}")
+
             if key not in test_args:
                 test_args[key] = argparse.Namespace(
                     mc=data["args"]["mc"],
@@ -208,6 +218,7 @@ if __name__ == "__main__":
         test_args[key] = args
 
     for key, args in test_args.items():
+        print(f"Testing {key} with args: {args}")
         suo, initial_amount, horizon = build_suo(args)
         if args.horizon is None:
             if horizon is not None:
@@ -241,43 +252,42 @@ if __name__ == "__main__":
                 args.horizon,
                 args.dump,
                 args.verbose,
-                use_exact=args.exact,
+                use_exact=True,
                 precision=args.precision,
             )
 
-        has_extra_imc = (
-            args.extra_trans_path is not None and args.extra_init_path is not None
-        )
-        if has_extra_imc:
-            interval, initial_interval = load_imc(args)
-            # Build the premise monitor on the learned model
-            extra_mon, extra_mon_comps = create_monitor(
-                interval,
-                initial_interval,
-                "min",
-                True,
-                args.horizon,
-                args.dump,
-                args.verbose,
-                use_exact=args.exact,
-                precision=args.precision,
-            )
+        # has_extra_imc = (
+        #     args.extra_trans_path is not None and args.extra_init_path is not None
+        # )
+        # if has_extra_imc:
+        #     interval, initial_interval = load_imc(args)
+        #     # Build the premise monitor on the learned model
+        #     extra_mon, extra_mon_comps = create_monitor(
+        #         interval,
+        #         initial_interval,
+        #         "min",
+        #         True,
+        #         args.horizon,
+        #         args.dump,
+        #         args.verbose,
+        #         use_exact=args.exact,
+        #         precision=args.precision,
+        #     )
 
         # Load the regression model
-        if args.regression_path and args.regression_observations:
-            reg_model = np.load(args.regression_path, allow_pickle=True).item()
-            observations = np.load(
-                args.regression_observations, allow_pickle=True
-            ).item()["observations"]
-            column_names = [
-                f"Step{s}_Obs{o}"
-                for s in range(args.sample_length)
-                for o in observations
-            ]
-        else:
-            reg_model = None
+        # if args.regression_path and args.regression_observations:
+        #     reg_model = np.load(args.regression_path, allow_pickle=True).item()
+        #     observations = np.load(
+        #         args.regression_observations, allow_pickle=True
+        #     ).item()["observations"]
+        #     column_names = [
+        #         f"Step{s}_Obs{o}"
+        #         for s in range(args.sample_length)
+        #         for o in observations
+        #     ]
+        # else:
+        #     reg_model = None
 
-        uncertain_monitors = None
         if not args.no_target:
             target_monitor = suo.create_target_monitor()
 
@@ -288,29 +298,29 @@ if __name__ == "__main__":
             # )
             # float_target_monitor = non_exact_suo.create_target_monitor()
 
-            if (
-                args.additive_uncertainty
-                and "_model" in suo.__dict__
-                and "_model_def" in suo.__dict__
-            ):
-                uncertain_monitors = {}
-                pomdp = suo._model
-                mdp = stormpy_exact_pomdp_to_mdp(suo._model)
-                au_transformer = AddUncertaintyExact(mdp)
-                for au in args.additive_uncertainty:
-                    imdp = au_transformer.transform(
-                        Rational(float(au)), Rational(0.0001)
-                    )
-                    ipomdp = stormpy_imdp_to_ipomdp(
-                        imdp, pomdp.observations, pomdp.observation_valuations
-                    )
-                    au_mon, _ = build_monitor_from_model(
-                        ipomdp,
-                        "min",
-                        args.horizon,
-                        target=suo._model_def.target_label,
-                    )
-                    uncertain_monitors[au] = au_mon
+            # if (
+            #     args.additive_uncertainty
+            #     and "_model" in suo.__dict__
+            #     and "_model_def" in suo.__dict__
+            # ):
+            #     uncertain_monitors = {}
+            #     pomdp = suo._model
+            #     mdp = stormpy_exact_pomdp_to_mdp(suo._model)
+            #     au_transformer = AddUncertaintyExact(mdp)
+            #     for au in args.additive_uncertainty:
+            #         imdp = au_transformer.transform(
+            #             Rational(float(au)), Rational(0.0001)
+            #         )
+            #         ipomdp = stormpy_imdp_to_ipomdp(
+            #             imdp, pomdp.observations, pomdp.observation_valuations
+            #         )
+            #         au_mon, _ = build_monitor_from_model(
+            #             ipomdp,
+            #             "min",
+            #             args.horizon,
+            #             target=suo._model_def.target_label,
+            #         )
+            #         uncertain_monitors[au] = au_mon
 
         logger.info("Ready for testing")
 
@@ -329,9 +339,9 @@ if __name__ == "__main__":
         sampling_risks = []
         uncertain_risks = {}
 
-        if uncertain_monitors is not None:
-            for au, _ in uncertain_monitors.items():
-                uncertain_risks[au] = []
+        # if uncertain_monitors is not None:
+        #     for au, _ in uncertain_monitors.items():
+        #         uncertain_risks[au] = []
 
         for trace in tqdm(traces):
             alarms.append(any([s[2] for s in trace]))
@@ -355,15 +365,15 @@ if __name__ == "__main__":
                 # float_target_risk = float_target_risk[sub_trace]
                 # float_target_risks.append(float(float_target_risk))
 
-            if uncertain_monitors is not None:
-                for au, au_mon in uncertain_monitors.items():
-                    uncertain_risk = test_monitor(
-                        au_mon,
-                        [sub_trace],
-                        with_tqdm=False,
-                    )
-                    uncertain_risk = uncertain_risk[sub_trace]
-                    uncertain_risks[au].append(float(uncertain_risk))
+            # if uncertain_monitors is not None:
+            #     for au, au_mon in uncertain_monitors.items():
+            #         uncertain_risk = test_monitor(
+            #             au_mon,
+            #             [sub_trace],
+            #             with_tqdm=False,
+            #         )
+            #         uncertain_risk = uncertain_risk[sub_trace]
+            #         uncertain_risks[au].append(float(uncertain_risk))
 
             # Run premise on the learned model
             if has_imc:
@@ -375,35 +385,35 @@ if __name__ == "__main__":
                     with_tqdm=False,
                 )[sub_trace]
 
-                imc_risks.append(risk)
+                imc_risks.append(float(risk))
 
-            if has_extra_imc:
-                risk = test_monitor(
-                    extra_mon,
-                    [sub_trace],
-                    obs_func=lambda x: extra_mon_comps.observation_map[x],
-                    skip_initial=True,
-                    with_tqdm=False,
-                )[sub_trace]
+            # if has_extra_imc:
+            #     risk = test_monitor(
+            #         extra_mon,
+            #         [sub_trace],
+            #         obs_func=lambda x: extra_mon_comps.observation_map[x],
+            #         skip_initial=True,
+            #         with_tqdm=False,
+            #     )[sub_trace]
 
-                extra_imc_risks.append(risk)
+            #     extra_imc_risks.append(risk)
 
             # Run regression model
-            if reg_model:
-                reg_sub_trace = prep_trace_for_regression(sub_trace, observations)
-                X = pd.DataFrame([reg_sub_trace], columns=column_names)
-                prob = reg_model.predict_proba(X)
-                regression_risks.append(prob[0, 1])
+            # if reg_model:
+            #     reg_sub_trace = prep_trace_for_regression(sub_trace, observations)
+            #     X = pd.DataFrame([reg_sub_trace], columns=column_names)
+            #     prob = reg_model.predict_proba(X)
+            #     regression_risks.append(prob[0, 1])
 
-            if args.sampling_amount is not None:
-                sampling_risk = random_sample_monitor_test(
-                    suo,
-                    [sub_trace],
-                    args.horizon,
-                    args.sampling_amount,
-                    with_tqdm=False,
-                )[sub_trace]
-                sampling_risks.append(sampling_risk)
+            # if args.sampling_amount is not None:
+            #     sampling_risk = random_sample_monitor_test(
+            #         suo,
+            #         [sub_trace],
+            #         args.horizon,
+            #         args.sampling_amount,
+            #         with_tqdm=False,
+            #     )[sub_trace]
+            #     sampling_risks.append(sampling_risk)
 
         if args.dump_stats is not None:
             stats = {
@@ -411,26 +421,35 @@ if __name__ == "__main__":
                 "samples": traces,
                 "alarms": alarms,
                 "risks": {},
+                "state_risks": {},
             }
             if has_imc:
                 stats["risks"]["imc_risks"] = imc_risks
+                stats["state_risks"]["imc_state_risks"] = [
+                    float(mon_comps.risks[i].upper())
+                    for s, i in sorted(mon_comps.state_index_map.items())
+                ]
 
-            if has_extra_imc:
-                stats["risks"]["extra_imc_risks"] = extra_imc_risks
+            # if has_extra_imc:
+            #     stats["risks"]["extra_imc_risks"] = extra_imc_risks
 
             if not args.no_target:
                 stats["risks"]["target_risks"] = target_risks
+                stats["state_risks"]["target_state_risks"] = [
+                    float(r) for r in suo.get_risk()
+                ]
+
             #     stats["risks"]["float_target_risks"] = float_target_risks
 
-            if reg_model:
-                stats["risks"]["regression_risks"] = regression_risks
+            # if reg_model:
+            #     stats["risks"]["regression_risks"] = regression_risks
 
-            if args.sampling_amount is not None:
-                stats["risks"]["sampling_risks"] = sampling_risks
+            # if args.sampling_amount is not None:
+            #     stats["risks"]["sampling_risks"] = sampling_risks
 
-            if uncertain_monitors is not None:
-                for au, risks in uncertain_risks.items():
-                    stats["risks"][f"uncertain_risks_{au}"] = risks
+            # if uncertain_monitors is not None:
+            #     for au, risks in uncertain_risks.items():
+            #         stats["risks"][f"uncertain_risks_{au}"] = risks
 
             if args.dump_stats == "":
                 filename = os.path.join(
@@ -441,5 +460,6 @@ if __name__ == "__main__":
             else:
                 filename = args.dump_stats
 
+            os.makedirs(os.path.dirname(filename), exist_ok=True)
             with open(filename, "wb") as f:
                 pickle.dump(stats, f)

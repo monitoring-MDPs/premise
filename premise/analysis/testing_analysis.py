@@ -118,7 +118,7 @@ def inspect_traces(traces, alarms, risks_dict, suo, sample_length):
                 print(f"{k} risk: {risks_dict[k][i]}")
 
 
-def main(stats_path="../../out/tmp/test06-23"):
+def main(stats_path="../../out/tmp/testing23"):
     matplotlib.rcParams["figure.dpi"] = 300
     path = Path(stats_path)
     if path.is_dir():
@@ -134,9 +134,13 @@ def main(stats_path="../../out/tmp/test06-23"):
 
         risks_dict = {}
         alarm_dict = {}
+        state_risks_dict = {}
         for name, risks in data["risks"].items():
             risks_dict[name] = risks
             alarm_dict[name] = alarms
+
+        for name, risks in data["state_risks"].items():
+            state_risks_dict[name] = risks
 
         print(f"Loaded {len(samples)} samples.")
         print(f"Crashes: {np.sum(alarms)} / {len(alarms)} ({100*np.mean(alarms):.2f}%)")
@@ -160,6 +164,15 @@ def main(stats_path="../../out/tmp/test06-23"):
                 f"{k}",
                 ax,
             )
+        plt.show()
+
+        # Plot histograms of state_risks
+        plt.scatter(
+            state_risks_dict["imc_state_risks"],
+            state_risks_dict["target_state_risks"],
+        )
+        plt.xlabel("IMC State Risks")
+        plt.ylabel("Target State Risks")
         plt.show()
 
         # Plot all scatter plots in a grid dynamic on the number of keys

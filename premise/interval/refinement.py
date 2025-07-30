@@ -220,7 +220,6 @@ def refinement_learning(
             save_imc(
                 initial_interval,
                 interval,
-                suo,
                 intermediate_model_path + "-" + str(iteration),
             )
 
@@ -240,11 +239,8 @@ def refinement_learning(
 def save_imc(
     initial_interval,
     interval,
-    suo: SystemUnderObservation,
-    model_path: Optional[str] = None,
+    model_path: str,
 ):
-    if model_path is None:
-        model_path = f"out/{suo.model_name}"
     np.save(f"{model_path}-initial_interval.npy", initial_interval)  # type: ignore
     np.save(f"{model_path}-interval.npy", interval)  # type: ignore
 
@@ -353,7 +349,7 @@ def ref_main(args: argparse.Namespace):
     stats_saver.create_stats(ref_stop_cond, ref_stats)
     stats = stats_saver.save_stats()
 
-    save_imc(initial_interval, interval, suo, args.model_path)
+    save_imc(initial_interval, interval, args.model_path)
     return stats
 
 
