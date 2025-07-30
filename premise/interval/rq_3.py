@@ -1408,41 +1408,4 @@ if __name__ == "__main__":
 # python -m premise.interval.rq_3 --mc evadeV-5-3 --model_path /workspaces/premise/out/models/2025-07-17 --stats_path /workspaces/premise/out/stats/2025-07-17
 
 
-#coarse = True 
 
-    #imc_model {model_path}/{mc}-coarse-comp-noref
-    #imc_stats {stats_path}/{mc}-coarse_norefinement-stats
-    #imc_model_ref {model_path}/{mc}-coarse-comp-ref
-    #imc_stats_ref {stats_path}/{mc}-coarse_refinement-stats
-    #imc_model_ref_splitting {model_path}/{mc}-coarse-comp-refsplit
-    #imc_stats_ref_splitting {stats_path}/{mc}-coarse_refsplitinement-stats
-
-    #regression_model {model_path}/{mc}-coarse-comp-reg
-    #regression_stats {stats_path}/{mc}-coarse-comp-reg-stats
-
-    #se_path {model_path}/{mc}_coarse_comp_conformal_pred_state_estimator
-    #error_path {model_path}/{mc}_coarse_comp_conformal_pred_label_estimator
-    #rej_path {stats_path}/{mc}_coarse_comp_conformal_pred_label_estimator 
-    #stats_path {stats_path}/{mc}_coarse_comp_conformal_pred_rejection_classifier
-    #cp_classification_path {model_path}/{mc}_coarse_comp_conformal_pred_cp_classification
-
-
-#coarse = False 
-
-    #imc_model {model_path}/{mc}-comp-noref
-    #imc_stats {stats_path}/{mc}-comp-noref-stats
-    #imc_model_ref {model_path}/{mc}-comp-ref
-    #imc_stats_ref {stats_path}/{mc}-comp-ref-stats
-    #imc_model_ref_splitting {model_path}/{mc}-comp-refsplit
-    #imc_stats_ref_splitting  {stats_path}/{mc}-comp-refsplit-stats
-
-    #regression_model {model_path}/{mc}-comp-reg
-    #regression_stats {stats_path}/{mc}-comp-reg-stats
-
-    #se_path {model_path}/{mc}_comp_conformal_pred_state_estimator
-    #error_path {model_path}/{mc}_comp_conformal_pred_label_estimator
-    #rej_path {stats_path}/{mc}_comp_conformal_pred_label_estimator 
-    #stats_path {stats_path}/{mc}_comp_conformal_pred_rejection_classifier
-    #cp_classification_path {model_path}/{mc}_comp_conformal_pred_cp_classification
-
-    
