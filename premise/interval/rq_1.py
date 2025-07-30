@@ -50,6 +50,7 @@ def aggregated_stats_imc(
     imc_risks = {}
 
     imc_transition_counts = {}
+    stopping_threshold = None
 
     for x in range(1, 11):
         # for x in range(5,7):
@@ -621,7 +622,7 @@ def testing_argsparser():
     )
 
     parser.add_argument("--stats-path", type=str, help="Path stats")
-    
+
     parser.add_argument(
         "-ht",
         "--high-st",
