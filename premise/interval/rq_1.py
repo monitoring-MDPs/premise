@@ -332,7 +332,7 @@ def distance_graph(
         mc_x_values,
         mc_mean_distance,
         color="chartreuse",
-        label=f"MC, (Average final distance: {np.mean(mc_final_distances):.3f})",
+        label=f"HMM, (Average final distance: {np.mean(mc_final_distances):.3f})",
         linewidth=7,
         linestyle=":",
     )
@@ -382,7 +382,7 @@ def distance_graph(
         x_values,
         mean_distance,
         color="red",
-        label=f"IMC, (Average final distance: {np.mean(final_distances):.3f})",
+        label=f"iHMM, (Average final distance: {np.mean(final_distances):.3f})",
         linewidth=7,
         linestyle="--",
     )
@@ -411,21 +411,7 @@ def distance_graph(
         plt.ylim(bottom=0)
     ax.grid(True)
     plt.subplots_adjust(bottom=0.25)
-    if coarse:
-        if high_st:
-            plt.title(
-                f"{args.mc} coarse, stopping threshold: {stopping_threshold}",
-                fontsize=30,
-            )
-        else:
-            plt.title(f"{args.mc} coarse", fontsize=30)
-    else:
-        if high_st:
-            plt.title(
-                f"{args.mc},  stopping threshold: {stopping_threshold}", fontsize=30
-            )
-        else:
-            plt.title(f"{args.mc}", fontsize=30)
+
 
     plt.tight_layout()
     if coarse:
@@ -486,7 +472,7 @@ def overestimation_graph(
                     target_risks,
                     color="chartreuse",
                     marker="s",
-                    label="MC",
+                    label="HMM",
                 )
             else:
                 plt.scatter(mc_risks[key], target_risks, color="chartreuse", marker="s")
@@ -507,24 +493,9 @@ def overestimation_graph(
 
     plt.legend(fontsize=15)
 
-    plt.xlabel("IMC and MC risks", fontsize=15)
+    plt.xlabel("iHMM and HMM risks", fontsize=15)
     plt.ylabel("Target risks", fontsize=15)
     plt.tick_params(axis="both", labelsize=12)
-    if coarse:
-        if high_st:
-            plt.title(
-                f"{args.mc} coarse, stopping threshold: {stopping_threshold}",
-                fontsize=15,
-            )
-        else:
-            plt.title(f"{args.mc} coarse", fontsize=15)
-    else:
-        if high_st:
-            plt.title(
-                f"{args.mc}, stopping threshold: {stopping_threshold}", fontsize=15
-            )
-        else:
-            plt.title(f"{args.mc}", fontsize=15)
 
     plt.tight_layout()
     if coarse:

@@ -4,26 +4,32 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import argparse
 from premise.interval.loading import build_suo_args_parser
+import os
 
-def probelm_statement(high_st, coarse, stats_path):
+from premise.interval.utils import setup_logging
+
+def probelm_statement(high_st, coarse, stats_path, out_path):
 
     imc_data = {}
     imc_final_distances = []
 
-    #for x in range(1,11): 
-    for x in range(5,7):
+    for x in range(1,11): 
         states_aggreagted = []
         print(f'Experiment number {x}')
-        if coarse:
-            if high_st:
-                statistics = np.load(f'{stats_path}/high-st-{args.mc}-coarse_norefinement-stats-{x}.npy', allow_pickle=True).item()
+        try:
+            if coarse:
+                if high_st:
+                    statistics = np.load(f'{stats_path}/high-st-{args.mc}-coarse_norefinement-stats-{x}.npy', allow_pickle=True).item()
+                else:
+                    statistics = np.load(f'{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy', allow_pickle=True).item()
             else:
-                statistics = np.load(f'{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy', allow_pickle=True).item()
-        else:
-            if high_st:
-                statistics = np.load(f'{stats_path}/high-st-{args.mc}-comp-noref-stats-{x}.npy', allow_pickle=True).item() 
-            else:
-                statistics = np.load(f'{stats_path}/{args.mc}-comp-noref-stats-{x}.npy', allow_pickle=True).item() 
+                if high_st:
+                    statistics = np.load(f'{stats_path}/high-st-{args.mc}-comp-noref-stats-{x}.npy', allow_pickle=True).item() 
+                else:
+                    statistics = np.load(f'{stats_path}/{args.mc}-comp-noref-stats-{x}.npy', allow_pickle=True).item() 
+        except FileNotFoundError:
+            print(f"Statistics file for {x} not found, skipping.")
+            continue
 
         distances = statistics["distances"]
         imc_final_distances.append(distances[-1])
@@ -38,21 +44,23 @@ def probelm_statement(high_st, coarse, stats_path):
     ref_data = {}
     ref_final_distances = []
     
-    #for x in range(1,11):
-    for x in range(5,7):
+    for x in range(1,11):
         ref_states_aggreagted = []
         print(f'Experiment number {x}')
-        if coarse:
-            if high_st:
-                statistics = np.load(f'{stats_path}/high-st-{args.mc}-coarse_refinement-stats-{x}.npy', allow_pickle=True).item()
-            else:
-                statistics = np.load(f'{stats_path}/{args.mc}-coarse_refinement-stats-{x}.npy', allow_pickle=True).item()
-        else: 
-            if high_st:
-                statistics = np.load(f'{stats_path}/high-st-{args.mc}-comp-ref-stats-{x}.npy', allow_pickle=True).item()
-            else:
-                statistics = np.load(f'{stats_path}/{args.mc}-comp-ref-stats-{x}.npy', allow_pickle=True).item()
-
+        try:
+            if coarse:
+                if high_st:
+                    statistics = np.load(f'{stats_path}/high-st-{args.mc}-coarse_refinement-stats-{x}.npy', allow_pickle=True).item()
+                else:
+                    statistics = np.load(f'{stats_path}/{args.mc}-coarse_refinement-stats-{x}.npy', allow_pickle=True).item()
+            else: 
+                if high_st:
+                    statistics = np.load(f'{stats_path}/high-st-{args.mc}-comp-ref-stats-{x}.npy', allow_pickle=True).item()
+                else:
+                    statistics = np.load(f'{stats_path}/{args.mc}-comp-ref-stats-{x}.npy', allow_pickle=True).item()
+        except FileNotFoundError:
+            print(f"Statistics file for {x} not found, skipping.")
+            continue
 
         distances = statistics["distances"]
         ref_final_distances.append(distances[-1])
@@ -68,20 +76,23 @@ def probelm_statement(high_st, coarse, stats_path):
     split_ref_data = {}
     split_ref_final_distances = []
     
-    #for x in range(1,11):
-    for x in range(5,7): 
+    for x in range(1,11): 
         split_ref_states_aggreagted = []
         print(f'Experiment number {x}')
-        if coarse:
-            if high_st:
-                statistics = np.load(f'{stats_path}/high-st-{args.mc}-coarse_refsplitinement-stats-{x}.npy', allow_pickle=True).item()
-            else:
-                statistics = np.load(f'{stats_path}/{args.mc}-coarse_refsplitinement-stats-{x}.npy', allow_pickle=True).item()
-        else: 
-            if high_st:
-                statistics = np.load(f'{stats_path}/high-st-{args.mc}-comp-refsplit-stats-{x}.npy', allow_pickle=True).item()
-            else:
-                statistics = np.load(f'{stats_path}/{args.mc}-comp-refsplit-stats-{x}.npy', allow_pickle=True).item()
+        try:
+            if coarse:
+                if high_st:
+                    statistics = np.load(f'{stats_path}/high-st-{args.mc}-coarse_refsplitinement-stats-{x}.npy', allow_pickle=True).item()
+                else:
+                    statistics = np.load(f'{stats_path}/{args.mc}-coarse_refsplitinement-stats-{x}.npy', allow_pickle=True).item()
+            else: 
+                if high_st:
+                    statistics = np.load(f'{stats_path}/high-st-{args.mc}-comp-refsplit-stats-{x}.npy', allow_pickle=True).item()
+                else:
+                    statistics = np.load(f'{stats_path}/{args.mc}-comp-refsplit-stats-{x}.npy', allow_pickle=True).item()
+        except FileNotFoundError:
+            print(f"Statistics file for {x} not found, skipping.")
+            continue
 
 
         distances = statistics["distances"]
@@ -265,32 +276,25 @@ def probelm_statement(high_st, coarse, stats_path):
         plt.ylim(bottom=0)
     ax.grid(True)
     plt.subplots_adjust(bottom=0.25)
-    if coarse:
-        if high_st:
-            plt.title(f'{args.mc} coarse high st', fontsize=20)
-        else: 
-            plt.title(f'{args.mc} coarse', fontsize=20)
-    else:
-        if high_st:
-            plt.title(f'{args.mc} high st', fontsize=20)
-        else: 
-            plt.title(f'{args.mc}', fontsize=20)
 
     if coarse:
         if high_st:
-            plt.savefig(f"/workspaces/premise/premise/analysis/r2_high-st-{args.mc}_coarse_interval_width.pdf", dpi=300, bbox_inches='tight')
+            plt.savefig(f"{out_path}/r2_high-st-{args.mc}_coarse_interval_width.pdf", dpi=300, bbox_inches='tight')
         else:
-            plt.savefig(f"/workspaces/premise/premise/analysis/r2_{args.mc}_coarse_interval_width.pdf", dpi=300, bbox_inches='tight')
+            plt.savefig(f"{out_path}/r2_{args.mc}_coarse_interval_width.pdf", dpi=300, bbox_inches='tight')
     else: 
         if high_st:
-            plt.savefig(f"/workspaces/premise/premise/analysis/r2_high-st-{args.mc}_interval_width.pdf", dpi=300, bbox_inches='tight')
+            plt.savefig(f"{out_path}/r2_high-st-{args.mc}_interval_width.pdf", dpi=300, bbox_inches='tight')
         else:
-            plt.savefig(f"/workspaces/premise/premise/analysis/r2_{args.mc}_interval_width.pdf", dpi=300, bbox_inches='tight')
+            plt.savefig(f"{out_path}/r2_{args.mc}_interval_width.pdf", dpi=300, bbox_inches='tight')
 
     plt.show()
 
 
 def main(args: argparse.Namespace):
+    setup_logging()
+
+    os.makedirs(args.out, exist_ok=True)
 
     if args.sys_vars != None: 
         coarse = True
@@ -299,7 +303,7 @@ def main(args: argparse.Namespace):
 
     stats_path = args.stats_path 
     if args.high_st == False:
-        probelm_statement(args.high_st, coarse, stats_path)
+        probelm_statement(args.high_st, coarse, stats_path, args.out)
         
 
 def testing_argsparser():
@@ -310,7 +314,17 @@ def testing_argsparser():
                         type = str, 
                         help = 'Path to stats'
     )
-    parser.add_argument("--high_st", type = bool, default = False, help = "If higher stopping threashold is used")
+    parser.add_argument("--high_st",
+                        type = bool, 
+                        default = False, 
+                        help = "If higher stopping threashold is used")
+
+    parser.add_argument("-o",
+                        "--out",
+                        type=str,
+                        default="out/results",
+                        help="Output path for the results",
+    )
 
     return parser
 
