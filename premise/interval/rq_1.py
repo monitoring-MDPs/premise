@@ -308,8 +308,8 @@ def distance_graph(
         mc_distance_data.append(distance_daum)
 
     # Find common x range for interpolation
-    min_x = max(min(transitions) for transitions in mc_transitions_data)
-    max_x = min(max(transitions) for transitions in mc_transitions_data)
+    min_x = min(min(transitions) for transitions in mc_transitions_data)
+    max_x = max(max(transitions) for transitions in mc_transitions_data)
     mc_x_values = np.linspace(min_x, max_x, 500)
 
     # Interpolate all runs to common x values
@@ -358,8 +358,8 @@ def distance_graph(
         distance_data.append(distance_daum)
 
     # Find common x range for interpolation
-    min_x = max(min(transitions) for transitions in transitions_data)
-    max_x = min(max(transitions) for transitions in transitions_data)
+    min_x = min(min(transitions) for transitions in transitions_data)
+    max_x = max(max(transitions) for transitions in transitions_data)
     x_values = np.linspace(min_x, max_x, 500)
 
     # Interpolate all runs to common x values

@@ -1,4 +1,7 @@
-stats_path = "$1"
+#!/bin/bash
+set -x
+
+stats_path="$1"
 if [ -z "$stats_path" ]; then
     echo "Usage: $0 <stats_path>"
     exit 1
