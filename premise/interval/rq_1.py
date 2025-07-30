@@ -412,7 +412,6 @@ def distance_graph(
     ax.grid(True)
     plt.subplots_adjust(bottom=0.25)
 
-
     plt.tight_layout()
     if coarse:
         if high_st:
