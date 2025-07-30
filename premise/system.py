@@ -288,7 +288,7 @@ class CoarseMCSystemUnderObservation(MCSystemUnderObservation):
             self._model, self.sys_vars
         )
 
-    def get_states_and_transitions(self, all_transitions: bool = True):
+    def get_states_and_transitions(self, all_transitions: bool = False):
         return super().get_states_and_transitions(
             all_transitions, state_coarse_map=self.state_coarse_map
         )
