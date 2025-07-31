@@ -8,14 +8,15 @@ import os
 
 from premise.interval.utils import setup_logging
 
+
 def probelm_statement(high_st, coarse, stats_path, out_path):
 
     imc_data = {}
     imc_final_distances = []
 
-    for x in range(1,11): 
+    for x in range(1, 11):
         states_aggreagted = []
-        print(f'Experiment number {x}')
+        print(f"Experiment number {x}")
         try:
             if coarse:
                 if high_st:
@@ -52,9 +53,15 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
                             )
             else:
                 if high_st:
-                    statistics = np.load(f'{stats_path}/high-st-{args.mc}-comp-noref-stats-{x}.npy', allow_pickle=True).item() 
+                    statistics = np.load(
+                        f"{stats_path}/high-st-{args.mc}-comp-noref-stats-{x}.npy",
+                        allow_pickle=True,
+                    ).item()
                 else:
-                    statistics = np.load(f'{stats_path}/{args.mc}-comp-noref-stats-{x}.npy', allow_pickle=True).item() 
+                    statistics = np.load(
+                        f"{stats_path}/{args.mc}-comp-noref-stats-{x}.npy",
+                        allow_pickle=True,
+                    ).item()
         except FileNotFoundError:
             print(f"Statistics file for {x} not found, skipping.")
             continue
@@ -62,19 +69,19 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
         distances = statistics["distances"]
         imc_final_distances.append(distances[-1])
         states_vistited = statistics["transitions_learned"]
-        total = 0 
-        for s in states_vistited: 
+        total = 0
+        for s in states_vistited:
             total += s
             states_aggreagted.append(total)
-        
+
         imc_data[x] = [distances, states_aggreagted]
 
     ref_data = {}
     ref_final_distances = []
-    
-    for x in range(1,11):
+
+    for x in range(1, 11):
         ref_states_aggreagted = []
-        print(f'Experiment number {x}')
+        print(f"Experiment number {x}")
         try:
             if coarse:
                 if high_st:
@@ -111,9 +118,15 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
                             )  
             else: 
                 if high_st:
-                    statistics = np.load(f'{stats_path}/high-st-{args.mc}-comp-ref-stats-{x}.npy', allow_pickle=True).item()
+                    statistics = np.load(
+                        f"{stats_path}/high-st-{args.mc}-comp-ref-stats-{x}.npy",
+                        allow_pickle=True,
+                    ).item()
                 else:
-                    statistics = np.load(f'{stats_path}/{args.mc}-comp-ref-stats-{x}.npy', allow_pickle=True).item()
+                    statistics = np.load(
+                        f"{stats_path}/{args.mc}-comp-ref-stats-{x}.npy",
+                        allow_pickle=True,
+                    ).item()
         except FileNotFoundError:
             print(f"Statistics file for {x} not found, skipping.")
             continue
@@ -121,20 +134,19 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
         distances = statistics["distances"]
         ref_final_distances.append(distances[-1])
         states_vistited = statistics["transitions_learned"]
-        total = 0 
-        for s in states_vistited: 
+        total = 0
+        for s in states_vistited:
             total += s
-            ref_states_aggreagted.append(total)   
+            ref_states_aggreagted.append(total)
 
         ref_data[x] = [distances, ref_states_aggreagted]
 
-    
     split_ref_data = {}
     split_ref_final_distances = []
-    
-    for x in range(1,11): 
+
+    for x in range(1, 11):
         split_ref_states_aggreagted = []
-        print(f'Experiment number {x}')
+        print(f"Experiment number {x}")
         try:
             if coarse:
                 if high_st:
@@ -171,31 +183,35 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
                             )
             else: 
                 if high_st:
-                    statistics = np.load(f'{stats_path}/high-st-{args.mc}-comp-refsplit-stats-{x}.npy', allow_pickle=True).item()
+                    statistics = np.load(
+                        f"{stats_path}/high-st-{args.mc}-comp-refsplit-stats-{x}.npy",
+                        allow_pickle=True,
+                    ).item()
                 else:
-                    statistics = np.load(f'{stats_path}/{args.mc}-comp-refsplit-stats-{x}.npy', allow_pickle=True).item()
+                    statistics = np.load(
+                        f"{stats_path}/{args.mc}-comp-refsplit-stats-{x}.npy",
+                        allow_pickle=True,
+                    ).item()
         except FileNotFoundError:
             print(f"Statistics file for {x} not found, skipping.")
             continue
 
-
         distances = statistics["distances"]
         split_ref_final_distances.append(distances[-1])
         states_vistited = statistics["transitions_learned"]
-        total = 0 
-        for s in states_vistited: 
+        total = 0
+        for s in states_vistited:
             total += s
             split_ref_states_aggreagted.append(total)
-    
-        split_ref_data[x] = [distances, split_ref_states_aggreagted]
 
+        split_ref_data[x] = [distances, split_ref_states_aggreagted]
 
     log = True
 
     plt.figure()
     fig, ax = plt.subplots(figsize=(10, 5))
 
-    #NO REFINEMENT AVERAGE PERFORMANCE
+    # NO REFINEMENT AVERAGE PERFORMANCE
     transitions_data = []
     distance_data = []
 
@@ -226,26 +242,26 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
     distance_mean = np.mean(distance_array, axis=0)
     distance_std = np.std(distance_array, axis=0)
 
-    #Plot mean line
+    # Plot mean line
     ax.plot(
         x_values,
         distance_mean,
-        color='red',
-        label = f'No refinement, (Mean final distance: {np.mean(imc_final_distances):.3f})',
+        color="red",
+        label=f"No refinement, (Mean final distance: {np.mean(imc_final_distances):.3f})",
         linewidth=3,
-        linestyle='--',
-        )
+        linestyle="--",
+    )
 
-    #Add shaded area for spread
+    # Add shaded area for spread
     ax.fill_between(
-            x_values,
-            distance_mean - distance_std,
-            distance_mean + distance_std,
-            alpha=0.2,
-            color='red',
-        )
+        x_values,
+        distance_mean - distance_std,
+        distance_mean + distance_std,
+        alpha=0.2,
+        color="red",
+    )
 
-    #REFINEMENT AVERAGE PERFORMANCE
+    # REFINEMENT AVERAGE PERFORMANCE
     R_transitions_data = []
     R_distance_data = []
 
@@ -276,26 +292,26 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
     R_distance_mean = np.mean(R_distance_array, axis=0)
     R_distance_std = np.std(R_distance_array, axis=0)
 
-    #Plot mean line
+    # Plot mean line
     ax.plot(
         x_values,
         R_distance_mean,
-        color='blue',
-        label = f'Refinement, (Mean final width: {np.mean(ref_final_distances):.3f})',
+        color="blue",
+        label=f"Refinement, (Mean final width: {np.mean(ref_final_distances):.3f})",
         linewidth=3,
-        linestyle=':',
-        )
+        linestyle=":",
+    )
 
-    #Add shaded area for spread
+    # Add shaded area for spread
     ax.fill_between(
-            x_values,
-            R_distance_mean - R_distance_std,
-            R_distance_mean + R_distance_std,
-            alpha=0.2,
-            color='blue',
-        )
-    
-    #SPLITTING REFINEMENT AVERAGE PERFORMANCE
+        x_values,
+        R_distance_mean - R_distance_std,
+        R_distance_mean + R_distance_std,
+        alpha=0.2,
+        color="blue",
+    )
+
+    # SPLITTING REFINEMENT AVERAGE PERFORMANCE
     SR_transitions_data = []
     SR_distance_data = []
 
@@ -326,29 +342,29 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
     SR_distance_mean = np.mean(SR_distance_array, axis=0)
     SR_distance_std = np.std(SR_distance_array, axis=0)
 
-    #Plot mean line
+    # Plot mean line
     ax.plot(
         x_values,
         SR_distance_mean,
-        color='aqua',
-        label = f'Refinement with splitting, (Mean final width: {np.mean(ref_final_distances):.3f})',
+        color="aqua",
+        label=f"Refinement with splitting, (Mean final width: {np.mean(ref_final_distances):.3f})",
         linewidth=3,
-        linestyle='-.',
-        )
+        linestyle="-.",
+    )
 
-    #Add shaded area for spread
+    # Add shaded area for spread
     ax.fill_between(
-            x_values,
-            SR_distance_mean - SR_distance_std,
-            SR_distance_mean + SR_distance_std,
-            alpha=0.2,
-            color='aqua',
-        )
-    
+        x_values,
+        SR_distance_mean - SR_distance_std,
+        SR_distance_mean + SR_distance_std,
+        alpha=0.2,
+        color="aqua",
+    )
+
     formatter = ticker.ScalarFormatter(useMathText=True)
     formatter.set_powerlimits((4, 4))  # Force 10^4 scale
     ax.xaxis.set_major_formatter(formatter)
-    ax.tick_params(axis='both', labelsize=15)
+    ax.tick_params(axis="both", labelsize=15)
     ax.xaxis.get_offset_text().set_size(15)
 
     ax.set_xlabel("Explored states", fontsize=20)
@@ -363,14 +379,30 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
 
     if coarse:
         if high_st:
-            plt.savefig(f"{out_path}/r2_high-st-{args.mc}_coarse_interval_width.pdf", dpi=300, bbox_inches='tight')
+            plt.savefig(
+                f"{out_path}/r2_high-st-{args.mc}_coarse_interval_width.pdf",
+                dpi=300,
+                bbox_inches="tight",
+            )
         else:
-            plt.savefig(f"{out_path}/r2_{args.mc}_coarse_interval_width.pdf", dpi=300, bbox_inches='tight')
-    else: 
+            plt.savefig(
+                f"{out_path}/r2_{args.mc}_coarse_interval_width.pdf",
+                dpi=300,
+                bbox_inches="tight",
+            )
+    else:
         if high_st:
-            plt.savefig(f"{out_path}/r2_high-st-{args.mc}_interval_width.pdf", dpi=300, bbox_inches='tight')
+            plt.savefig(
+                f"{out_path}/r2_high-st-{args.mc}_interval_width.pdf",
+                dpi=300,
+                bbox_inches="tight",
+            )
         else:
-            plt.savefig(f"{out_path}/r2_{args.mc}_interval_width.pdf", dpi=300, bbox_inches='tight')
+            plt.savefig(
+                f"{out_path}/r2_{args.mc}_interval_width.pdf",
+                dpi=300,
+                bbox_inches="tight",
+            )
 
     plt.show()
 
@@ -380,35 +412,35 @@ def main(args: argparse.Namespace):
 
     os.makedirs(args.out, exist_ok=True)
 
-    if args.sys_vars != None: 
+    if args.sys_vars != None:
         coarse = True
     else:
         coarse = False
 
-    stats_path = args.stats_path 
+    stats_path = args.stats_path
     if args.high_st == False:
         probelm_statement(args.high_st, coarse, stats_path, args.out)
-        
+
 
 def testing_argsparser():
     parser = argparse.ArgumentParser(description="Learn an IMC")
     build_suo_args_parser(parser)
 
-    parser.add_argument('--stats-path',
-                        type = str, 
-                        help = 'Path to stats'
+    parser.add_argument("--stats-path", type=str, help="Path to stats")
+    parser.add_argument(
+        "-ht",
+        "--high-st",
+        action="store_true",
+        default=False,
+        help="If higher stopping threashold is used",
     )
-    parser.add_argument( "-ht",
-                        "--high-st",
-                        type = bool, 
-                        default = False, 
-                        help = "If higher stopping threashold is used")
 
-    parser.add_argument("-o",
-                        "--out",
-                        type=str,
-                        default="out/results",
-                        help="Output path for the results",
+    parser.add_argument(
+        "-o",
+        "--out",
+        type=str,
+        default="out/results",
+        help="Output path for the results",
     )
 
     return parser
@@ -420,8 +452,6 @@ if __name__ == "__main__":
     main(args)
 
 
+# python -m premise.interval.rq_2_new --mc airportA-7-10-10 --stats_path /workspaces/premise/out/stats/2025-07-19
 
-
-#python -m premise.interval.rq_2_new --mc airportA-7-10-10 --stats_path /workspaces/premise/out/stats/2025-07-19
-
-#python -m premise.interval.rq_2_new --mc airportA-7-10-10 -sv d p pobs turn --stats_path /workspaces/premise/out/stats/2025-07-17
+# python -m premise.interval.rq_2_new --mc airportA-7-10-10 -sv d p pobs turn --stats_path /workspaces/premise/out/stats/2025-07-17

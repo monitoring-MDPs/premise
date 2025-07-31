@@ -1086,7 +1086,7 @@ def testing_argsparser():
     parser.add_argument(
         "-ht",
         "--high-st",
-        type=bool,
+        action="store_true",
         default=False,
         help="If higher stopping threashold is used",
     )
