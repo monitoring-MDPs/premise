@@ -50,7 +50,7 @@ from premise.interval.conformal_prediction.MC_model import *
 import torch.nn.functional
 
 
-from premise.interval.model_free.regression_model import prep_trace_for_regression
+# from premise.interval.model_free.regression_model import prep_trace_for_regression
 from premise.interval.loading import (
     build_suo,
     build_suo_args_parser,
@@ -227,125 +227,92 @@ def aggregated_stats_imc(
     return imc_risks, imc_transition_counts, stopping_threashold, imc_distances
 
 
-def aggregated_stats_regression(
-    high_st,
-    coarse,
-    mc,
-    model_path,
-    stats_path,
-    testing_samples,
-    horizon,
-    initial_amount,
-):
-def aggregated_stats_regression(high_st, coarse, mc, model_path, stats_path, testing_samples, horizon, initial_amount): 
+# def aggregated_stats_regression(
+#     high_st,
+#     coarse,
+#     mc,
+#     model_path,
+#     stats_path,
+#     testing_samples,
+#     horizon,
+#     initial_amount,
+# ):
 
-    regression_risks = {}
-    regression_ys = {}
+#     regression_risks = {}
+#     regression_ys = {}
 
-    for x in range(1,11):
-        print(f'Experiment number {x}')
-        try:
-            if coarse:
-                if high_st: 
-                    statistics = np.load(f'{stats_path}/high-st-{mc}-coarse-comp-reg-stats-{x}.npy', allow_pickle=True)
-                else:
-                    statistics = np.load(f'{stats_path}/{mc}-coarse-comp-reg-stats-{x}.npy', allow_pickle=True)
-            else: 
-                if high_st: 
-                    statistics = np.load(f'{stats_path}/high-st-{mc}-comp-reg-stats-{x}.npy', allow_pickle=True)
-                else: 
-                    statistics = np.load(f'{stats_path}/{mc}-comp-reg-stats-{x}.npy', allow_pickle=True)
-        except FileNotFoundError:
-            print(f"Statistics file for {x} not found, skipping.")
-            continue
+#     for x in range(1, 11):
+#         try:
+#             if coarse:
+#                 if high_st:
+#                     paths = glob.glob(
+#                         f"{model_path}/high-st-{mc}-coarse-comp-reg-{x}_*.npy"
+#                     )
+#                 else:
+#                     paths = glob.glob(f"{model_path}/{mc}-coarse-comp-reg-{x}_*.npy")
+#             else:
+#                 if high_st:
+#                     paths = glob.glob(f"{model_path}/high-st-{mc}-comp-reg-{x}_*.npy")
+#                 else:
+#                     paths = glob.glob(f"{model_path}/{mc}-comp-reg-{x}_*.npy")
+#         except FileNotFoundError:
+#             print(f"Statistics file for {x} not found, skipping.")
+#             continue
 
-        obj = statistics.item() 
-        observations = obj["observations"]
-        model_path = obj["args"]["model_path"] 
+#         regression_ys[str(x)] = []
 
-        reg_model = np.load(f'{model_path}.npy', allow_pickle=True).item() #THERE IS ONLY 10 MODELS (ONE PER EACH OF 10 RUNS)
+#         for path in paths:
+#             match = re.search(r"_(\d+)\.npy$", path)
+#             if match:
+#                 regression_ys[str(x)].append(int(match.group(1)))
 
+#         for key in regression_ys.keys():
+#             regression_ys[key].sort()
 
+#         for y in regression_ys[str(x)]:
+#             regression_risks[f"{x}-{y}"] = []
 
+#             if coarse:
+#                 if high_st:
+#                     statistics = np.load(
+#                         f"{stats_path}/high-st-{mc}-coarse-comp-reg-stats-{x}.npy",
+#                         allow_pickle=True,
+#                     ).item()
+#                 else:
+#                     statistics = np.load(
+#                         f"{stats_path}/{mc}-coarse-comp-reg-stats-{x}.npy",
+#                         allow_pickle=True,
+#                     ).item()
+#             else:
+#                 if high_st:
+#                     statistics = np.load(
+#                         f"{stats_path}/high-st-{mc}-comp-reg-stats-{x}.npy",
+#                         allow_pickle=True,
+#                     ).item()
+#                 else:
+#                     statistics = np.load(
+#                         f"{stats_path}/{mc}-comp-reg-stats-{x}.npy", allow_pickle=True
+#                     ).item()
 
-  
-    #OLD 
+#             obj = statistics.item()
+#             observations = obj["observations"]
+#             model_path = obj["args"]["model_path"]
 
-    regression_risks = {}
-    regression_ys = {}
+#             for y in range(regression_ys[str(x)]):
+#                 reg_model = np.load(f"{model_path}_{y}.npy", allow_pickle=True).item()
 
-    for x in range(1, 11):
-        try:
-            if coarse:
-                if high_st:
-                    paths = glob.glob(
-                        f"{model_path}/high-st-{mc}-coarse-comp-reg-{x}_*.npy"
-                    )
-                else:
-                    paths = glob.glob(f"{model_path}/{mc}-coarse-comp-reg-{x}_*.npy")
-            else:
-                if high_st:
-                    paths = glob.glob(f"{model_path}/high-st-{mc}-comp-reg-{x}_*.npy")
-                else:
-                    paths = glob.glob(f"{model_path}/{mc}-comp-reg-{x}_*.npy")
-        except FileNotFoundError:
-            print(f"Statistics file for {x} not found, skipping.")
-            continue
+#             column_names = [
+#                 f"Step{s}_Obs{o}" for s in range(initial_amount) for o in observations
+#             ]
 
-        regression_ys[str(x)] = []
+#             for t in testing_samples:
+#                 sub_trace: Trace = t[:initial_amount]
+#                 reg_sub_trace = prep_trace_for_regression(sub_trace, observations)
+#                 X = pd.DataFrame([reg_sub_trace], columns=column_names)
+#                 prob = reg_model.predict_proba(X)
+#                 regression_risks[f"{x}-{y}"].append(float(prob[:, 1].item()))
 
-        for path in paths:
-            match = re.search(r"_(\d+)\.npy$", path)
-            if match:
-                regression_ys[str(x)].append(int(match.group(1)))
-
-        for key in regression_ys.keys():
-            regression_ys[key].sort()
-
-        for y in regression_ys[str(x)]:
-            regression_risks[f"{x}-{y}"] = []
-
-            if coarse:
-                if high_st:
-                    statistics = np.load(
-                        f"{stats_path}/high-st-{mc}-coarse-comp-reg-stats-{x}.npy",
-                        allow_pickle=True,
-                    ).item()
-                else:
-                    statistics = np.load(
-                        f"{stats_path}/{mc}-coarse-comp-reg-stats-{x}.npy",
-                        allow_pickle=True,
-                    ).item()
-            else:
-                if high_st:
-                    statistics = np.load(
-                        f"{stats_path}/high-st-{mc}-comp-reg-stats-{x}.npy",
-                        allow_pickle=True,
-                    ).item()
-                else:
-                    statistics = np.load(
-                        f"{stats_path}/{mc}-comp-reg-stats-{x}.npy", allow_pickle=True
-                    ).item()
-
-            obj = statistics.item()
-            observations = obj["observations"]
-            model_path = obj["args"]["model_path"]
-
-            for y in range(regression_ys[str(x)]):
-                reg_model = np.load(f"{model_path}_{y}.npy", allow_pickle=True).item()
-
-            column_names = [
-                f"Step{s}_Obs{o}" for s in range(initial_amount) for o in observations
-            ]
-
-            for t in testing_samples:
-                sub_trace: Trace = t[:initial_amount]
-                reg_sub_trace = prep_trace_for_regression(sub_trace, observations)
-                X = pd.DataFrame([reg_sub_trace], columns=column_names)
-                prob = reg_model.predict_proba(X)
-                regression_risks[f"{x}-{y}"].append(float(prob[:, 1].item()))
-
-    return regression_risks, regression_ys
+#     return regression_risks, regression_ys
 
 
 def aggreagted_stats_conformal(high_st, new_noisy, coarse, mc, model_path, stats_path):
@@ -823,13 +790,13 @@ def plot_roc_curve(
             imc_ref_split_final_risks[key.split("-")[0]] = imc_risks_ref_splitting[key]
 
     # Regression
-    reg_final_risks = {}
+    # reg_final_risks = {}
 
-    for x in range(1, 11):
-        # for x in range(5,7):
-        for key in regression_risks.keys():
-            if int(key.split("-")[1]) == max(regression_ys[str(x)]):
-                reg_final_risks[str(x)] = regression_risks[key]
+    # for x in range(1, 11):
+    #     # for x in range(5,7):
+    #     for key in regression_risks.keys():
+    #         if int(key.split("-")[1]) == max(regression_ys[str(x)]):
+    #             reg_final_risks[str(x)] = regression_risks[key]
 
     # Confromal Prediction
     conformal_final_risks = {}
@@ -935,49 +902,49 @@ def plot_roc_curve(
     )
 
     # REGRESSION MEAN PERFORMANCE
-    regression_roc_data = {}
+    # regression_roc_data = {}
 
-    for key in reg_final_risks.keys():
+    # for key in reg_final_risks.keys():
 
-        fpr, tpr, thresholds = metrics.roc_curve(alarms, reg_final_risks[key])
-        roc_auc = metrics.auc(fpr, tpr)
-        regression_roc_data[key] = [fpr, tpr, roc_auc]
+    #     fpr, tpr, thresholds = metrics.roc_curve(alarms, reg_final_risks[key])
+    #     roc_auc = metrics.auc(fpr, tpr)
+    #     regression_roc_data[key] = [fpr, tpr, roc_auc]
 
-    mean_fpr = np.linspace(0, 1, 100)
-    tprs = []
-    aucs = []
+    # mean_fpr = np.linspace(0, 1, 100)
+    # tprs = []
+    # aucs = []
 
-    for key in regression_roc_data.keys():
-        interp_tpr = np.interp(
-            mean_fpr, regression_roc_data[key][0], regression_roc_data[key][1]
-        )
-        aucs.append(regression_roc_data[key][2])
-        interp_tpr[0] = 0.0
-        tprs.append(interp_tpr)
+    # for key in regression_roc_data.keys():
+    #     interp_tpr = np.interp(
+    #         mean_fpr, regression_roc_data[key][0], regression_roc_data[key][1]
+    #     )
+    #     aucs.append(regression_roc_data[key][2])
+    #     interp_tpr[0] = 0.0
+    #     tprs.append(interp_tpr)
 
-    mean_tpr = np.mean(tprs, axis=0)
-    mean_tpr[-1] = 1.0
-    mean_auc = np.mean(aucs)
+    # mean_tpr = np.mean(tprs, axis=0)
+    # mean_tpr[-1] = 1.0
+    # mean_auc = np.mean(aucs)
 
-    plt.plot(
-        mean_fpr,
-        mean_tpr,
-        color="green",
-        label=f"Regression, (Mean AUC = {mean_auc:.2f})",
-        linewidth=5,
-        linestyle="--",
-    )
+    # plt.plot(
+    #     mean_fpr,
+    #     mean_tpr,
+    #     color="green",
+    #     label=f"Regression, (Mean AUC = {mean_auc:.2f})",
+    #     linewidth=5,
+    #     linestyle="--",
+    # )
 
-    std_tpr = np.std(tprs, axis=0)
-    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
-    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
-    ax.fill_between(
-        mean_fpr,
-        tprs_lower,
-        tprs_upper,
-        color="green",
-        alpha=0.2,
-    )
+    # std_tpr = np.std(tprs, axis=0)
+    # tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    # tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+    # ax.fill_between(
+    #     mean_fpr,
+    #     tprs_lower,
+    #     tprs_upper,
+    #     color="green",
+    #     alpha=0.2,
+    # )
 
     # CONFORMAL MEAN PERFORMANCE
     conformal_roc_data = {}
@@ -1669,16 +1636,17 @@ def main_imc(args: argparse.Namespace):
         testing_samples,
     )
 
-    regression_risks, regression_ys = aggregated_stats_regression(
-        args.high_st,
-        coarse,
-        mc,
-        model_path,
-        stats_path,
-        testing_samples,
-        horizon,
-        initial_amount,
-    )
+    # regression_risks, regression_ys = aggregated_stats_regression(
+    #     args.high_st,
+    #     coarse,
+    #     mc,
+    #     model_path,
+    #     stats_path,
+    #     testing_samples,
+    #     horizon,
+    #     initial_amount,
+    # )
+    regression_risks, regression_ys = {}, {}
     conformal_risks, conformal_ys = aggreagted_stats_conformal(
         args.high_st, noisy_measurements, coarse, mc, model_path, stats_path
     )
@@ -1702,8 +1670,11 @@ def main_imc(args: argparse.Namespace):
         coarse,
         alarms,
         imc_risks_ref,
+        imc_risks_ref_splitting,
         regression_risks,
+        conformal_risks,
         regression_ys,
+        conformal_ys,
         target_risks,
         args.out,
     )

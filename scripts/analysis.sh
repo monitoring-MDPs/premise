@@ -2,13 +2,19 @@
 set -x
 
 stats_path="$1"
+model_path="$2"
+
 if [ -z "$stats_path" ]; then
-    echo "Usage: $0 <stats_path>"
+    echo "Usage: $0 <stats_path> <model_path>"
     exit 1
 fi
 
+if [ -z "$model_path" ]; then
+    echo "Usage: $0 <stats_path> <model_path>"
+    exit 1
+fi
 
-models=("SnL-10x10" "airportA-7-10-10" "evadeV-5-3" "evadeV-6-3" "evadeI-15")
+models=("airportB-7-40-20" "SnL-10x10" "airportA-7-10-10" "evadeV-5-3" "evadeV-6-3" "evadeI-15")
 additional_args=("" "-ht")
 
 # RQ 1 analysis
@@ -38,7 +44,7 @@ done
 wait
 
 
-models=("SnL-10x10" "airportA-7-10-10" "evadeV-5-3" "evadeV-6-3" "evadeI-15")
+models=("SnL-10x10" "airportB-7-40-20" "airportA-7-10-10" "evadeV-5-3" "evadeV-6-3" "evadeI-15")
 additional_args=("" "-ht")
 additional_args_2=("" "-c")
 

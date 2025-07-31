@@ -19,5 +19,7 @@ additional_args_2=("" "-c")
 for ag_1 in "${additional_args[@]}"; do
     for ag_2 in "${additional_args_2[@]}"; do
         for model in "${models[@]}"; do
-            python -m premise.interval.rq_3 --mc "$model" --stats-path "$stats_path" --model-path  "$model_path" $ag
-       
+            python -m premise.interval.rq_3 --mc "$model" --stats-path "$stats_path" --model-path  "$model_path" $ag_1 $ag_2 &
+        done
+    done
+done
