@@ -22,6 +22,16 @@ from premise.interval.interval import (
 )
 from premise.interval.maximum_likelihood import dict_to_pomdp, create_mle_monitor
 
+def aggregted_alarms(testing_samples):
+    alarms = []
+
+    for trace in tqdm(testing_samples):
+        alarms.append(any([s[2] for s in trace]))
+
+    alarms = np.array(alarms).astype(int)
+
+    return alarms
+
 
 def stats_true(horizon, initial_amount, testing_samples, suo):
 
@@ -45,60 +55,149 @@ def stats_true(horizon, initial_amount, testing_samples, suo):
 
 
 def aggregated_stats_imc(
-    high_st, coarse, stats_path, initial_amount, horizon, args, testing_samples
+    method, high_st, coarse, stats_path, initial_amount, horizon, args, testing_samples
 ):
     imc_risks = {}
 
     imc_transition_counts = {}
     stopping_threshold = None
 
+
     for x in range(1, 11):
         print(f"Experiment number {x}")
         try:
             if coarse:
                 if high_st:
-                    if args.mc == ' SnLw-10x10':
-                        statistics = np.load(
-                            f"{stats_path}/high-st-SnL-coarse_norefinement-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-                    elif args.mc == 'evadeV-6-3-coarse': 
-                        statistics = np.load(
-                            f"{stats_path}/high-st-evadeV-6-3-coarse_norefinement-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-                    else:
-                        statistics = np.load(
-                            f"{stats_path}/high-st-{args.mc}-coarse_norefinement-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
+                    if method == "noref":
+                        if args.mc == ' SnLw-10x10':
+                            statistics = np.load(
+                                f"{stats_path}/high-st-SnL-coarse_norefinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        elif args.mc == 'evadeV-6-3-coarse': 
+                            statistics = np.load(
+                                f"{stats_path}/high-st-evadeV-6-3-coarse_norefinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        else:
+                            statistics = np.load(
+                                f"{stats_path}/high-st-{args.mc}-coarse_norefinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                    if method == "ref":
+                        if args.mc == ' SnLw-10x10':
+                            statistics = np.load(
+                                f"{stats_path}/high-st-SnL-coarse_refinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        elif args.mc == 'evadeV-6-3-coarse': 
+                            statistics = np.load(
+                                f"{stats_path}/high-st-evadeV-6-3-coarse_refinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        else:
+                            statistics = np.load(
+                                f"{stats_path}/high-st-{args.mc}-coarse_refinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                    if method == "refsplit":
+                        if args.mc == ' SnLw-10x10':
+                            statistics = np.load(
+                                f"{stats_path}/high-st-SnL-coarse_refsplitinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        elif args.mc == 'evadeV-6-3-coarse': 
+                            statistics = np.load(
+                                f"{stats_path}/high-st-evadeV-6-3-coarse_refsplitinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        else:
+                            statistics = np.load(
+                                f"{stats_path}/high-st-{args.mc}-coarse_refsplitinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
                 else:
-                    if args.mc == ' SnLw-10x10':
-                        statistics = np.load(
-                            f"{stats_path}/SnL-coarse_norefinement-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-                    elif args.mc == 'evadeV-6-3-coarse': 
-                        statistics = np.load(
-                            f"{stats_path}/evadeV-6-3-coarse_norefinement-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-                    else:
-                        statistics = np.load(
-                            f"{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
+                    if method == "noref":
+                        if args.mc == ' SnLw-10x10':
+                            statistics = np.load(
+                                f"{stats_path}/SnL-coarse_norefinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        elif args.mc == 'evadeV-6-3-coarse': 
+                            statistics = np.load(
+                                f"{stats_path}/evadeV-6-3-coarse_norefinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        else:
+                            statistics = np.load(
+                                f"{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                    if method == "ref":
+                        if args.mc == ' SnLw-10x10':
+                            statistics = np.load(
+                                f"{stats_path}/SnL-coarse_refinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        elif args.mc == 'evadeV-6-3-coarse': 
+                            statistics = np.load(
+                                f"{stats_path}/evadeV-6-3-coarse_refinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        else:
+                            statistics = np.load(
+                                f"{stats_path}/{args.mc}-coarse_refinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                    if method == "refsplit":
+                        if args.mc == ' SnLw-10x10':
+                            statistics = np.load(
+                                f"{stats_path}/SnL-coarse_refsplitinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        elif args.mc == 'evadeV-6-3-coarse': 
+                            statistics = np.load(
+                                f"{stats_path}/evadeV-6-3-coarse_refsplitinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        else:
+                            statistics = np.load(
+                                f"{stats_path}/{args.mc}-coarse_refsplitinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
             else:
                 if high_st:
-                    statistics = np.load(
-                        f"{stats_path}/high-st-{args.mc}-comp-noref-stats-{x}.npy",
-                        allow_pickle=True,
-                    )
+                    if method == "noref":
+                        statistics = np.load(
+                            f"{stats_path}/high-st-{args.mc}-comp-noref-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    if method == "ref":
+                        statistics = np.load(
+                            f"{stats_path}/high-st-{args.mc}-comp-ref-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    if method == "refsplit":
+                        statistics = np.load(
+                            f"{stats_path}/high-st-{args.mc}-comp-refsplit-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
                 else:
-                    statistics = np.load(
-                        f"{stats_path}/{args.mc}-comp-noref-stats-{x}.npy",
-                        allow_pickle=True,
-                    )
+                    if method == "noref":
+                        statistics = np.load(
+                            f"{stats_path}/{args.mc}-comp-noref-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    if method == "ref":
+                        statistics = np.load(
+                            f"{stats_path}/{args.mc}-comp-ref-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    if method == "refsplit":
+                        statistics = np.load(
+                            f"{stats_path}/{args.mc}-comp-refsplit-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
         except FileNotFoundError:
             print(f"Statistics file for {x} not found, skipping.")
             continue
@@ -247,7 +346,7 @@ def aggregated_stats_mc(
     return mc_risks, mc_transition_counts
 
 
-def distance_graph(
+""" def distance_graph(
     high_st,
     coarse,
     target_risks,
@@ -257,20 +356,29 @@ def distance_graph(
     mc_transition_counts,
     stopping_threshold,
     out_path,
-):
+): """
+    
+def distance_graph(high_st, coarse, target_risks, imc_risks, imc_transition_counts, imc_risks_ref, imc_transition_counts_ref, imc_risks_refsplit, imc_transition_counts_refsplit, stopping_threshold, out_path):
 
-    # Extract unique experiment numbers from IMC data
+    # Extract unique experiment numbers from NO REF data
     imc_experiment_numbers = set()
     for key in imc_risks.keys():
         exp_num = int(key.split("-")[0])
         imc_experiment_numbers.add(exp_num)
 
-    # Extract unique experiment numbers from MC data
-    mc_experiment_numbers = set()
-    for key in mc_risks.keys():
+    # Extract unique experiment numbers from REF data
+    ref_experiment_numbers = set()
+    for key in  imc_risks_ref.keys():
         exp_num = int(key.split("-")[0])
-        mc_experiment_numbers.add(exp_num)
+        ref_experiment_numbers.add(exp_num)
 
+    # Extract unique experiment numbers from REF with SPLITTING data
+    refsplit_experiment_numbers = set()
+    for key in imc_risks_refsplit.keys():
+        exp_num = int(key.split("-")[0])
+        refsplit_experiment_numbers.add(exp_num)
+
+    
     # IMC
     distance_stats = {}
 
@@ -302,94 +410,72 @@ def distance_graph(
         if str(x) in imc_transition_counts and distance_graph_data[x]:
             graph_data.append([distance_graph_data[x], imc_transition_counts[str(x)]])
 
-    # MC
 
-    mc_distance_stats = {}
+    #REF
+    ref_distance_stats = {}
 
-    for key in mc_risks.keys():
+    for key in imc_risks_ref.keys():
+        total_distance = 0
+        for x in range(len(target_risks)):
+            total_distance += abs(imc_risks_ref[key][x] - target_risks[x])
+        ref_distance_stats[key] = total_distance / args.testing_samples
+
+    ref_distance_graph_data = {}
+    for x in ref_experiment_numbers:
+        ref_distance_graph_data[x] = []
+
+    for key in ref_distance_stats.keys():
+        exp_num = int(key.split("-")[0])
+        if exp_num in ref_experiment_numbers:
+            ref_distance_graph_data[exp_num].append(ref_distance_stats[key])
+
+    ref_final_distances = []
+    for x in sorted(ref_experiment_numbers):
+        if ref_distance_graph_data[x]:  # Check if list is not empty
+            ref_final_distances.append(ref_distance_graph_data[x][-1])
+
+    ref_graph_data = []
+    for x in sorted(ref_experiment_numbers):
+        if str(x) in imc_transition_counts_ref and ref_distance_graph_data[x]:
+            ref_graph_data.append(
+                [ref_distance_graph_data[x], imc_transition_counts_ref[str(x)]]
+            )
+
+    # REF with SPLITTING
+    refsplit_distance_stats = {}
+
+    for key in imc_risks_refsplit.keys():
         total_distance = 0
         for x in range(len(target_risks)):
             # total_distance += testing_samples_weights[x] * abs(
-            #    mc_risks[key][x] - target_risks[x]
+            #    imc_risks[key][x] - target_risks[x]
             # )
-            total_distance += abs(mc_risks[key][x] - target_risks[x])
-        mc_distance_stats[key] = total_distance / args.testing_samples
+            total_distance += abs(imc_risks_refsplit[key][x] - target_risks[x])
+        refsplit_distance_stats[key] = total_distance / args.testing_samples
 
-    mc_distance_graph_data = {}
-    for x in mc_experiment_numbers:
-        mc_distance_graph_data[x] = []
+    refsplit_distance_graph_data = {}
+    for x in refsplit_experiment_numbers:
+        refsplit_distance_graph_data[x] = []
 
-    for key in mc_distance_stats.keys():
+    for key in refsplit_distance_stats.keys():
         exp_num = int(key.split("-")[0])
-        if exp_num in mc_experiment_numbers:
-            mc_distance_graph_data[exp_num].append(mc_distance_stats[key])
+        if exp_num in refsplit_experiment_numbers:
+            refsplit_distance_graph_data[exp_num].append(refsplit_distance_stats[key])
 
-    mc_final_distances = []
-    for x in sorted(mc_experiment_numbers):
-        if mc_distance_graph_data[x]:  # Check if list is not empty
-            mc_final_distances.append(mc_distance_graph_data[x][-1])
+    refsplit_final_distances = []
+    for x in sorted(refsplit_experiment_numbers):
+        if refsplit_distance_graph_data[x]:  # Check if list is not empty
+            refsplit_final_distances.append(refsplit_distance_graph_data[x][-1])
 
-    mc_graph_data = []
-    for x in sorted(mc_experiment_numbers):
-        if str(x) in mc_transition_counts and mc_distance_graph_data[x]:
-            mc_graph_data.append(
-                [mc_distance_graph_data[x], mc_transition_counts[str(x)]]
-            )
+    refsplit_graph_data = []
+    for x in sorted(refsplit_experiment_numbers):
+        if str(x) in imc_transition_counts_refsplit and distance_graph_data[x]:
+            refsplit_graph_data.append([refsplit_distance_graph_data[x], imc_transition_counts_refsplit[str(x)]])
 
+    
     log = False
     plt.figure()
     fig, ax = plt.subplots(figsize=(16, 8))
-
-    # MC AVERAGE PERFORMANCE
-
-    mc_transitions_data = []
-    mc_distance_data = []
-
-    for entry in mc_graph_data:
-        transitions = entry[1]
-        distance_daum = entry[0]
-
-        mc_transitions_data.append(transitions)
-        mc_distance_data.append(distance_daum)
-
-    # Find common x range for interpolation
-    min_x = min(min(transitions) for transitions in mc_transitions_data)
-    max_x = max(max(transitions) for transitions in mc_transitions_data)
-    mc_x_values = np.linspace(min_x, max_x, 500)
-
-    # Interpolate all runs to common x values
-    mc_interpolated_auc = []
-    for auc, transitions in zip(mc_distance_data, mc_transitions_data):
-        if log:
-            auc = np.log10(auc)
-        interpolated = np.interp(mc_x_values, transitions, auc)
-        if log:
-            interpolated = np.power(10, interpolated)
-        mc_interpolated_auc.append(interpolated)
-
-    # Calculate mean and std for interpolated y values
-    mc_distance_array = np.array(mc_interpolated_auc)
-    mc_mean_distance = np.mean(mc_distance_array, axis=0)
-    mc_std_distance = np.std(mc_distance_array, axis=0)
-
-    # Plot mean line
-    ax.plot(
-        mc_x_values,
-        mc_mean_distance,
-        color="chartreuse",
-        label=f"HMM, (Average final distance: {np.mean(mc_final_distances):.3f})",
-        linewidth=7,
-        linestyle=":",
-    )
-
-    # Add shaded area for spread
-    ax.fill_between(
-        mc_x_values,
-        mc_mean_distance - mc_std_distance,
-        mc_mean_distance + mc_std_distance,
-        alpha=0.2,
-        color="chartreuse",
-    )
 
     # IMC AVERAGE PERFORMANCE
     transitions_data = []
@@ -439,6 +525,107 @@ def distance_graph(
         mean_distance + std_distance,
         alpha=0.2,
         color="red",
+    )
+
+    # REF AVERAGE PERFORMANCE
+
+    ref_transitions_data = []
+    ref_distance_data = []
+
+    for entry in ref_graph_data:
+        transitions = entry[1]
+        distance_daum = entry[0]
+
+        ref_transitions_data.append(transitions)
+        ref_distance_data.append(distance_daum)
+
+    # Find common x range for interpolation
+    min_x = min(min(transitions) for transitions in ref_transitions_data)
+    max_x = max(max(transitions) for transitions in ref_transitions_data)
+    ref_x_values = np.linspace(min_x, max_x, 500)
+
+    # Interpolate all runs to common x values
+    ref_interpolated_auc = []
+    for auc, transitions in zip(ref_distance_data, ref_transitions_data):
+        if log:
+            auc = np.log10(auc)
+        interpolated = np.interp(ref_x_values, transitions, auc)
+        if log:
+            interpolated = np.power(10, interpolated)
+        ref_interpolated_auc.append(interpolated)
+
+    # Calculate mean and std for interpolated y values
+    ref_distance_array = np.array(ref_interpolated_auc)
+    ref_mean_distance = np.mean(ref_distance_array, axis=0)
+    ref_std_distance = np.std(ref_distance_array, axis=0)
+
+    # Plot mean line
+    ax.plot(
+        ref_x_values,
+        ref_mean_distance,
+        color="blue",
+        label=f"Refinement, (Average final distance: {np.mean(ref_final_distances):.3f})",
+        linewidth=7,
+        linestyle=":",
+    )
+
+    # Add shaded area for spread
+    ax.fill_between(
+        ref_x_values,
+        ref_mean_distance - ref_std_distance,
+        ref_mean_distance + ref_std_distance,
+        alpha=0.2,
+        color="blue",
+    )
+
+    # REF with SPLITTING AVERAGE PERFORMANCE
+    refsplit_transitions_data = []
+    refsplit_distance_data = []
+
+    for entry in refsplit_graph_data:
+        transitions = entry[1]
+        distance_daum = entry[0]
+
+        refsplit_transitions_data.append(transitions)
+        refsplit_distance_data.append(distance_daum)
+
+    # Find common x range for interpolation
+    refsplit_min_x = min(min(transitions) for transitions in refsplit_transitions_data)
+    refsplit_max_x = max(max(transitions) for transitions in refsplit_transitions_data)
+    refsplit_x_values = np.linspace(refsplit_min_x, refsplit_max_x, 500)
+
+    # Interpolate all runs to common x values
+    refsplit_interpolated_auc = []
+    for auc, transitions in zip(refsplit_distance_data, refsplit_transitions_data):
+        if log:
+            auc = np.log10(auc)
+        interpolated = np.interp(refsplit_x_values, transitions, auc)
+        if log:
+            interpolated = np.power(10, interpolated)
+        refsplit_interpolated_auc.append(interpolated)
+
+    # Calculate mean and std for interpolated y values
+    refsplit_distance_array = np.array(refsplit_interpolated_auc)
+    refsplit_mean_distance = np.mean(refsplit_distance_array, axis=0)
+    refsplit_std_distance = np.std(refsplit_distance_array, axis=0)
+
+    # Plot mean line
+    ax.plot(
+        refsplit_x_values,
+        refsplit_mean_distance,
+        color="aqua",
+        label=f"iHMM, (Average final distance: {np.mean(final_distances):.3f})",
+        linewidth=7,
+        linestyle="-.",
+    )
+
+    # Add shaded area for spread
+    ax.fill_between(
+        refsplit_x_values,
+        refsplit_mean_distance - refsplit_std_distance,
+        refsplit_mean_distance + refsplit_std_distance,
+        alpha=0.2,
+        color="aqua",
     )
 
     formatter = ticker.ScalarFormatter(useMathText=True)
@@ -567,6 +754,183 @@ def overestimation_graph(
 
     plt.show()
 
+def roc_curve_model_based(
+    coarse,
+    alarms,
+    imc_risks,
+    mc_risks,
+    target_risks,
+    out_path,
+):
+
+    # Extract unique experiment numbers from iHMM data
+    imc_experiment_numbers = set()
+    for key in imc_risks.keys():
+        exp_num = int(key.split("-")[0])
+        imc_experiment_numbers.add(exp_num)
+
+    # Extract unique experiment numbers from HMM data
+    mc_experiment_numbers = set()
+    for key in mc_risks.keys():
+        exp_num = int(key.split("-")[0])
+        mc_experiment_numbers.add(exp_num)
+
+  
+    # iHMM
+    imc_final_risks = {}
+
+    ys = []
+    for key in imc_risks.keys():
+        ys.append(int(key.split("-")[1]))
+
+    for key in imc_risks.keys():
+        if key.split("-")[1] == str(max(ys)):
+            imc_final_risks[key.split("-")[0]] = imc_risks[key]
+
+    # HMM
+    mc_final_risks = {}
+
+    mc_ys = []
+    for key in mc_risks.keys():
+        mc_ys.append(int(key.split("-")[1]))
+
+    for key in mc_risks.keys():
+        if key.split("-")[1] == str(max(mc_ys)):
+            mc_final_risks[key.split("-")[0]] = mc_risks[key]
+
+    plt.figure()
+    fig, ax = plt.subplots(figsize=(16, 12))
+    
+
+    # iHMM MEAN PERFORMANCE
+    imc_roc_data_mean = {}
+
+    for key in imc_final_risks.keys():
+        fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_final_risks[key])
+        roc_auc = metrics.auc(fpr, tpr)
+        imc_roc_data_mean[key] = [fpr, tpr, roc_auc]
+
+    mean_fpr = np.linspace(0, 1, 100)
+    tprs = []
+    aucs = []
+
+    for key in imc_roc_data_mean.keys():
+        interp_tpr = np.interp(
+            mean_fpr, imc_roc_data_mean[key][0], imc_roc_data_mean[key][1]
+        )
+        aucs.append(imc_roc_data_mean[key][2])
+        interp_tpr[0] = 0.0
+        tprs.append(interp_tpr)
+
+    mean_tpr = np.mean(tprs, axis=0)
+    mean_tpr[-1] = 1.0
+    mean_auc = np.mean(aucs)
+
+    plt.plot(
+        mean_fpr,
+        mean_tpr,
+        color="red",
+        label=f"iHMM, (Mean AUC = {mean_auc:.2f})",
+        linewidth=5,
+        linestyle="--",
+    )
+
+    std_tpr = np.std(tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+    ax.fill_between(
+        mean_fpr,
+        tprs_lower,
+        tprs_upper,
+        color="red",
+        alpha=0.2,
+    )
+
+    fpr, tpr, threshold = metrics.roc_curve(alarms, target_risks)
+    roc_auc = metrics.auc(fpr, tpr)
+    target_auc = roc_auc
+
+    ax.plot(
+        fpr,
+        tpr,
+        color="black",
+        label=f"Target Monitor, AUC = {target_auc:.2f}",
+        linewidth=5,
+        linestyle="-",
+        marker="D",
+    )
+
+    # HMM MEAN PERFORMANCE
+    mc_roc_data_mean = {}
+
+    for key in mc_final_risks.keys():
+        fpr, tpr, thresholds = metrics.roc_curve(alarms, mc_final_risks[key])
+        roc_auc = metrics.auc(fpr, tpr)
+        mc_roc_data_mean[key] = [fpr, tpr, roc_auc]
+
+    mean_fpr = np.linspace(0, 1, 100)
+
+    mc_tprs = []
+    mc_aucs = []
+
+    for key in mc_roc_data_mean.keys():
+        interp_tpr = np.interp(
+            mean_fpr, mc_roc_data_mean[key][0], mc_roc_data_mean[key][1]
+        )
+        mc_aucs.append(mc_roc_data_mean[key][2])
+        interp_tpr[0] = 0.0
+        mc_tprs.append(interp_tpr)
+
+    mean_tpr = np.mean(mc_tprs, axis=0)
+    mean_tpr[-1] = 1.0
+    mean_auc = np.mean(mc_aucs)
+
+    plt.plot(
+        mean_fpr,
+        mean_tpr,
+        color="chartruse",
+        label=f"HMM, (Mean AUC = {mean_auc:.2f})",
+        linewidth=5,
+        linestyle=":",
+    )
+
+    std_tpr = np.std(tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+    ax.fill_between(
+        mean_fpr,
+        tprs_lower,
+        tprs_upper,
+        color="chartruse",
+        alpha=0.2,
+    )
+
+    plt.plot([0, 1], [0, 1], "r--")
+    plt.xlim((0, 1))
+    plt.ylim((0, 1))
+    plt.xticks(fontsize=25)
+    plt.yticks(fontsize=25)
+    plt.ylabel("True Positive Rate", fontsize=35)
+    plt.xlabel("False Positive Rate", fontsize=35)
+    plt.legend(loc="lower right", fontsize=30)
+    plt.tick_params(axis="both")
+    plt.grid(True)
+    plt.tight_layout()
+
+    if coarse:
+        plt.savefig(
+            f"{out_path}/rq1_{args.mc}_coarse_ROC_HMM_iHMM_comparison.pdf",
+            dpi=300,
+            bbox_inches="tight",
+        )
+    else:
+        plt.savefig(
+            f"{out_path}/rq1_{args.mc}_ROC_HMM_iHMM_comparison.pdf",
+            dpi=300,
+            bbox_inches="tight",
+        )
+    plt.show()
+        
 
 def main_imc(args: argparse.Namespace):
     setup_logging()
@@ -594,6 +958,8 @@ def main_imc(args: argparse.Namespace):
     else:
         coarse = False
 
+    alarms = aggregted_alarms(testing_samples)
+
     target_risks = stats_true(
         horizon, 
         initial_amount, 
@@ -601,7 +967,7 @@ def main_imc(args: argparse.Namespace):
         suo,
     )
 
-    imc_risks, imc_transition_counts, stopping_threshold = aggregated_stats_imc(
+    'noref', imc_risks, imc_transition_counts, stopping_threshold = aggregated_stats_imc(
         args.high_st,
         coarse,
         args.stats_path,
@@ -610,6 +976,27 @@ def main_imc(args: argparse.Namespace):
         args,
         testing_samples,
     )
+
+    'ref', imc_risks_ref, imc_transition_counts_ref, stopping_threshold_ref = aggregated_stats_imc(
+        args.high_st,
+        coarse,
+        args.stats_path,
+        initial_amount,
+        horizon,
+        args,
+        testing_samples,
+    )
+
+    'refsplit', imc_risks_refsplit, imc_transition_counts_refsplit, stopping_threshold_refsplit = aggregated_stats_imc(
+        args.high_st,
+        coarse,
+        args.stats_path,
+        initial_amount,
+        horizon,
+        args,
+        testing_samples,
+    )
+
     mc_risks, mc_transition_counts = aggregated_stats_mc(
         args.high_st,
         coarse,
@@ -629,11 +1016,14 @@ def main_imc(args: argparse.Namespace):
         target_risks,
         imc_risks,
         imc_transition_counts,
-        mc_risks,
-        mc_transition_counts,
+        imc_risks_ref, 
+        imc_transition_counts_ref,
+        imc_risks_refsplit, 
+        imc_transition_counts_refsplit,
         stopping_threshold,
         args.out,
     )
+
     overestimation_graph(
         args.high_st,
         coarse,
@@ -643,6 +1033,15 @@ def main_imc(args: argparse.Namespace):
         mc_risks,
         mc_transition_counts,
         stopping_threshold,
+        args.out,
+    )
+
+    roc_curve_model_based(
+        coarse,
+        alarms,
+        imc_risks,
+        mc_risks,
+        target_risks,
         args.out,
     )
 
