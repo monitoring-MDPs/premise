@@ -29,6 +29,8 @@ for ag in "${additional_args[@]}"; do
     done
 done
 
+wait
+
 # RQ 2 analysis
 for ag in "${additional_args[@]}"; do
     python -m premise.interval.rq_2 -mc SnLw-10x10 -sv pos --stats-path "$stats_path" $ag &
