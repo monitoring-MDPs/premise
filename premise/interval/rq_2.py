@@ -20,37 +20,37 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
         try:
             if coarse:
                 if high_st:
-                    if args.mc == ' SnLw-10x10':
+                    if args.mc == " SnLw-10x10":
                         statistics = np.load(
-                                f"{stats_path}/high-st-SnL-coarse_norefinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                    elif args.mc == 'evadeV-6-3-coarse': 
+                            f"{stats_path}/high-st-SnL-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif args.mc == "evadeV-6-3-coarse":
                         statistics = np.load(
-                                f"{stats_path}/high-st-evadeV-6-3-coarse_norefinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
+                            f"{stats_path}/high-st-evadeV-6-3-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
                     else:
                         statistics = np.load(
-                                f"{stats_path}/high-st-{args.mc}-coarse_norefinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
+                            f"{stats_path}/high-st-{args.mc}-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
                 else:
-                    if args.mc == ' SnLw-10x10':
+                    if args.mc == " SnLw-10x10":
                         statistics = np.load(
-                                f"{stats_path}/SnL-coarse_norefinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                    elif args.mc == 'evadeV-6-3-coarse': 
+                            f"{stats_path}/SnL-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif args.mc == "evadeV-6-3-coarse":
                         statistics = np.load(
-                                f"{stats_path}/evadeV-6-3-coarse_norefinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
+                            f"{stats_path}/evadeV-6-3-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
                     else:
                         statistics = np.load(
-                                f"{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
+                            f"{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
             else:
                 if high_st:
                     statistics = np.load(
@@ -85,38 +85,38 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
         try:
             if coarse:
                 if high_st:
-                    if args.mc == ' SnLw-10x10':
-                            statistics = np.load(
-                                f"{stats_path}/high-st-SnL-coarse_refinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                    elif args.mc == 'evadeV-6-3-coarse': 
-                            statistics = np.load(
-                                f"{stats_path}/high-st-evadeV-6-3-coarse_refinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
+                    if args.mc == " SnLw-10x10":
+                        statistics = np.load(
+                            f"{stats_path}/high-st-SnL-coarse_refinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif args.mc == "evadeV-6-3-coarse":
+                        statistics = np.load(
+                            f"{stats_path}/high-st-evadeV-6-3-coarse_refinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
                     else:
-                            statistics = np.load(
-                                f"{stats_path}/high-st-{args.mc}-coarse_refinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
+                        statistics = np.load(
+                            f"{stats_path}/high-st-{args.mc}-coarse_refinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
                 else:
-                    if args.mc == ' SnLw-10x10':
-                            statistics = np.load(
-                                f"{stats_path}/SnL-coarse_refinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                    elif args.mc == 'evadeV-6-3-coarse': 
-                            statistics = np.load(
-                                f"{stats_path}/evadeV-6-3-coarse_refinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
+                    if args.mc == " SnLw-10x10":
+                        statistics = np.load(
+                            f"{stats_path}/SnL-coarse_refinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif args.mc == "evadeV-6-3-coarse":
+                        statistics = np.load(
+                            f"{stats_path}/evadeV-6-3-coarse_refinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
                     else:
-                            statistics = np.load(
-                                f"{stats_path}/{args.mc}-coarse_refinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )  
-            else: 
+                        statistics = np.load(
+                            f"{stats_path}/{args.mc}-coarse_refinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+            else:
                 if high_st:
                     statistics = np.load(
                         f"{stats_path}/high-st-{args.mc}-comp-ref-stats-{x}.npy",
@@ -150,38 +150,38 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
         try:
             if coarse:
                 if high_st:
-                    if args.mc == ' SnLw-10x10':
+                    if args.mc == " SnLw-10x10":
                         statistics = np.load(
-                                f"{stats_path}/high-st-SnL-coarse_refsplitinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                    elif args.mc == 'evadeV-6-3-coarse': 
+                            f"{stats_path}/high-st-SnL-coarse_refsplitinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif args.mc == "evadeV-6-3-coarse":
                         statistics = np.load(
-                                f"{stats_path}/high-st-evadeV-6-3-coarse_refsplitinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
+                            f"{stats_path}/high-st-evadeV-6-3-coarse_refsplitinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
                     else:
                         statistics = np.load(
-                                f"{stats_path}/high-st-{args.mc}-coarse_refsplitinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )   
+                            f"{stats_path}/high-st-{args.mc}-coarse_refsplitinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
                 else:
-                    if args.mc == ' SnLw-10x10':
-                            statistics = np.load(
-                                f"{stats_path}/SnL-coarse_refsplitinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                    elif args.mc == 'evadeV-6-3-coarse': 
-                            statistics = np.load(
-                                f"{stats_path}/evadeV-6-3-coarse_refsplitinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
+                    if args.mc == " SnLw-10x10":
+                        statistics = np.load(
+                            f"{stats_path}/SnL-coarse_refsplitinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif args.mc == "evadeV-6-3-coarse":
+                        statistics = np.load(
+                            f"{stats_path}/evadeV-6-3-coarse_refsplitinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
                     else:
-                            statistics = np.load(
-                                f"{stats_path}/{args.mc}-coarse_refsplitinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-            else: 
+                        statistics = np.load(
+                            f"{stats_path}/{args.mc}-coarse_refsplitinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+            else:
                 if high_st:
                     statistics = np.load(
                         f"{stats_path}/high-st-{args.mc}-comp-refsplit-stats-{x}.npy",
@@ -408,7 +408,7 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
 
 
 def main(args: argparse.Namespace):
-    setup_logging()
+    setup_logging("rq2:" + str(vars(args)))
 
     os.makedirs(args.out, exist_ok=True)
 

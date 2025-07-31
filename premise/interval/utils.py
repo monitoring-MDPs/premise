@@ -61,18 +61,16 @@ class MultiLineFormatter(logging.Formatter):
         return head + "".join(indent + line for line in trailing)
 
 
-def setup_logging():
+def setup_logging(name: str = ""):
     global logger
 
     logger.setLevel(logging.INFO)
-    print(logger)
     handler = logging.StreamHandler(sys.stdout)
     formatter = MultiLineFormatter(
-        "%(levelname)s:%(asctime)s - (%(relative)ss) - %(filename)s:%(lineno)d - %(message)s"
+        f"%(levelname)s:%(asctime)s - {name} - (%(relative)ss) - %(filename)s:%(lineno)d - %(message)s"
     )
     time_filter = TimeFilter()
     handler.setFormatter(formatter)
     logger.handlers.clear()
     logger.addHandler(handler)
     logger.addFilter(time_filter)
-    print(logger.handlers)

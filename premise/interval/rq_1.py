@@ -947,7 +947,7 @@ def roc_curve_model_based(
 
 
 def main_imc(args: argparse.Namespace):
-    setup_logging()
+    setup_logging("rq1:" + str(vars(args)))
 
     suo, initial_amount, horizon = build_suo(args)
 
