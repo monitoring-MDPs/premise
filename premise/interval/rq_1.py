@@ -2,6 +2,7 @@ import argparse
 import os
 from matplotlib import pyplot as plt
 import numpy as np
+from sklearn import metrics
 from tqdm import tqdm, trange
 import matplotlib.ticker as ticker
 import pickle
