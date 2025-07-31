@@ -15,32 +15,27 @@ if [ -z "$model_path" ]; then
 fi
 
 models=("airportB-7-40-20" "SnL-10x10" "airportA-7-10-10" "evadeV-5-3" "evadeV-6-3" "evadeI-15")
-additional_args=("" "-ht")
 
 # RQ 1 analysis
-for ag in "${additional_args[@]}"; do
-    python -m premise.interval.rq_1 -mc SnLw-10x10 -sv pos --stats-path "$stats_path" $ag &
-    python -m premise.interval.rq_1 -mc evadeV-6-3-coarse -sv start turn c_ax c_ay c_dx c_dy "$stats_path" $ag &
-    python -m premise.interval.rq_1 -mc airportA-7-10-10 -sv d p pobs turn --stats-path "$stats_path" $ag &
-    python -m premise.interval.rq_1 -mc airportB-7-40-20 -sv d p pobs turn --stats-path "$stats_path" $ag &
+python -m premise.interval.rq_1 -mc SnLw-10x10 -sv pos --stats-path "$stats_path"&
+python -m premise.interval.rq_1 -mc evadeV-6-3-coarse -sv start turn c_ax c_ay c_dx c_dy --stats-path "$stats_path"&
+python -m premise.interval.rq_1 -mc airportA-7-10-10 -sv d p pobs turn --stats-path "$stats_path"&
+python -m premise.interval.rq_1 -mc airportB-7-40-20 -sv d p pobs turn --stats-path "$stats_path"&
 
-    for model in "${models[@]}"; do
-        python -m premise.interval.rq_1 --mc "$model" --stats-path "$stats_path" $ag &
-    done
+for model in "${models[@]}"; do
+    python -m premise.interval.rq_1 --mc "$model" --stats-path "$stats_path"&
 done
 
 wait
 
 # RQ 2 analysis
-for ag in "${additional_args[@]}"; do
-    python -m premise.interval.rq_2 -mc SnLw-10x10 -sv pos --stats-path "$stats_path" $ag &
-    python -m premise.interval.rq_2 -mc evadeV-6-3-coarse -sv start turn c_ax c_ay c_dx c_dy --stats-path "$stats_path" $ag &
-    python -m premise.interval.rq_2 -mc airportA-7-10-10 -sv d p pobs turn --stats-path "$stats_path" $ag &
-    python -m premise.interval.rq_2 -mc airportB-7-40-20 -sv d p pobs turn --stats-path "$stats_path" $ag &
+python -m premise.interval.rq_2 -mc SnLw-10x10 -sv pos --stats-path "$stats_path"&
+python -m premise.interval.rq_2 -mc evadeV-6-3-coarse -sv start turn c_ax c_ay c_dx c_dy --stats-path "$stats_path"&
+python -m premise.interval.rq_2 -mc airportA-7-10-10 -sv d p pobs turn --stats-path "$stats_path"&
+python -m premise.interval.rq_2 -mc airportB-7-40-20 -sv d p pobs turn --stats-path "$stats_path"&
 
-    for model in "${models[@]}"; do
-        python -m premise.interval.rq_2 --mc "$model" --stats-path "$stats_path" $ag &
-    done
+for model in "${models[@]}"; do
+    python -m premise.interval.rq_2 --mc "$model" --stats-path "$stats_path"&
 done
 
 wait
