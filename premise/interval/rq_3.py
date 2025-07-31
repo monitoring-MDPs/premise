@@ -10,6 +10,8 @@ from sklearn import metrics
 import matplotlib.ticker as ticker
 
 
+from premise.interval.model_free.regression_model import prep_traces_onehot_encoder
+from premise.interval.utils import setup_logging
 from premise.interval.conformal_prediction.train_stoch_seq_nsc import *
 from premise.interval.conformal_prediction.train_seq_se import *
 from premise.interval.conformal_prediction.train_seq_nsc import *
@@ -25,32 +27,6 @@ from premise.interval.conformal_prediction.InvertedPendulum import *
 from premise.interval.conformal_prediction.MC_model import *
 import torch.nn.functional
 
-import argparse
-
-import numpy as np
-import pandas as pd
-from tqdm import tqdm
-import os
-import pickle
-from premise.interval.utils import logger, setup_logging
-
-from premise.interval.conformal_prediction.train_stoch_seq_nsc import *
-from premise.interval.conformal_prediction.train_seq_se import *
-from premise.interval.conformal_prediction.train_seq_nsc import *
-from premise.interval.conformal_prediction.CP_Classification import *
-from premise.interval.conformal_prediction.CP_Regression import *
-from premise.interval.conformal_prediction.SeqDataset import *
-import torch
-from torch.autograd import Variable
-import premise.interval.conformal_prediction.utility_functions as utils
-import numpy as np
-import argparse
-from premise.interval.conformal_prediction.InvertedPendulum import *
-from premise.interval.conformal_prediction.MC_model import *
-import torch.nn.functional
-
-
-# from premise.interval.model_free.regression_model import prep_trace_for_regression
 from premise.interval.loading import (
     build_suo,
     build_suo_args_parser,
@@ -58,10 +34,8 @@ from premise.interval.loading import (
 )
 from premise.interval.conformence import test_monitor
 from premise.interval.interval import (
-    Samples,
     Trace,
     create_monitor,
-    build_monitor_from_model,
 )
 
 
@@ -187,7 +161,7 @@ def aggregated_stats_imc(
 
         obj = statistics.item()
         imc_transition_count = obj["transitions_learned"]
-        stopping_threashold = obj["args"]["stopping_threshold"]
+        stopping_threshold = obj["args"]["stopping_threshold"]
         distances = obj["distances"]
         imc_distances[str(x)] = distances
         imc_transition_counts[str(x)] = imc_transition_count
@@ -224,95 +198,98 @@ def aggregated_stats_imc(
 
                 imc_risks[f"{x}-{y}"].append(float(risk))
 
-    return imc_risks, imc_transition_counts, stopping_threashold, imc_distances
+    return imc_risks, imc_transition_counts, stopping_threshold, imc_distances
 
 
-# def aggregated_stats_regression(
-#     high_st,
-#     coarse,
-#     mc,
-#     model_path,
-#     stats_path,
-#     testing_samples,
-#     horizon,
-#     initial_amount,
-# ):
+def aggregated_stats_regression(
+    high_st,
+    coarse,
+    mc,
+    model_path,
+    stats_path,
+    testing_samples,
+    horizon,
+    initial_amount,
+):
 
-#     regression_risks = {}
-#     regression_ys = {}
+    regression_risks = {}
+    regression_ys = {}
 
-#     for x in range(1, 11):
-#         try:
-#             if coarse:
-#                 if high_st:
-#                     paths = glob.glob(
-#                         f"{model_path}/high-st-{mc}-coarse-comp-reg-{x}_*.npy"
-#                     )
-#                 else:
-#                     paths = glob.glob(f"{model_path}/{mc}-coarse-comp-reg-{x}_*.npy")
-#             else:
-#                 if high_st:
-#                     paths = glob.glob(f"{model_path}/high-st-{mc}-comp-reg-{x}_*.npy")
-#                 else:
-#                     paths = glob.glob(f"{model_path}/{mc}-comp-reg-{x}_*.npy")
-#         except FileNotFoundError:
-#             print(f"Statistics file for {x} not found, skipping.")
-#             continue
+    for x in range(1, 11):
+        try:
+            if coarse:
+                if high_st:
+                    paths = glob.glob(
+                        f"{model_path}/high-st-{mc}-coarse-comp-reg-{x}_*.npy"
+                    )
+                else:
+                    paths = glob.glob(f"{model_path}/{mc}-coarse-comp-reg-{x}_*.npy")
+            else:
+                if high_st:
+                    paths = glob.glob(f"{model_path}/high-st-{mc}-comp-reg-{x}_*.npy")
+                else:
+                    paths = glob.glob(f"{model_path}/{mc}-comp-reg-{x}_*.npy")
+        except FileNotFoundError:
+            print(f"Statistics file for {x} not found, skipping.")
+            continue
 
-#         regression_ys[str(x)] = []
+        regression_ys[str(x)] = []
 
-#         for path in paths:
-#             match = re.search(r"_(\d+)\.npy$", path)
-#             if match:
-#                 regression_ys[str(x)].append(int(match.group(1)))
+        for path in paths:
+            match = re.search(r"_(\d+)\.npy$", path)
+            if match:
+                regression_ys[str(x)].append(int(match.group(1)))
 
-#         for key in regression_ys.keys():
-#             regression_ys[key].sort()
+        for key in regression_ys.keys():
+            regression_ys[key].sort()
 
-#         for y in regression_ys[str(x)]:
-#             regression_risks[f"{x}-{y}"] = []
+        for y in regression_ys[str(x)]:
+            regression_risks[f"{x}-{y}"] = []
 
-#             if coarse:
-#                 if high_st:
-#                     statistics = np.load(
-#                         f"{stats_path}/high-st-{mc}-coarse-comp-reg-stats-{x}.npy",
-#                         allow_pickle=True,
-#                     ).item()
-#                 else:
-#                     statistics = np.load(
-#                         f"{stats_path}/{mc}-coarse-comp-reg-stats-{x}.npy",
-#                         allow_pickle=True,
-#                     ).item()
-#             else:
-#                 if high_st:
-#                     statistics = np.load(
-#                         f"{stats_path}/high-st-{mc}-comp-reg-stats-{x}.npy",
-#                         allow_pickle=True,
-#                     ).item()
-#                 else:
-#                     statistics = np.load(
-#                         f"{stats_path}/{mc}-comp-reg-stats-{x}.npy", allow_pickle=True
-#                     ).item()
+            if coarse:
+                if high_st:
+                    statistics = np.load(
+                        f"{stats_path}/high-st-{mc}-coarse-comp-reg-stats-{x}.npy",
+                        allow_pickle=True,
+                    ).item()
+                else:
+                    statistics = np.load(
+                        f"{stats_path}/{mc}-coarse-comp-reg-stats-{x}.npy",
+                        allow_pickle=True,
+                    ).item()
+            else:
+                if high_st:
+                    statistics = np.load(
+                        f"{stats_path}/high-st-{mc}-comp-reg-stats-{x}.npy",
+                        allow_pickle=True,
+                    ).item()
+                else:
+                    statistics = np.load(
+                        f"{stats_path}/{mc}-comp-reg-stats-{x}.npy", allow_pickle=True
+                    ).item()
 
-#             obj = statistics.item()
-#             observations = obj["observations"]
-#             model_path = obj["args"]["model_path"]
+            obj = statistics.item()
+            observations = obj["observations"]
+            model_path = obj["args"]["model_path"]
+            ohe = obj["one_hot_encoder"]
 
-#             for y in range(regression_ys[str(x)]):
-#                 reg_model = np.load(f"{model_path}_{y}.npy", allow_pickle=True).item()
+            for y in range(regression_ys[str(x)]):
+                reg_model = np.load(f"{model_path}_{y}.npy", allow_pickle=True).item()
 
-#             column_names = [
-#                 f"Step{s}_Obs{o}" for s in range(initial_amount) for o in observations
-#             ]
+            column_names = [
+                f"Step{s}_Obs{o}" for s in range(initial_amount) for o in observations
+            ]
 
-#             for t in testing_samples:
-#                 sub_trace: Trace = t[:initial_amount]
-#                 reg_sub_trace = prep_trace_for_regression(sub_trace, observations)
-#                 X = pd.DataFrame([reg_sub_trace], columns=column_names)
-#                 prob = reg_model.predict_proba(X)
-#                 regression_risks[f"{x}-{y}"].append(float(prob[:, 1].item()))
+            for t in testing_samples:
+                sub_trace: Trace = t[:initial_amount]
+                reg_sub_trace = prep_traces_onehot_encoder(
+                    ohe, sub_trace, initial_amount
+                )
+                X = pd.DataFrame([reg_sub_trace], columns=column_names)
+                prob = reg_model.predict_proba(X)
+                regression_risks[f"{x}-{y}"].append(float(prob[:, 1].item()))
 
-#     return regression_risks, regression_ys
+    return regression_risks, regression_ys
 
 
 def aggreagted_stats_conformal(high_st, new_noisy, coarse, mc, model_path, stats_path):
@@ -753,7 +730,7 @@ def roc_curve_model_based(
 
 
 def plot_roc_curve(
-    stopping_threashold,
+    stopping_threshold,
     high_st,
     coarse,
     alarms,
@@ -790,13 +767,13 @@ def plot_roc_curve(
             imc_ref_split_final_risks[key.split("-")[0]] = imc_risks_ref_splitting[key]
 
     # Regression
-    # reg_final_risks = {}
+    reg_final_risks = {}
 
-    # for x in range(1, 11):
-    #     # for x in range(5,7):
-    #     for key in regression_risks.keys():
-    #         if int(key.split("-")[1]) == max(regression_ys[str(x)]):
-    #             reg_final_risks[str(x)] = regression_risks[key]
+    for x in range(1, 11):
+        # for x in range(5,7):
+        for key in regression_risks.keys():
+            if int(key.split("-")[1]) == max(regression_ys[str(x)]):
+                reg_final_risks[str(x)] = regression_risks[key]
 
     # Confromal Prediction
     conformal_final_risks = {}
@@ -902,49 +879,49 @@ def plot_roc_curve(
     )
 
     # REGRESSION MEAN PERFORMANCE
-    # regression_roc_data = {}
+    regression_roc_data = {}
 
-    # for key in reg_final_risks.keys():
+    for key in reg_final_risks.keys():
 
-    #     fpr, tpr, thresholds = metrics.roc_curve(alarms, reg_final_risks[key])
-    #     roc_auc = metrics.auc(fpr, tpr)
-    #     regression_roc_data[key] = [fpr, tpr, roc_auc]
+        fpr, tpr, thresholds = metrics.roc_curve(alarms, reg_final_risks[key])
+        roc_auc = metrics.auc(fpr, tpr)
+        regression_roc_data[key] = [fpr, tpr, roc_auc]
 
-    # mean_fpr = np.linspace(0, 1, 100)
-    # tprs = []
-    # aucs = []
+    mean_fpr = np.linspace(0, 1, 100)
+    tprs = []
+    aucs = []
 
-    # for key in regression_roc_data.keys():
-    #     interp_tpr = np.interp(
-    #         mean_fpr, regression_roc_data[key][0], regression_roc_data[key][1]
-    #     )
-    #     aucs.append(regression_roc_data[key][2])
-    #     interp_tpr[0] = 0.0
-    #     tprs.append(interp_tpr)
+    for key in regression_roc_data.keys():
+        interp_tpr = np.interp(
+            mean_fpr, regression_roc_data[key][0], regression_roc_data[key][1]
+        )
+        aucs.append(regression_roc_data[key][2])
+        interp_tpr[0] = 0.0
+        tprs.append(interp_tpr)
 
-    # mean_tpr = np.mean(tprs, axis=0)
-    # mean_tpr[-1] = 1.0
-    # mean_auc = np.mean(aucs)
+    mean_tpr = np.mean(tprs, axis=0)
+    mean_tpr[-1] = 1.0
+    mean_auc = np.mean(aucs)
 
-    # plt.plot(
-    #     mean_fpr,
-    #     mean_tpr,
-    #     color="green",
-    #     label=f"Regression, (Mean AUC = {mean_auc:.2f})",
-    #     linewidth=5,
-    #     linestyle="--",
-    # )
+    plt.plot(
+        mean_fpr,
+        mean_tpr,
+        color="green",
+        label=f"Regression, (Mean AUC = {mean_auc:.2f})",
+        linewidth=5,
+        linestyle="--",
+    )
 
-    # std_tpr = np.std(tprs, axis=0)
-    # tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
-    # tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
-    # ax.fill_between(
-    #     mean_fpr,
-    #     tprs_lower,
-    #     tprs_upper,
-    #     color="green",
-    #     alpha=0.2,
-    # )
+    std_tpr = np.std(tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+    ax.fill_between(
+        mean_fpr,
+        tprs_lower,
+        tprs_upper,
+        color="green",
+        alpha=0.2,
+    )
 
     # CONFORMAL MEAN PERFORMANCE
     conformal_roc_data = {}
@@ -1101,20 +1078,19 @@ def auc_graph_prep(
         roc_auc = metrics.auc(fpr, tpr)
         imc_ref_splitting_auc[imc_ref_key_splitting] = roc_auc
 
-    """ reg_auc = {}
+    # reg_auc = {}
 
-    for reg_key in regression_risks.keys(): 
-        fpr, tpr, threshold = metrics.roc_curve(alarms, regression_risks[reg_key])
-        roc_auc = metrics.auc(fpr, tpr)
-        reg_auc[reg_key] = roc_auc
- """
-    """ 
-    conformal_auc = {}
+    # for reg_key in regression_risks.keys():
+    #     fpr, tpr, threshold = metrics.roc_curve(alarms, regression_risks[reg_key])
+    #     roc_auc = metrics.auc(fpr, tpr)
+    #     reg_auc[reg_key] = roc_auc
 
-    for conformal_key in conformal_risks.keys():
-        fpr, tpr, threshold = metrics.roc_curve(alarms, conformal_risks[conformal_key])
-        roc_auc = metrics.auc(fpr, tpr)
-        conformal_auc[conformal_key] = roc_auc """
+    # conformal_auc = {}
+
+    # for conformal_key in conformal_risks.keys():
+    #     fpr, tpr, threshold = metrics.roc_curve(alarms, conformal_risks[conformal_key])
+    #     roc_auc = metrics.auc(fpr, tpr)
+    #     conformal_auc[conformal_key] = roc_auc
 
     imc_results = {}
 
@@ -1149,29 +1125,27 @@ def auc_graph_prep(
             if x == entry:
                 imc_ref_splitting_results[x].append(imc_ref_splitting_auc[key])
 
-    """ reg_results = {}
+    # reg_results = {}
 
-    for x in range(1,11):
-        reg_results[str(x)] = []
+    # for x in range(1,11):
+    #     reg_results[str(x)] = []
 
+    # for key in reg_auc.keys():
+    #     for entry in reg_results.keys():
+    #         x = key.split('-')[0]
+    #         if x == entry:
+    #             reg_results[x].append(reg_auc[key])
 
-    for key in reg_auc.keys():
-        for entry in reg_results.keys():
-            x = key.split('-')[0]
-            if x == entry:
-                reg_results[x].append(reg_auc[key]) """
+    # conformal_results = {}
 
-    """ 
-    conformal_results = {}
+    # for x in range(8,9):
+    #     conformal_results[str(x)] = []
 
-    for x in range(8,9): 
-        conformal_results[str(x)] = []
-
-    for key in conformal_auc.keys(): 
-        for entry in conformal_results.keys():
-            x = key.split('-')[0]
-            if x == entry: 
-                conformal_results[x].append(conformal_auc[key]) """
+    # for key in conformal_auc.keys():
+    #     for entry in conformal_results.keys():
+    #         x = key.split('-')[0]
+    #         if x == entry:
+    #             conformal_results[x].append(conformal_auc[key])
 
     return (
         target_auc,
@@ -1231,23 +1205,21 @@ def plotting(
 
         NR_sets.append((total_state_count, imc_results[key]))
 
-    """ for key in reg_results.keys():
-        total_state_count = []
-  
-        for val in regression_ys[key]:
-            total_state_count.append(val*(horizon+initial_amount))
-        
-        REG_sets.append((total_state_count, reg_results[key]))
- """
-    """
-    for key in conformal_results.keys():
-        total_state_count = []
+    # for key in reg_results.keys():
+    #     total_state_count = []
 
-        for val in conformal_ys[key]:
-            total_state_count.append(val*(horizon+initial_amount))
+    #     for val in regression_ys[key]:
+    #         total_state_count.append(val*(horizon+initial_amount))
 
-        CONF_sets.append((total_state_count, conformal_results[key])) 
-    """
+    #     REG_sets.append((total_state_count, reg_results[key]))
+
+    # for key in conformal_results.keys():
+    #     total_state_count = []
+
+    #     for val in conformal_ys[key]:
+    #         total_state_count.append(val*(horizon+initial_amount))
+
+    #     CONF_sets.append((total_state_count, conformal_results[key]))
 
     # log = True
     log = False
@@ -1422,61 +1394,60 @@ def plotting(
         color="red",
     )
 
-    """ #REGRESSION MODEL AVERAGE PERFORMANCE
+    # REGRESSION MODEL AVERAGE PERFORMANCE
 
-    REG_transitions_data = []
-    REG_auc_data = []
+    # REG_transitions_data = []
+    # REG_auc_data = []
 
-    for entry in REG_sets:
-        transitions = entry[0]
-        auc_daum = entry[1]
+    # for entry in REG_sets:
+    #     transitions = entry[0]
+    #     auc_daum = entry[1]
 
-        REG_transitions_data.append(transitions)
-        REG_auc_data.append(auc_daum)
+    #     REG_transitions_data.append(transitions)
+    #     REG_auc_data.append(auc_daum)
 
-    # Find common x range for interpolation
-    REG_min_x = max(min(transitions) for transitions in REG_transitions_data)
-    REG_max_x = min(max(transitions) for transitions in REG_transitions_data)
-    REG_x_values = np.linspace(REG_min_x, REG_max_x, 500)
+    # # Find common x range for interpolation
+    # REG_min_x = max(min(transitions) for transitions in REG_transitions_data)
+    # REG_max_x = min(max(transitions) for transitions in REG_transitions_data)
+    # REG_x_values = np.linspace(REG_min_x, REG_max_x, 500)
 
-    # Interpolate all runs to common x values
-    REG_interpolated_auc = []
-    for auc, transitions in zip(REG_auc_data, REG_transitions_data):
-        if log:
-            auc = np.log10(auc)
-        REG_interpolated = np.interp(REG_x_values, transitions, auc)
-        if log:
-            REG_interpolated = np.power(10, REG_interpolated)
-        REG_interpolated_auc.append(REG_interpolated)
+    # # Interpolate all runs to common x values
+    # REG_interpolated_auc = []
+    # for auc, transitions in zip(REG_auc_data, REG_transitions_data):
+    #     if log:
+    #         auc = np.log10(auc)
+    #     REG_interpolated = np.interp(REG_x_values, transitions, auc)
+    #     if log:
+    #         REG_interpolated = np.power(10, REG_interpolated)
+    #     REG_interpolated_auc.append(REG_interpolated)
 
-    # Calculate mean and std for interpolated y values
-    REG_auc_array = np.array(REG_interpolated_auc)
-    REG_mean_auc = np.mean(REG_auc_array, axis=0)
-    REG_std_auc = np.std(REG_auc_array, axis=0)
-    REG_min_auc = np.min(REG_auc_array, axis=0)
-    REG_max_auc = np.max(REG_auc_array, axis=0)
+    # # Calculate mean and std for interpolated y values
+    # REG_auc_array = np.array(REG_interpolated_auc)
+    # REG_mean_auc = np.mean(REG_auc_array, axis=0)
+    # REG_std_auc = np.std(REG_auc_array, axis=0)
+    # REG_min_auc = np.min(REG_auc_array, axis=0)
+    # REG_max_auc = np.max(REG_auc_array, axis=0)
 
-    #Plot mean line
-    ax.plot(
-        REG_x_values,
-        REG_mean_auc,
-        color='green',
-        label = 'Regression',
-        linestyle='-.',
-        linewidth=5,
-        )
+    # #Plot mean line
+    # ax.plot(
+    #     REG_x_values,
+    #     REG_mean_auc,
+    #     color='green',
+    #     label = 'Regression',
+    #     linestyle='-.',
+    #     linewidth=5,
+    #     )
 
-    #Add shaded area for spread
-    ax.fill_between(
-            REG_x_values,
-            REG_mean_auc - REG_std_auc,
-            REG_mean_auc + REG_std_auc,
-            alpha=0.2,
-            color='green'
-        ) """
+    # #Add shaded area for spread
+    # ax.fill_between(
+    #         REG_x_values,
+    #         REG_mean_auc - REG_std_auc,
+    #         REG_mean_auc + REG_std_auc,
+    #         alpha=0.2,
+    #         color='green'
+    #     )
 
-    """ 
-    #CONFORMAL PREDICTION MODEL AVERAGE PERFORMANCE
+    # CONFORMAL PREDICTION MODEL AVERAGE PERFORMANCE
 
     CONF_transitions_data = []
     CONF_auc_data = []
@@ -1510,40 +1481,40 @@ def plotting(
     CONF_min_auc = np.min(CONF_auc_array, axis=0)
     CONF_max_auc = np.max(CONF_auc_array, axis=0)
 
-    #Plot mean line
+    # Plot mean line
     ax.plot(
         CONF_x_values,
         CONF_mean_auc,
-        color='orange',
-        label = 'Conformal prediction',
+        color="orange",
+        label="Conformal prediction",
         linewidth=5,
-        )
+    )
 
-    #Add shaded area for spread
+    # Add shaded area for spread
     ax.fill_between(
-            CONF_x_values,
-            CONF_mean_auc - CONF_std_auc,
-            CONF_mean_auc + CONF_std_auc,
-            alpha=0.2,
-            color='yellow',
-        ) 
- """
-    formatter = ticker.ScalarFormatter(useMathText=True)
-    formatter.set_powerlimits((4, 4))  # Force 10^4 scale
-    ax.xaxis.set_major_formatter(formatter)
-    ax.tick_params(axis="both", labelsize=30)
-    ax.xaxis.get_offset_text().set_size(30)
+        CONF_x_values,
+        CONF_mean_auc - CONF_std_auc,
+        CONF_mean_auc + CONF_std_auc,
+        alpha=0.2,
+        color="yellow",
+    )
 
-    ax.set_xlabel("State count", fontsize=35)
-    ax.set_ylabel("AUC", fontsize=35)
-    ax.legend(loc="lower right", fontsize=30)
-    if log:
-        plt.yscale("log")
-    else:
-        plt.ylim(bottom=0)
-    ax.grid(True)
-    plt.subplots_adjust(bottom=0.25)
-    plt.tight_layout()
+    # formatter = ticker.ScalarFormatter(useMathText=True)
+    # formatter.set_powerlimits((4, 4))  # Force 10^4 scale
+    # ax.xaxis.set_major_formatter(formatter)
+    # ax.tick_params(axis="both", labelsize=30)
+    # ax.xaxis.get_offset_text().set_size(30)
+
+    # ax.set_xlabel("State count", fontsize=35)
+    # ax.set_ylabel("AUC", fontsize=35)
+    # ax.legend(loc="lower right", fontsize=30)
+    # if log:
+    #     plt.yscale("log")
+    # else:
+    #     plt.ylim(bottom=0)
+    # ax.grid(True)
+    # plt.subplots_adjust(bottom=0.25)
+    # plt.tight_layout()
 
     if coarse:
         plt.savefig(
@@ -1593,7 +1564,7 @@ def main_imc(args: argparse.Namespace):
     (
         imc_risks_ref_splitting,
         imc_transition_counts_ref_splitting,
-        imc_stopping_threashold_ref_splitting,
+        imc_stopping_threshold_ref_splitting,
         imc_distances_ref_splitting,
     ) = aggregated_stats_imc(
         args.high_st,
@@ -1606,7 +1577,7 @@ def main_imc(args: argparse.Namespace):
         args,
         testing_samples,
     )
-    imc_risks, imc_transition_counts, imc_stopping_threashold, imc_distances = (
+    imc_risks, imc_transition_counts, imc_stopping_threshold, imc_distances = (
         aggregated_stats_imc(
             args.high_st,
             coarse,
@@ -1622,7 +1593,7 @@ def main_imc(args: argparse.Namespace):
     (
         imc_risks_ref,
         imc_transition_counts_ref,
-        imc_stopping_threashold_ref,
+        imc_stopping_threshold_ref,
         imc_distances_ref,
     ) = aggregated_stats_imc(
         args.high_st,
@@ -1636,24 +1607,23 @@ def main_imc(args: argparse.Namespace):
         testing_samples,
     )
 
-    # regression_risks, regression_ys = aggregated_stats_regression(
-    #     args.high_st,
-    #     coarse,
-    #     mc,
-    #     model_path,
-    #     stats_path,
-    #     testing_samples,
-    #     horizon,
-    #     initial_amount,
-    # )
-    regression_risks, regression_ys = {}, {}
+    regression_risks, regression_ys = aggregated_stats_regression(
+        args.high_st,
+        coarse,
+        mc,
+        model_path,
+        stats_path,
+        testing_samples,
+        horizon,
+        initial_amount,
+    )
     conformal_risks, conformal_ys = aggreagted_stats_conformal(
         args.high_st, noisy_measurements, coarse, mc, model_path, stats_path
     )
 
     roc_curve_model_based(
         coarse,
-        imc_stopping_threashold_ref,
+        imc_stopping_threshold_ref,
         alarms,
         imc_risks,
         imc_risks_ref,
@@ -1665,7 +1635,7 @@ def main_imc(args: argparse.Namespace):
         args.out,
     )
     plot_roc_curve(
-        imc_stopping_threashold_ref,
+        imc_stopping_threshold_ref,
         args.high_st,
         coarse,
         alarms,
