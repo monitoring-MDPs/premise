@@ -53,20 +53,41 @@ def aggregated_stats_imc(
     stopping_threshold = None
 
     for x in range(1, 11):
-        # for x in range(5,7):
         print(f"Experiment number {x}")
         try:
             if coarse:
                 if high_st:
-                    statistics = np.load(
-                        f"{stats_path}/high-st-{args.mc}-coarse_norefinement-stats-{x}.npy",
-                        allow_pickle=True,
-                    )
+                    if args.mc == ' SnLw-10x10':
+                        statistics = np.load(
+                            f"{stats_path}/high-st-SnL-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif args.mc == 'evadeV-6-3-coarse': 
+                        statistics = np.load(
+                            f"{stats_path}/high-st-evadeV-6-3-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    else:
+                        statistics = np.load(
+                            f"{stats_path}/high-st-{args.mc}-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
                 else:
-                    statistics = np.load(
-                        f"{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy",
-                        allow_pickle=True,
-                    )
+                    if args.mc == ' SnLw-10x10':
+                        statistics = np.load(
+                            f"{stats_path}/SnL-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif args.mc == 'evadeV-6-3-coarse': 
+                        statistics = np.load(
+                            f"{stats_path}/evadeV-6-3-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    else:
+                        statistics = np.load(
+                            f"{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
             else:
                 if high_st:
                     statistics = np.load(
@@ -132,20 +153,43 @@ def aggregated_stats_mc(
 
     mc_transition_counts = {}
 
+
     for x in range(1, 11):
         print(f"Experiment number {x}")
         try:
             if coarse:
                 if high_st:
-                    statistics = np.load(
-                        f"{stats_path}/high-st-{args.mc}-coarse-comp-mle-stats-{x}.npy",
+                    if args.mc == ' SnLw-10x10': 
+                        statistics = np.load(
+                        f"{stats_path}/high-st-SnL-coarse-comp-mle-stats-{x}.npy",
                         allow_pickle=True,
-                    )
+                        )
+                    elif args.mc == 'evadeV-6-3-coarse':
+                        statistics = np.load(
+                            f"{stats_path}/high-st-evadeV-6-3-coarse-comp-mle-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    else:
+                        statistics = np.load(
+                            f"{stats_path}/high-st-{args.mc}-coarse-comp-mle-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
                 else:
-                    statistics = np.load(
-                        f"{stats_path}/{args.mc}-coarse-comp-mle-stats-{x}.npy",
+                    if args.mc == ' SnLw-10x10': 
+                        statistics = np.load(
+                        f"{stats_path}/SnL-coarse-comp-mle-stats-{x}.npy",
                         allow_pickle=True,
-                    )
+                        )
+                    elif args.mc == 'evadeV-6-3-coarse':
+                        statistics = np.load(
+                            f"{stats_path}/evadeV-6-3-coarse-comp-mle-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    else:
+                        statistics = np.load(
+                            f"{stats_path}/{args.mc}-coarse-comp-mle-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
             else:
                 if high_st:
                     statistics = np.load(
@@ -543,10 +587,20 @@ def main_imc(args: argparse.Namespace):
 
     if args.sys_vars != None:
         coarse = True
+    elif args.mc == 'SnLw-10x10':
+        coarse = True
+    elif args.mc == 'evadeV-6-3-coarse':
+        coarse = True
     else:
         coarse = False
 
-    target_risks = stats_true(horizon, initial_amount, testing_samples, suo)
+    target_risks = stats_true(
+        horizon, 
+        initial_amount, 
+        testing_samples, 
+        suo,
+    )
+
     imc_risks, imc_transition_counts, stopping_threshold = aggregated_stats_imc(
         args.high_st,
         coarse,

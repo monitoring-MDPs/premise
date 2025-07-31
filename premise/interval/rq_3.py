@@ -203,6 +203,38 @@ def aggregated_stats_regression(high_st, coarse, mc, model_path, stats_path, tes
     regression_ys = {}
 
     for x in range(1,11):
+        print(f'Experiment number {x}')
+        try:
+            if coarse:
+                if high_st: 
+                    statistics = np.load(f'{stats_path}/high-st-{mc}-coarse-comp-reg-stats-{x}.npy', allow_pickle=True)
+                else:
+                    statistics = np.load(f'{stats_path}/{mc}-coarse-comp-reg-stats-{x}.npy', allow_pickle=True)
+            else: 
+                if high_st: 
+                    statistics = np.load(f'{stats_path}/high-st-{mc}-comp-reg-stats-{x}.npy', allow_pickle=True)
+                else: 
+                    statistics = np.load(f'{stats_path}/{mc}-comp-reg-stats-{x}.npy', allow_pickle=True)
+        except FileNotFoundError:
+            print(f"Statistics file for {x} not found, skipping.")
+            continue
+
+        obj = statistics.item() 
+        observations = obj["observations"]
+        model_path = obj["args"]["model_path"] 
+
+        reg_model = np.load(f'{model_path}.npy', allow_pickle=True).item() #THERE IS ONLY 10 MODELS (ONE PER EACH OF 10 RUNS)
+
+
+
+
+  
+    #OLD 
+
+    regression_risks = {}
+    regression_ys = {}
+
+    for x in range(1,11):
         try:
             if coarse: 
                 if high_st:
