@@ -22,6 +22,7 @@ from premise.interval.interval import (
 )
 from premise.interval.maximum_likelihood import dict_to_pomdp, create_mle_monitor
 
+
 def aggregted_alarms(testing_samples):
     alarms = []
 
@@ -62,19 +63,18 @@ def aggregated_stats_imc(
     imc_transition_counts = {}
     stopping_threshold = None
 
-
     for x in range(1, 11):
         print(f"Experiment number {x}")
         try:
             if coarse:
                 if high_st:
                     if method == "noref":
-                        if args.mc == ' SnLw-10x10':
+                        if args.mc == " SnLw-10x10":
                             statistics = np.load(
                                 f"{stats_path}/high-st-SnL-coarse_norefinement-stats-{x}.npy",
                                 allow_pickle=True,
                             )
-                        elif args.mc == 'evadeV-6-3-coarse': 
+                        elif args.mc == "evadeV-6-3-coarse":
                             statistics = np.load(
                                 f"{stats_path}/high-st-evadeV-6-3-coarse_norefinement-stats-{x}.npy",
                                 allow_pickle=True,
@@ -85,12 +85,12 @@ def aggregated_stats_imc(
                                 allow_pickle=True,
                             )
                     if method == "ref":
-                        if args.mc == ' SnLw-10x10':
+                        if args.mc == " SnLw-10x10":
                             statistics = np.load(
                                 f"{stats_path}/high-st-SnL-coarse_refinement-stats-{x}.npy",
                                 allow_pickle=True,
                             )
-                        elif args.mc == 'evadeV-6-3-coarse': 
+                        elif args.mc == "evadeV-6-3-coarse":
                             statistics = np.load(
                                 f"{stats_path}/high-st-evadeV-6-3-coarse_refinement-stats-{x}.npy",
                                 allow_pickle=True,
@@ -101,12 +101,12 @@ def aggregated_stats_imc(
                                 allow_pickle=True,
                             )
                     if method == "refsplit":
-                        if args.mc == ' SnLw-10x10':
+                        if args.mc == " SnLw-10x10":
                             statistics = np.load(
                                 f"{stats_path}/high-st-SnL-coarse_refsplitinement-stats-{x}.npy",
                                 allow_pickle=True,
                             )
-                        elif args.mc == 'evadeV-6-3-coarse': 
+                        elif args.mc == "evadeV-6-3-coarse":
                             statistics = np.load(
                                 f"{stats_path}/high-st-evadeV-6-3-coarse_refsplitinement-stats-{x}.npy",
                                 allow_pickle=True,
@@ -118,12 +118,12 @@ def aggregated_stats_imc(
                             )
                 else:
                     if method == "noref":
-                        if args.mc == ' SnLw-10x10':
+                        if args.mc == " SnLw-10x10":
                             statistics = np.load(
                                 f"{stats_path}/SnL-coarse_norefinement-stats-{x}.npy",
                                 allow_pickle=True,
                             )
-                        elif args.mc == 'evadeV-6-3-coarse': 
+                        elif args.mc == "evadeV-6-3-coarse":
                             statistics = np.load(
                                 f"{stats_path}/evadeV-6-3-coarse_norefinement-stats-{x}.npy",
                                 allow_pickle=True,
@@ -134,12 +134,12 @@ def aggregated_stats_imc(
                                 allow_pickle=True,
                             )
                     if method == "ref":
-                        if args.mc == ' SnLw-10x10':
+                        if args.mc == " SnLw-10x10":
                             statistics = np.load(
                                 f"{stats_path}/SnL-coarse_refinement-stats-{x}.npy",
                                 allow_pickle=True,
                             )
-                        elif args.mc == 'evadeV-6-3-coarse': 
+                        elif args.mc == "evadeV-6-3-coarse":
                             statistics = np.load(
                                 f"{stats_path}/evadeV-6-3-coarse_refinement-stats-{x}.npy",
                                 allow_pickle=True,
@@ -150,12 +150,12 @@ def aggregated_stats_imc(
                                 allow_pickle=True,
                             )
                     if method == "refsplit":
-                        if args.mc == ' SnLw-10x10':
+                        if args.mc == " SnLw-10x10":
                             statistics = np.load(
                                 f"{stats_path}/SnL-coarse_refsplitinement-stats-{x}.npy",
                                 allow_pickle=True,
                             )
-                        elif args.mc == 'evadeV-6-3-coarse': 
+                        elif args.mc == "evadeV-6-3-coarse":
                             statistics = np.load(
                                 f"{stats_path}/evadeV-6-3-coarse_refsplitinement-stats-{x}.npy",
                                 allow_pickle=True,
@@ -252,18 +252,17 @@ def aggregated_stats_mc(
 
     mc_transition_counts = {}
 
-
     for x in range(1, 11):
         print(f"Experiment number {x}")
         try:
             if coarse:
                 if high_st:
-                    if args.mc == ' SnLw-10x10': 
+                    if args.mc == " SnLw-10x10":
                         statistics = np.load(
-                        f"{stats_path}/high-st-SnL-coarse-comp-mle-stats-{x}.npy",
-                        allow_pickle=True,
+                            f"{stats_path}/high-st-SnL-coarse-comp-mle-stats-{x}.npy",
+                            allow_pickle=True,
                         )
-                    elif args.mc == 'evadeV-6-3-coarse':
+                    elif args.mc == "evadeV-6-3-coarse":
                         statistics = np.load(
                             f"{stats_path}/high-st-evadeV-6-3-coarse-comp-mle-stats-{x}.npy",
                             allow_pickle=True,
@@ -274,12 +273,12 @@ def aggregated_stats_mc(
                             allow_pickle=True,
                         )
                 else:
-                    if args.mc == ' SnLw-10x10': 
+                    if args.mc == " SnLw-10x10":
                         statistics = np.load(
-                        f"{stats_path}/SnL-coarse-comp-mle-stats-{x}.npy",
-                        allow_pickle=True,
+                            f"{stats_path}/SnL-coarse-comp-mle-stats-{x}.npy",
+                            allow_pickle=True,
                         )
-                    elif args.mc == 'evadeV-6-3-coarse':
+                    elif args.mc == "evadeV-6-3-coarse":
                         statistics = np.load(
                             f"{stats_path}/evadeV-6-3-coarse-comp-mle-stats-{x}.npy",
                             allow_pickle=True,
@@ -357,8 +356,21 @@ def aggregated_stats_mc(
     stopping_threshold,
     out_path,
 ): """
-    
-def distance_graph(high_st, coarse, target_risks, imc_risks, imc_transition_counts, imc_risks_ref, imc_transition_counts_ref, imc_risks_refsplit, imc_transition_counts_refsplit, stopping_threshold, out_path):
+
+
+def distance_graph(
+    high_st,
+    coarse,
+    target_risks,
+    imc_risks,
+    imc_transition_counts,
+    imc_risks_ref,
+    imc_transition_counts_ref,
+    imc_risks_refsplit,
+    imc_transition_counts_refsplit,
+    stopping_threshold,
+    out_path,
+):
 
     # Extract unique experiment numbers from NO REF data
     imc_experiment_numbers = set()
@@ -368,7 +380,7 @@ def distance_graph(high_st, coarse, target_risks, imc_risks, imc_transition_coun
 
     # Extract unique experiment numbers from REF data
     ref_experiment_numbers = set()
-    for key in  imc_risks_ref.keys():
+    for key in imc_risks_ref.keys():
         exp_num = int(key.split("-")[0])
         ref_experiment_numbers.add(exp_num)
 
@@ -378,7 +390,6 @@ def distance_graph(high_st, coarse, target_risks, imc_risks, imc_transition_coun
         exp_num = int(key.split("-")[0])
         refsplit_experiment_numbers.add(exp_num)
 
-    
     # IMC
     distance_stats = {}
 
@@ -410,8 +421,7 @@ def distance_graph(high_st, coarse, target_risks, imc_risks, imc_transition_coun
         if str(x) in imc_transition_counts and distance_graph_data[x]:
             graph_data.append([distance_graph_data[x], imc_transition_counts[str(x)]])
 
-
-    #REF
+    # REF
     ref_distance_stats = {}
 
     for key in imc_risks_ref.keys():
@@ -470,9 +480,13 @@ def distance_graph(high_st, coarse, target_risks, imc_risks, imc_transition_coun
     refsplit_graph_data = []
     for x in sorted(refsplit_experiment_numbers):
         if str(x) in imc_transition_counts_refsplit and distance_graph_data[x]:
-            refsplit_graph_data.append([refsplit_distance_graph_data[x], imc_transition_counts_refsplit[str(x)]])
+            refsplit_graph_data.append(
+                [
+                    refsplit_distance_graph_data[x],
+                    imc_transition_counts_refsplit[str(x)],
+                ]
+            )
 
-    
     log = False
     plt.figure()
     fig, ax = plt.subplots(figsize=(16, 8))
@@ -754,6 +768,7 @@ def overestimation_graph(
 
     plt.show()
 
+
 def roc_curve_model_based(
     coarse,
     alarms,
@@ -775,7 +790,6 @@ def roc_curve_model_based(
         exp_num = int(key.split("-")[0])
         mc_experiment_numbers.add(exp_num)
 
-  
     # iHMM
     imc_final_risks = {}
 
@@ -800,7 +814,6 @@ def roc_curve_model_based(
 
     plt.figure()
     fig, ax = plt.subplots(figsize=(16, 12))
-    
 
     # iHMM MEAN PERFORMANCE
     imc_roc_data_mean = {}
@@ -930,7 +943,7 @@ def roc_curve_model_based(
             bbox_inches="tight",
         )
     plt.show()
-        
+
 
 def main_imc(args: argparse.Namespace):
     setup_logging()
@@ -951,9 +964,9 @@ def main_imc(args: argparse.Namespace):
 
     if args.sys_vars != None:
         coarse = True
-    elif args.mc == 'SnLw-10x10':
+    elif args.mc == "SnLw-10x10":
         coarse = True
-    elif args.mc == 'evadeV-6-3-coarse':
+    elif args.mc == "evadeV-6-3-coarse":
         coarse = True
     else:
         coarse = False
@@ -961,26 +974,14 @@ def main_imc(args: argparse.Namespace):
     alarms = aggregted_alarms(testing_samples)
 
     target_risks = stats_true(
-        horizon, 
-        initial_amount, 
-        testing_samples, 
+        horizon,
+        initial_amount,
+        testing_samples,
         suo,
     )
 
     imc_risks, imc_transition_counts, stopping_threshold = aggregated_stats_imc(
-        'noref'
-        args.high_st,
-        coarse,
-        args.stats_path,
-        initial_amount,
-        horizon,
-        args,
-        testing_samples,
-    )
-    
-
-    imc_risks_ref, imc_transition_counts_ref, stopping_threshold_ref = aggregated_stats_imc(
-        'ref', 
+        "noref",
         args.high_st,
         coarse,
         args.stats_path,
@@ -990,15 +991,30 @@ def main_imc(args: argparse.Namespace):
         testing_samples,
     )
 
-    imc_risks_refsplit, imc_transition_counts_refsplit, stopping_threshold_refsplit = aggregated_stats_imc(
-        'refsplit', 
-        args.high_st,
-        coarse,
-        args.stats_path,
-        initial_amount,
-        horizon,
-        args,
-        testing_samples,
+    imc_risks_ref, imc_transition_counts_ref, stopping_threshold_ref = (
+        aggregated_stats_imc(
+            "ref",
+            args.high_st,
+            coarse,
+            args.stats_path,
+            initial_amount,
+            horizon,
+            args,
+            testing_samples,
+        )
+    )
+
+    imc_risks_refsplit, imc_transition_counts_refsplit, stopping_threshold_refsplit = (
+        aggregated_stats_imc(
+            "refsplit",
+            args.high_st,
+            coarse,
+            args.stats_path,
+            initial_amount,
+            horizon,
+            args,
+            testing_samples,
+        )
     )
 
     mc_risks, mc_transition_counts = aggregated_stats_mc(
@@ -1020,9 +1036,9 @@ def main_imc(args: argparse.Namespace):
         target_risks,
         imc_risks,
         imc_transition_counts,
-        imc_risks_ref, 
+        imc_risks_ref,
         imc_transition_counts_ref,
-        imc_risks_refsplit, 
+        imc_risks_refsplit,
         imc_transition_counts_refsplit,
         stopping_threshold,
         args.out,
