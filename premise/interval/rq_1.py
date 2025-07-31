@@ -947,7 +947,7 @@ def roc_curve_model_based(
 
 
 def main_imc(args: argparse.Namespace):
-    setup_logging("rq1:" + str(vars(args)))
+    setup_logging("rq1:" + args.mc)
 
     suo, initial_amount, horizon = build_suo(args)
 
@@ -1080,7 +1080,7 @@ def build_learning_parser(parser: argparse.ArgumentParser):
         "-s",
         "--testing-samples",
         type=int,
-        default=50,
+        default=100,
         help="Total number of samples used in learning",
     )
 

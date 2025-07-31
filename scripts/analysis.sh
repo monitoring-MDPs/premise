@@ -14,7 +14,7 @@ if [ -z "$model_path" ]; then
     exit 1
 fi
 
-models=("airportB-7-40-20" "SnL-10x10" "airportA-7-10-10" "evadeV-5-3" "evadeV-6-3" "evadeI-15")
+models=("airportB-7-40-20" "SnL-10x10" "SnLw-10x10" "airportA-7-10-10" "evadeV-5-3" "evadeV-6-3" "evadeV-6-3-coarse" "evadeI-15")
 additional_args=("" "-ht")
 additional_args_2=("" "-c")
 

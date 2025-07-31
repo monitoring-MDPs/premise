@@ -1648,7 +1648,7 @@ def plotting(
 
 
 def main_imc(args: argparse.Namespace):
-    setup_logging("rq3:" + str(vars(args)))
+    setup_logging("rq3:" + args.mc + str(args.coarse) + str(args.high_st))
 
     os.makedirs(args.out, exist_ok=True)
 
@@ -1809,7 +1809,7 @@ def build_learning_parser(parser: argparse.ArgumentParser):
         "-s",
         "--testing_samples",
         type=int,
-        default=200,
+        default=100,
         help="Total number of samples used in learning",
     )
     group.add_argument(

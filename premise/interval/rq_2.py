@@ -408,7 +408,7 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
 
 
 def main(args: argparse.Namespace):
-    setup_logging("rq2:" + str(vars(args)))
+    setup_logging("rq2:" + args.mc)
 
     os.makedirs(args.out, exist_ok=True)
 
