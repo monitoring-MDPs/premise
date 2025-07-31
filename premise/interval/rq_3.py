@@ -92,36 +92,102 @@ def aggregated_stats_imc(
             if coarse:
                 if high_st:
                     if method == "noref":
-                        statistics = np.load(
-                            f"{stats_path}/high-st-{mc}-coarse_norefinement-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
+                        if args.mc == ' SnLw-10x10':
+                            statistics = np.load(
+                                f"{stats_path}/high-st-SnL-coarse_norefinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        elif args.mc == 'evadeV-6-3-coarse': 
+                            statistics = np.load(
+                                f"{stats_path}/high-st-evadeV-6-3-coarse_norefinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        else:
+                            statistics = np.load(
+                                f"{stats_path}/high-st-{mc}-coarse_norefinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )    
                     elif method == "ref":
-                        statistics = np.load(
-                            f"{stats_path}/high-st-{mc}-coarse_refinement-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
+                        if args.mc == ' SnLw-10x10':
+                            statistics = np.load(
+                                f"{stats_path}/high-st-SnL-coarse_refinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        elif args.mc == 'evadeV-6-3-coarse': 
+                            statistics = np.load(
+                                f"{stats_path}/high-st-evadeV-6-3-coarse_refinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        else:
+                            statistics = np.load(
+                                f"{stats_path}/high-st-{mc}-coarse_refinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
                     elif method == "refsplit":
-                        statistics = np.load(
-                            f"{stats_path}/high-st-{mc}-coarse_refsplitinement-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
+                        if args.mc == ' SnLw-10x10':
+                            statistics = np.load(
+                                f"{stats_path}/high-st-SnL-coarse_refsplitinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        elif args.mc == 'evadeV-6-3-coarse': 
+                            statistics = np.load(
+                                f"{stats_path}/high-st-evadeV-6-3-coarse_refsplitinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        else:
+                            statistics = np.load(
+                                f"{stats_path}/high-st-{mc}-coarse_refsplitinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
                 else:
                     if method == "noref":
-                        statistics = np.load(
-                            f"{stats_path}/{mc}-coarse_norefinement-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
+                        if args.mc == ' SnLw-10x10':
+                            statistics = np.load(
+                                f"{stats_path}/SnL-coarse_norefinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        elif args.mc == 'evadeV-6-3-coarse': 
+                            statistics = np.load(
+                                f"{stats_path}/evadeV-6-3-coarse_norefinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        else:
+                            statistics = np.load(
+                                f"{stats_path}/{mc}-coarse_norefinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
                     elif method == "ref":
-                        statistics = np.load(
-                            f"{stats_path}/{mc}-coarse_refinement-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
+                        if args.mc == ' SnLw-10x10':
+                            statistics = np.load(
+                                f"{stats_path}/SnL-coarse_refinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        elif args.mc == 'evadeV-6-3-coarse': 
+                            statistics = np.load(
+                                f"{stats_path}/evadeV-6-3-coarse_refinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        else:
+                            statistics = np.load(
+                                f"{stats_path}/{mc}-coarse_refinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
                     elif method == "refsplit":
-                        statistics = np.load(
-                            f"{stats_path}/{mc}-coarse_refsplitinement-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
+                        if args.mc == ' SnLw-10x10':
+                            statistics = np.load(
+                                f"{stats_path}/SnL-coarse_refsplitinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        elif args.mc == 'evadeV-6-3-coarse': 
+                            statistics = np.load(
+                                f"{stats_path}/evadeV-6-3-coarse_refsplitinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        else:
+                            statistics = np.load(
+                                f"{stats_path}/{mc}-coarse_refsplitinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
             else:
                 if high_st:
                     if method == "noref":
@@ -219,11 +285,19 @@ def aggregated_stats_regression(
         try:
             if coarse:
                 if high_st:
-                    paths = glob.glob(
-                        f"{model_path}/high-st-{mc}-coarse-comp-reg-{x}_*.npy"
-                    )
+                    if args.mc == 'SnLw-10x10':
+                        paths = glob.glob(f"{model_path}/high-st-SnL-coarse-comp-reg-{x}_*.npy")
+                    elif args.mc == 'evadeV-6-3-coarse': 
+                        paths = glob.glob(f"{model_path}/high-st-evadeV-6-3-coarse-comp-reg-{x}_*.npy")
+                    else:   
+                        paths = glob.glob(f"{model_path}/high-st-{mc}-coarse-comp-reg-{x}_*.npy")
                 else:
-                    paths = glob.glob(f"{model_path}/{mc}-coarse-comp-reg-{x}_*.npy")
+                    if args.mc == 'SnLw-10x10':
+                        paths = glob.glob(f"{model_path}/SnL-coarse-comp-reg-{x}_*.npy")
+                    elif args.mc == 'evadeV-6-3-coarse': 
+                        paths = glob.glob(f"{model_path}/evadeV-6-3-coarse-comp-reg-{x}_*.npy")
+                    else:  
+                        paths = glob.glob(f"{model_path}/{mc}-coarse-comp-reg-{x}_*.npy")
             else:
                 if high_st:
                     paths = glob.glob(f"{model_path}/high-st-{mc}-comp-reg-{x}_*.npy")
@@ -246,27 +320,47 @@ def aggregated_stats_regression(
         for y in regression_ys[str(x)]:
             regression_risks[f"{x}-{y}"] = []
 
-            if coarse:
-                if high_st:
-                    statistics = np.load(
-                        f"{stats_path}/high-st-{mc}-coarse-comp-reg-stats-{x}.npy",
-                        allow_pickle=True,
-                    ).item()
+            try:
+                if coarse:
+                    if high_st:
+                        if args.mc == 'SnLw-10x10':
+                            statistics = np.load(
+                                f"{stats_path}/high-st-SnL-coarse-comp-reg-stats-{x}.npy",
+                                allow_pickle=True,
+                            ).item()
+
+                        elif args.mc == 'evadeV-6-3-coarse': 
+                            statistics = np.load(
+                                f"{stats_path}/high-st-evadeV-6-3-coarse-comp-reg-stats-{x}.npy",
+                                allow_pickle=True,
+                            ).item()
+
+                        else:
+                            statistics = np.load(
+                                f"{stats_path}/high-st-{mc}-coarse-comp-reg-stats-{x}.npy",
+                                allow_pickle=True,
+                            ).item()
+                    else:
+                        if args.mc == 'SnLw-10x10':
+                            statistics = np.load(f"{stats_path}/SnL-coarse-comp-reg-stats-{x}.npy", allow_pickle=True).item()
+                        elif args.mc == 'evadeV-6-3-coarse': 
+                            statistics = np.load(f"{stats_path}/evadeV-6-3-coarse-comp-reg-stats-{x}.npy", allow_pickle=True).item()
+                        else:
+                            statistics = np.load(f"{stats_path}/{mc}-coarse-comp-reg-stats-{x}.npy", allow_pickle=True).item()
                 else:
-                    statistics = np.load(
-                        f"{stats_path}/{mc}-coarse-comp-reg-stats-{x}.npy",
-                        allow_pickle=True,
-                    ).item()
-            else:
-                if high_st:
-                    statistics = np.load(
-                        f"{stats_path}/high-st-{mc}-comp-reg-stats-{x}.npy",
-                        allow_pickle=True,
-                    ).item()
-                else:
-                    statistics = np.load(
-                        f"{stats_path}/{mc}-comp-reg-stats-{x}.npy", allow_pickle=True
-                    ).item()
+                    if high_st:
+                        statistics = np.load(
+                            f"{stats_path}/high-st-{mc}-comp-reg-stats-{x}.npy",
+                            allow_pickle=True,
+                        ).item()
+                    else:
+                        statistics = np.load(
+                            f"{stats_path}/{mc}-comp-reg-stats-{x}.npy", allow_pickle=True
+                        ).item()
+
+            except FileNotFoundError:
+                print(f"Statistics file for {x} not found, skipping.")
+                continue
 
             obj = statistics.item()
             observations = obj["observations"]
