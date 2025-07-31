@@ -643,12 +643,12 @@ def roc_curve_model_based(
     # Refinement
     imc_ref_final_risks = {}
 
-    ys = []
+    ys_refinement  = []
     for key in imc_risks_ref.keys():
-        ys.append(int(key.split("-")[1]))
+        ys_refinement.append(int(key.split("-")[1]))
 
     for key in imc_risks_ref.keys():
-        if key.split("-")[1] == str(max(ys)):
+        if key.split("-")[1] == str(max(ys_refinement)):
             imc_ref_final_risks[key.split("-")[0]] = imc_risks_ref[key]
 
     # Refinement with splitting
@@ -656,7 +656,7 @@ def roc_curve_model_based(
 
     ys_splitting = []
     for key in imc_risks_ref_splitting.keys():
-        ys_splitting(int(key.split("-")[1]))
+        ys_splitting.append(int(key.split("-")[1]))
 
     for key in imc_risks_ref_splitting.keys():
         if key.split("-")[1] == str(max(ys_splitting)):

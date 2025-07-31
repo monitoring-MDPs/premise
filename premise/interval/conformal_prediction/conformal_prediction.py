@@ -551,6 +551,8 @@ def conformal_prediction_main(args: argparse.Namespace):
         # SAVING REJECTION CLASSIFIER
 
         if args.sys_vars != None:
+
+            
             rej_filename = os.path.join(
                 args.dump_stats,
                 f"{args.mc}_coarse_comp_conformal_pred_rejection_classifier_{args.run_id}_{amount}.pickle",
