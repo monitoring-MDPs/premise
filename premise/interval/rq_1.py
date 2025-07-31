@@ -967,7 +967,20 @@ def main_imc(args: argparse.Namespace):
         suo,
     )
 
-    'noref', imc_risks, imc_transition_counts, stopping_threshold = aggregated_stats_imc(
+    imc_risks, imc_transition_counts, stopping_threshold = aggregated_stats_imc(
+        'noref'
+        args.high_st,
+        coarse,
+        args.stats_path,
+        initial_amount,
+        horizon,
+        args,
+        testing_samples,
+    )
+    
+
+    imc_risks_ref, imc_transition_counts_ref, stopping_threshold_ref = aggregated_stats_imc(
+        'ref', 
         args.high_st,
         coarse,
         args.stats_path,
@@ -977,17 +990,8 @@ def main_imc(args: argparse.Namespace):
         testing_samples,
     )
 
-    'ref', imc_risks_ref, imc_transition_counts_ref, stopping_threshold_ref = aggregated_stats_imc(
-        args.high_st,
-        coarse,
-        args.stats_path,
-        initial_amount,
-        horizon,
-        args,
-        testing_samples,
-    )
-
-    'refsplit', imc_risks_refsplit, imc_transition_counts_refsplit, stopping_threshold_refsplit = aggregated_stats_imc(
+    imc_risks_refsplit, imc_transition_counts_refsplit, stopping_threshold_refsplit = aggregated_stats_imc(
+        'refsplit', 
         args.high_st,
         coarse,
         args.stats_path,
