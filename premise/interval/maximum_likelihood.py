@@ -13,7 +13,7 @@ import stormpy
 from premise.interval.conformence import test_monitor
 from premise.interval.loading import build_suo, build_suo_args_parser
 from premise.models import _analyse_model
-from premise.monitor import Monitor, UnfoldingRiskAssessment
+from premise.monitor import FilterBasedRiskAssessment, Monitor, UnfoldingRiskAssessment
 from premise.interval.interval import Samples, State
 from premise.interval.utils import logger, setup_logging
 from premise.system import SystemUnderObservation
@@ -81,6 +81,9 @@ def dict_to_pomdp(
         trans_dict.items(),
         key=lambda x: x[0][0][0][0] if isinstance(x[0][0][0], tuple) else x[0][0][0],
     ):
+        if p == 0:
+            continue
+
         if s not in state_index_map:
             state_index_map[s] = state_index
             transitions[state_index] = {}
@@ -101,8 +104,8 @@ def dict_to_pomdp(
         transitions[s_index][d_index] = prob
 
     if use_exact:
-        #builder = sp.storage.RationalSparseMatrixBuilder(0, 0, 0, False, True) 
-        builder = sp.storage.ExactSparseMatrixBuilder(0, 0, 0, False, True) 
+        # builder = sp.storage.RationalSparseMatrixBuilder(0, 0, 0, False, True)
+        builder = sp.storage.ExactSparseMatrixBuilder(0, 0, 0, False, True)
 
     else:
         builder = sp.storage.SparseMatrixBuilder(0, 0, 0, False, True)
@@ -129,9 +132,8 @@ def dict_to_pomdp(
         if s[-1] == target_label:  # target label (Change between models)
             labeling.add_label_to_state("target", i)
 
-
     if use_exact:
-        components = SparseExactModelComponents(matrix, labeling) 
+        components = SparseExactModelComponents(matrix, labeling)
     else:
         components = SparseModelComponents(matrix, labeling)
     components.observability_classes = [0] + [
@@ -139,13 +141,12 @@ def dict_to_pomdp(
     ]
 
     if use_exact:
-        return SparseExactPomdp(components), observation_map, state_index_map 
+        return SparseExactPomdp(components), observation_map, state_index_map
     else:
         return SparsePomdp(components), observation_map, state_index_map
 
 
 def create_mle_monitor(horizon: int, storm_model: SparsePomdp | SparseExactPomdp):
-    #prop_string = f'P=? [F<={horizon} "target"]'
     prop_string = f'Pmax=? [F<={horizon} "target"]'
     prop = sp.parse_properties(prop_string)[0]
     risk = _analyse_model(storm_model, prop).get_values()
@@ -184,18 +185,18 @@ def maximum_likelihood_estimation(
         else:
             transition_probabilities[src, dest] = 0.0
 
-    #ANTONINA
+    # ANTONINA
     initial_state_probabilities = {}
     initial_state_count = {}
     for state in all_initial_states:
-        initial_state_count[state] = 0 
+        initial_state_count[state] = 0
         for trace in samples:
             if trace[0] == state:
                 initial_state_count[state] += 1
 
     for key in initial_state_count.keys():
         initial_state_probabilities[key] = 0
-    
+
     for key in initial_state_count.keys():
         initial_state_probabilities[key] = initial_state_count[key] / len(samples)
 
@@ -277,20 +278,20 @@ def mle_learning(
         sample_subset = samples[: samples_per_iteration * (i + 1)]
         sample_count_list.append(len(sample_subset))
 
-        model = maximum_likelihood_estimation( 
+        model = maximum_likelihood_estimation(
             all_states,
             all_transitions,
             all_initial_states,
             sample_subset,
         )
 
-        with open(f"{model_path}-{i}.pickl", "wb") as f: 
+        with open(f"{model_path}-{i}.pickl", "wb") as f:
             pickle.dump(model, f)
-    
-    return sample_count_list 
+
+    return sample_count_list
 
 
-def mle_learning_main(args):  
+def mle_learning_main(args):
 
     setup_logging()
 

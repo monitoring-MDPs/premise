@@ -1,15 +1,11 @@
 import argparse
-import logging
-from pathlib import Path
-import glob 
+import glob
 import re
-from scipy.interpolate import interp1d
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import os
 import pickle
-from stormpy import AddUncertaintyExact, Rational
 from sklearn import metrics
 import matplotlib.ticker as ticker
 
@@ -27,18 +23,15 @@ import numpy as np
 import argparse
 from premise.interval.conformal_prediction.InvertedPendulum import *
 from premise.interval.conformal_prediction.MC_model import *
-import torch.nn.functional 
+import torch.nn.functional
 
 import argparse
-import logging
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import os
 import pickle
-from stormpy import AddUncertaintyExact, Rational
 from premise.interval.utils import logger, setup_logging
 
 from premise.interval.conformal_prediction.train_stoch_seq_nsc import *
@@ -54,21 +47,16 @@ import numpy as np
 import argparse
 from premise.interval.conformal_prediction.InvertedPendulum import *
 from premise.interval.conformal_prediction.MC_model import *
-import torch.nn.functional 
+import torch.nn.functional
 
 
-from premise.interval.interval import (
-    stormpy_imdp_to_ipomdp,
-    stormpy_exact_pomdp_to_mdp,
-)
 from premise.interval.model_free.regression_model import prep_trace_for_regression
 from premise.interval.loading import (
-    build_imc_loading_args_parser,
     build_suo,
     build_suo_args_parser,
     load_imc,
 )
-from premise.interval.conformence import random_sample_monitor_test, test_monitor
+from premise.interval.conformence import test_monitor
 from premise.interval.interval import (
     Samples,
     Trace,
@@ -76,96 +64,139 @@ from premise.interval.interval import (
     build_monitor_from_model,
 )
 
-def stats_true(horizon, initial_amount, testing_samples, suo): 
+
+def stats_true(horizon, initial_amount, testing_samples, suo):
 
     mon = suo.create_target_monitor()
     target_risks = []
 
     for trace in tqdm(testing_samples):
         sub_trace: Trace = trace[:initial_amount]
-      
+
         target_risk = test_monitor(
-                    mon,
-                    [sub_trace],
-                    with_tqdm=False, 
-                )[sub_trace]
-        
+            mon,
+            [sub_trace],
+            with_tqdm=False,
+        )[sub_trace]
+
         target_risks.append(float(target_risk))
 
     return target_risks
 
 
-def aggregted_alarms(testing_samples): 
+def aggregted_alarms(testing_samples):
     alarms = []
 
     for trace in tqdm(testing_samples):
-            alarms.append(any([s[2] for s in trace]))
+        alarms.append(any([s[2] for s in trace]))
 
-    alarms = np.array(alarms).astype(int) 
-    
+    alarms = np.array(alarms).astype(int)
+
     return alarms
 
 
 def aggregated_stats_imc(
-        high_st, coarse, method, mc, stats_path, initial_amount, horizon, args, testing_samples
-): 
+    high_st,
+    coarse,
+    method,
+    mc,
+    stats_path,
+    initial_amount,
+    horizon,
+    args,
+    testing_samples,
+):
 
     imc_risks = {}
 
     imc_transition_counts = {}
     imc_distances = {}
 
-    for x in range(1,11):
-        print(f'Experiment number {x}')
+    for x in range(1, 11):
+        print(f"Experiment number {x}")
         try:
-            if coarse: 
+            if coarse:
                 if high_st:
-                    if method == 'noref':
-                        statistics = np.load(f'{stats_path}/high-st-{mc}-coarse_norefinement-stats-{x}.npy', allow_pickle=True)
-                    elif method == 'ref':
-                        statistics = np.load(f'{stats_path}/high-st-{mc}-coarse_refinement-stats-{x}.npy', allow_pickle=True)
-                    elif method == 'refsplit':
-                        statistics = np.load(f'{stats_path}/high-st-{mc}-coarse_refsplitinement-stats-{x}.npy', allow_pickle=True)
+                    if method == "noref":
+                        statistics = np.load(
+                            f"{stats_path}/high-st-{mc}-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif method == "ref":
+                        statistics = np.load(
+                            f"{stats_path}/high-st-{mc}-coarse_refinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif method == "refsplit":
+                        statistics = np.load(
+                            f"{stats_path}/high-st-{mc}-coarse_refsplitinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
                 else:
-                    if method == 'noref':
-                        statistics = np.load(f'{stats_path}/{mc}-coarse_norefinement-stats-{x}.npy', allow_pickle=True)
-                    elif method == 'ref':
-                        statistics = np.load(f'{stats_path}/{mc}-coarse_refinement-stats-{x}.npy', allow_pickle=True)
-                    elif method == 'refsplit':
-                        statistics = np.load(f'{stats_path}/{mc}-coarse_refsplitinement-stats-{x}.npy', allow_pickle=True)
-            else: 
+                    if method == "noref":
+                        statistics = np.load(
+                            f"{stats_path}/{mc}-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif method == "ref":
+                        statistics = np.load(
+                            f"{stats_path}/{mc}-coarse_refinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif method == "refsplit":
+                        statistics = np.load(
+                            f"{stats_path}/{mc}-coarse_refsplitinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+            else:
                 if high_st:
-                    if method == 'noref':
-                        statistics = np.load(f'{stats_path}/high-st-{mc}-comp-noref-stats-{x}.npy', allow_pickle=True)
-                    elif method == 'ref':
-                        statistics = np.load(f'{stats_path}/high-st-{mc}-comp-ref-stats-{x}.npy', allow_pickle=True)
-                    elif method == 'refsplit':
-                        statistics = np.load(f'{stats_path}/high-st-{mc}-comp-refsplit-stats-{x}.npy', allow_pickle=True)
+                    if method == "noref":
+                        statistics = np.load(
+                            f"{stats_path}/high-st-{mc}-comp-noref-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif method == "ref":
+                        statistics = np.load(
+                            f"{stats_path}/high-st-{mc}-comp-ref-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif method == "refsplit":
+                        statistics = np.load(
+                            f"{stats_path}/high-st-{mc}-comp-refsplit-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
                 else:
-                    if method == 'noref':
-                        statistics = np.load(f'{stats_path}/{mc}-comp-noref-stats-{x}.npy', allow_pickle=True)
-                    elif method == 'ref':
-                        statistics = np.load(f'{stats_path}/{mc}-comp-ref-stats-{x}.npy', allow_pickle=True)
-                    elif method == 'refsplit':
-                        statistics = np.load(f'{stats_path}/{mc}-comp-refsplit-stats-{x}.npy', allow_pickle=True)
+                    if method == "noref":
+                        statistics = np.load(
+                            f"{stats_path}/{mc}-comp-noref-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif method == "ref":
+                        statistics = np.load(
+                            f"{stats_path}/{mc}-comp-ref-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif method == "refsplit":
+                        statistics = np.load(
+                            f"{stats_path}/{mc}-comp-refsplit-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
         except FileNotFoundError:
             print(f"Statistics file for {x} not found, skipping.")
             continue
 
-
-        obj = statistics.item()     
-        imc_transition_count = obj['transitions_learned']
-        stopping_threashold = obj['args']['stopping_threshold']
-        distances = obj['distances']
+        obj = statistics.item()
+        imc_transition_count = obj["transitions_learned"]
+        stopping_threashold = obj["args"]["stopping_threshold"]
+        distances = obj["distances"]
         imc_distances[str(x)] = distances
-        imc_transition_counts[str(x)]= imc_transition_count
+        imc_transition_counts[str(x)] = imc_transition_count
 
         model_path = obj["args"]["model_path"]
 
         for y in range(1, len(imc_transition_count) + 1):
             initial_distribution = f"{model_path}-{y}-initial_interval.npy"
             transition_intervals = f"{model_path}-{y}-interval.npy"
-
 
             transition_intervals, initial_distribution = load_imc(args)
 
@@ -179,9 +210,9 @@ def aggregated_stats_imc(
                 None,
             )
 
-            imc_risks[f'{x}-{y}'] = []
+            imc_risks[f"{x}-{y}"] = []
 
-            for t in testing_samples: 
+            for t in testing_samples:
                 sub_trace: Trace = t[:initial_amount]
                 risk = test_monitor(
                     mon,
@@ -189,14 +220,23 @@ def aggregated_stats_imc(
                     obs_func=lambda x: mon_comps.observation_map[x],
                     skip_initial=True,
                     with_tqdm=False,
-                    )[sub_trace]
-                
-               
-                imc_risks[f'{x}-{y}'].append(float(risk))
+                )[sub_trace]
+
+                imc_risks[f"{x}-{y}"].append(float(risk))
 
     return imc_risks, imc_transition_counts, stopping_threashold, imc_distances
 
 
+def aggregated_stats_regression(
+    high_st,
+    coarse,
+    mc,
+    model_path,
+    stats_path,
+    testing_samples,
+    horizon,
+    initial_amount,
+):
 def aggregated_stats_regression(high_st, coarse, mc, model_path, stats_path, testing_samples, horizon, initial_amount): 
 
     regression_risks = {}
@@ -234,64 +274,78 @@ def aggregated_stats_regression(high_st, coarse, mc, model_path, stats_path, tes
     regression_risks = {}
     regression_ys = {}
 
-    for x in range(1,11):
+    for x in range(1, 11):
         try:
-            if coarse: 
+            if coarse:
                 if high_st:
-                    paths = glob.glob(f'{model_path}/high-st-{mc}-coarse-comp-reg-{x}_*.npy')
+                    paths = glob.glob(
+                        f"{model_path}/high-st-{mc}-coarse-comp-reg-{x}_*.npy"
+                    )
                 else:
-                    paths = glob.glob(f'{model_path}/{mc}-coarse-comp-reg-{x}_*.npy')
-            else: 
+                    paths = glob.glob(f"{model_path}/{mc}-coarse-comp-reg-{x}_*.npy")
+            else:
                 if high_st:
-                    paths = glob.glob(f'{model_path}/high-st-{mc}-comp-reg-{x}_*.npy')
+                    paths = glob.glob(f"{model_path}/high-st-{mc}-comp-reg-{x}_*.npy")
                 else:
-                    paths = glob.glob(f'{model_path}/{mc}-comp-reg-{x}_*.npy')
+                    paths = glob.glob(f"{model_path}/{mc}-comp-reg-{x}_*.npy")
         except FileNotFoundError:
             print(f"Statistics file for {x} not found, skipping.")
             continue
-        
+
         regression_ys[str(x)] = []
 
         for path in paths:
-            match = re.search(r'_(\d+)\.npy$', path)
+            match = re.search(r"_(\d+)\.npy$", path)
             if match:
                 regression_ys[str(x)].append(int(match.group(1)))
 
-        for key in regression_ys.keys(): 
+        for key in regression_ys.keys():
             regression_ys[key].sort()
 
         for y in regression_ys[str(x)]:
-            regression_risks[f'{x}-{y}'] = []
+            regression_risks[f"{x}-{y}"] = []
 
             if coarse:
-                if high_st: 
-                    statistics = np.load(f'{stats_path}/high-st-{mc}-coarse-comp-reg-stats-{x}.npy', allow_pickle=True).item()
+                if high_st:
+                    statistics = np.load(
+                        f"{stats_path}/high-st-{mc}-coarse-comp-reg-stats-{x}.npy",
+                        allow_pickle=True,
+                    ).item()
                 else:
-                    statistics = np.load(f'{stats_path}/{mc}-coarse-comp-reg-stats-{x}.npy', allow_pickle=True).item()
-            else: 
-                if high_st: 
-                    statistics = np.load(f'{stats_path}/high-st-{mc}-comp-reg-stats-{x}.npy', allow_pickle=True).item()
-                else: 
-                    statistics = np.load(f'{stats_path}/{mc}-comp-reg-stats-{x}.npy', allow_pickle=True).item()
-            
+                    statistics = np.load(
+                        f"{stats_path}/{mc}-coarse-comp-reg-stats-{x}.npy",
+                        allow_pickle=True,
+                    ).item()
+            else:
+                if high_st:
+                    statistics = np.load(
+                        f"{stats_path}/high-st-{mc}-comp-reg-stats-{x}.npy",
+                        allow_pickle=True,
+                    ).item()
+                else:
+                    statistics = np.load(
+                        f"{stats_path}/{mc}-comp-reg-stats-{x}.npy", allow_pickle=True
+                    ).item()
+
             obj = statistics.item()
             observations = obj["observations"]
             model_path = obj["args"]["model_path"]
 
             for y in range(regression_ys[str(x)]):
-                reg_model =  np.load(f'{model_path}_{y}.npy', allow_pickle=True).item()
-    
-            column_names = [f"Step{s}_Obs{o}" for s in range(initial_amount) for o in observations]
+                reg_model = np.load(f"{model_path}_{y}.npy", allow_pickle=True).item()
 
-            for t in testing_samples: 
+            column_names = [
+                f"Step{s}_Obs{o}" for s in range(initial_amount) for o in observations
+            ]
+
+            for t in testing_samples:
                 sub_trace: Trace = t[:initial_amount]
                 reg_sub_trace = prep_trace_for_regression(sub_trace, observations)
                 X = pd.DataFrame([reg_sub_trace], columns=column_names)
-                prob = reg_model.predict_proba(X)    
-                regression_risks[f'{x}-{y}'].append(float(prob[:, 1].item()))
+                prob = reg_model.predict_proba(X)
+                regression_risks[f"{x}-{y}"].append(float(prob[:, 1].item()))
 
     return regression_risks, regression_ys
-
 
 
 def aggreagted_stats_conformal(high_st, new_noisy, coarse, mc, model_path, stats_path):
@@ -299,122 +353,204 @@ def aggreagted_stats_conformal(high_st, new_noisy, coarse, mc, model_path, stats
     conformal_risks = {}
     conformal_ys = {}
 
-    for x in range(1,11):
+    for x in range(1, 11):
         try:
-            if coarse: 
+            if coarse:
                 if high_st:
-                    paths = glob.glob(f'{model_path}/high-st-{mc}_coarse_comp_conformal_pred_state_estimator_{x}_*.pt')
-                else: 
-                    paths = glob.glob(f'{model_path}/{mc}_coarse_comp_conformal_pred_state_estimator_{x}_*.pt')
-            else: 
-                if high_st:
-                    paths = glob.glob(f'{model_path}/high-st-{mc}_comp_conformal_pred_state_estimator_{x}_*.pt')
+                    paths = glob.glob(
+                        f"{model_path}/high-st-{mc}_coarse_comp_conformal_pred_state_estimator_{x}_*.pt"
+                    )
                 else:
-                    paths = glob.glob(f'{model_path}/{mc}_comp_conformal_pred_state_estimator_{x}_*.pt')
+                    paths = glob.glob(
+                        f"{model_path}/{mc}_coarse_comp_conformal_pred_state_estimator_{x}_*.pt"
+                    )
+            else:
+                if high_st:
+                    paths = glob.glob(
+                        f"{model_path}/high-st-{mc}_comp_conformal_pred_state_estimator_{x}_*.pt"
+                    )
+                else:
+                    paths = glob.glob(
+                        f"{model_path}/{mc}_comp_conformal_pred_state_estimator_{x}_*.pt"
+                    )
         except FileNotFoundError:
             print(f"Statistics file for {x} not found, skipping.")
             continue
 
         conformal_ys[str(x)] = []
 
-        for path in paths: 
-            match = re.search(r'_(\d+)\.pt$', path)
-            if match: 
+        for path in paths:
+            match = re.search(r"_(\d+)\.pt$", path)
+            if match:
                 conformal_ys[str(x)].append(int(match.group(1)))
-        
-        for key in conformal_ys.keys(): 
+
+        for key in conformal_ys.keys():
             conformal_ys[key].sort()
 
         for y in conformal_ys[str(x)]:
-            conformal_risks[f'{x}-{y}'] = [] 
+            conformal_risks[f"{x}-{y}"] = []
             try:
-                if coarse: 
+                if coarse:
                     if high_st:
-                        state_estimator = torch.load(f'{model_path}/high-st-{mc}_coarse_comp_conformal_pred_state_estimator_{x}_{y}.pt', weights_only=False)
-                        label_estimator = torch.load(f'{model_path}/high-st-{mc}_coarse_comp_conformal_pred_label_estimator_{x}_{y}.pt', weights_only=False)
-                        cp_classification = torch.load(f'{model_path}/high-st-{mc}_coarse_comp_conformal_pred_cp_classification_{x}_{y}.pt', weights_only=False)
+                        state_estimator = torch.load(
+                            f"{model_path}/high-st-{mc}_coarse_comp_conformal_pred_state_estimator_{x}_{y}.pt",
+                            weights_only=False,
+                        )
+                        label_estimator = torch.load(
+                            f"{model_path}/high-st-{mc}_coarse_comp_conformal_pred_label_estimator_{x}_{y}.pt",
+                            weights_only=False,
+                        )
+                        cp_classification = torch.load(
+                            f"{model_path}/high-st-{mc}_coarse_comp_conformal_pred_cp_classification_{x}_{y}.pt",
+                            weights_only=False,
+                        )
 
-                        with open(f'{stats_path}/high-st-{mc}_coarse_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle', 'rb') as f:
+                        with open(
+                            f"{stats_path}/high-st-{mc}_coarse_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle",
+                            "rb",
+                        ) as f:
                             rej_classifier = pickle.load(f)
-                
-                        rejection_classifier = rej_classifier['rej_rule']
 
-                        with open(f'{stats_path}/high-st-{mc}_coarse_comp_conformal_pred_conformal_stats_{x}_{y}.pickle', 'rb') as f:
+                        rejection_classifier = rej_classifier["rej_rule"]
+
+                        with open(
+                            f"{stats_path}/high-st-{mc}_coarse_comp_conformal_pred_conformal_stats_{x}_{y}.pickle",
+                            "rb",
+                        ) as f:
                             conformal_stats = pickle.load(f)
                     else:
-                        state_estimator = torch.load(f'{model_path}/{mc}_coarse_comp_conformal_pred_state_estimator_{x}_{y}.pt', weights_only=False)
-                        label_estimator = torch.load(f'{model_path}/{mc}_coarse_comp_conformal_pred_label_estimator_{x}_{y}.pt', weights_only=False)
-                        cp_classification = torch.load(f'{model_path}/{mc}_coarse_comp_conformal_pred_cp_classification_{x}_{y}.pt', weights_only=False)
+                        state_estimator = torch.load(
+                            f"{model_path}/{mc}_coarse_comp_conformal_pred_state_estimator_{x}_{y}.pt",
+                            weights_only=False,
+                        )
+                        label_estimator = torch.load(
+                            f"{model_path}/{mc}_coarse_comp_conformal_pred_label_estimator_{x}_{y}.pt",
+                            weights_only=False,
+                        )
+                        cp_classification = torch.load(
+                            f"{model_path}/{mc}_coarse_comp_conformal_pred_cp_classification_{x}_{y}.pt",
+                            weights_only=False,
+                        )
 
-                        with open(f'{stats_path}/{mc}_coarse_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle', 'rb') as f:
+                        with open(
+                            f"{stats_path}/{mc}_coarse_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle",
+                            "rb",
+                        ) as f:
                             rej_classifier = pickle.load(f)
-                
-                        rejection_classifier = rej_classifier['rej_rule']
 
-                        with open(f'{stats_path}/{mc}_coarse_comp_conformal_pred_conformal_stats_{x}_{y}.pickle', 'rb') as f:
+                        rejection_classifier = rej_classifier["rej_rule"]
+
+                        with open(
+                            f"{stats_path}/{mc}_coarse_comp_conformal_pred_conformal_stats_{x}_{y}.pickle",
+                            "rb",
+                        ) as f:
                             conformal_stats = pickle.load(f)
-                    
-                else: 
+
+                else:
                     if high_st:
-                        state_estimator = torch.load(f'{model_path}/high-st-{mc}_comp_conformal_pred_state_estimator_{x}_{y}.pt', weights_only=False)
-                        label_estimator = torch.load(f'{model_path}/high-st-{mc}_comp_conformal_pred_label_estimator_{x}_{y}.pt', weights_only=False)
-                        cp_classification = torch.load(f'{model_path}/high-st-{mc}_comp_conformal_pred_cp_classification_{x}_{y}.pt', weights_only=False)
+                        state_estimator = torch.load(
+                            f"{model_path}/high-st-{mc}_comp_conformal_pred_state_estimator_{x}_{y}.pt",
+                            weights_only=False,
+                        )
+                        label_estimator = torch.load(
+                            f"{model_path}/high-st-{mc}_comp_conformal_pred_label_estimator_{x}_{y}.pt",
+                            weights_only=False,
+                        )
+                        cp_classification = torch.load(
+                            f"{model_path}/high-st-{mc}_comp_conformal_pred_cp_classification_{x}_{y}.pt",
+                            weights_only=False,
+                        )
 
-                        with open(f'{stats_path}/high-st-{mc}_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle', 'rb') as f:
+                        with open(
+                            f"{stats_path}/high-st-{mc}_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle",
+                            "rb",
+                        ) as f:
                             rej_classifier = pickle.load(f)
-                
-                        rejection_classifier = rej_classifier['rej_rule']
 
-                        with open(f'{stats_path}/high-st-{mc}_comp_conformal_pred_conformal_stats_{x}_{y}.pickle', 'rb') as f:
+                        rejection_classifier = rej_classifier["rej_rule"]
+
+                        with open(
+                            f"{stats_path}/high-st-{mc}_comp_conformal_pred_conformal_stats_{x}_{y}.pickle",
+                            "rb",
+                        ) as f:
                             conformal_stats = pickle.load(f)
                     else:
-                        state_estimator = torch.load(f'{model_path}/{mc}_comp_conformal_pred_state_estimator_{x}_{y}.pt', weights_only=False)
-                        label_estimator = torch.load(f'{model_path}/{mc}_comp_conformal_pred_label_estimator_{x}_{y}.pt', weights_only=False)
-                        cp_classification = torch.load(f'{model_path}/{mc}_comp_conformal_pred_cp_classification_{x}_{y}.pt', weights_only=False)
+                        state_estimator = torch.load(
+                            f"{model_path}/{mc}_comp_conformal_pred_state_estimator_{x}_{y}.pt",
+                            weights_only=False,
+                        )
+                        label_estimator = torch.load(
+                            f"{model_path}/{mc}_comp_conformal_pred_label_estimator_{x}_{y}.pt",
+                            weights_only=False,
+                        )
+                        cp_classification = torch.load(
+                            f"{model_path}/{mc}_comp_conformal_pred_cp_classification_{x}_{y}.pt",
+                            weights_only=False,
+                        )
 
-                        with open(f'{stats_path}/{mc}_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle', 'rb') as f:
+                        with open(
+                            f"{stats_path}/{mc}_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle",
+                            "rb",
+                        ) as f:
                             rej_classifier = pickle.load(f)
-                
-                        rejection_classifier = rej_classifier['rej_rule']
 
-                        with open(f'{stats_path}/{mc}_comp_conformal_pred_conformal_stats_{x}_{y}.pickle', 'rb') as f:
+                        rejection_classifier = rej_classifier["rej_rule"]
+
+                        with open(
+                            f"{stats_path}/{mc}_comp_conformal_pred_conformal_stats_{x}_{y}.pickle",
+                            "rb",
+                        ) as f:
                             conformal_stats = pickle.load(f)
 
             except FileNotFoundError:
                 print(f"Statistics file for {x} not found, skipping.")
                 continue
 
-
-            new_noisy_scaled = -1+2*(new_noisy - conformal_stats['dataset.MIN[1]'])/(conformal_stats['dataset.MAX[1]']-conformal_stats['dataset.MIN[1]'])
-            Y1 = np.transpose(new_noisy_scaled, (0,2,1))
+            new_noisy_scaled = -1 + 2 * (
+                new_noisy - conformal_stats["dataset.MIN[1]"]
+            ) / (conformal_stats["dataset.MAX[1]"] - conformal_stats["dataset.MIN[1]"])
+            Y1 = np.transpose(new_noisy_scaled, (0, 2, 1))
             Y1t = Variable(FloatTensor(Y1))
 
-            state_estimator.eval()    
+            state_estimator.eval()
             state_estim = state_estimator(Y1t)
             label_estimator.eval()
             label_hypothesis = label_estimator(state_estim)
-    
+
             label_prob = torch.nn.functional.softmax(label_hypothesis, dim=1)
             error_prob = label_prob[:, 1]
             error_prob = error_prob.tolist()
 
+            pool_conf_cred = cp_classification.compute_confidence_credibility(
+                np.transpose(new_noisy_scaled, (0, 2, 1))
+            )
+            keep_mask = utils.apply_svc_query_strategy(
+                rejection_classifier, pool_conf_cred
+            )
 
-            pool_conf_cred = cp_classification.compute_confidence_credibility(np.transpose(new_noisy_scaled,(0,2,1)))
-            keep_mask = utils.apply_svc_query_strategy(rejection_classifier, pool_conf_cred)
-
-            for u in range(len(error_prob)): 
-                if keep_mask[u] == -1.0: 
-                    error_prob[u] = 1.0 
-            
             for u in range(len(error_prob)):
-                conformal_risks[f'{x}-{y}'].append(error_prob[u])
+                if keep_mask[u] == -1.0:
+                    error_prob[u] = 1.0
 
+            for u in range(len(error_prob)):
+                conformal_risks[f"{x}-{y}"].append(error_prob[u])
 
     return conformal_risks, conformal_ys
 
 
-
-def roc_curve_model_based(coarse, current_threashold, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting, out_path):
+def roc_curve_model_based(
+    coarse,
+    current_threashold,
+    alarms,
+    imc_risks,
+    imc_risks_ref,
+    target_risks,
+    imc_distances,
+    imc_distances_ref,
+    imc_risks_ref_splitting,
+    imc_distances_ref_splitting,
+    out_path,
+):
 
     # Extract unique experiment numbers from IMC data
     imc_experiment_numbers = set()
@@ -427,59 +563,53 @@ def roc_curve_model_based(coarse, current_threashold, alarms, imc_risks, imc_ris
     for key in imc_risks_ref.keys():
         exp_num = int(key.split("-")[0])
         imc_ref_experiment_numbers.add(exp_num)
-    
+
     # Extract unique experiment numbers from IMC data
     imc_ref_split_experiment_numbers = set()
     for key in imc_risks_ref_splitting.keys():
         exp_num = int(key.split("-")[0])
         imc_ref_split_experiment_numbers.add(exp_num)
 
-
-    #No Refinement
+    # No Refinement
     imc_final_risks = {}
 
     ys = []
     for key in imc_risks.keys():
-        ys.append(int(key.split('-')[1]))
-    
+        ys.append(int(key.split("-")[1]))
+
     for key in imc_risks.keys():
-        if key.split('-')[1] == str(max(ys)):
-            imc_final_risks[key.split('-')[0]] = imc_risks[key]
+        if key.split("-")[1] == str(max(ys)):
+            imc_final_risks[key.split("-")[0]] = imc_risks[key]
 
-
-    #Refinement
+    # Refinement
     imc_ref_final_risks = {}
 
     ys = []
     for key in imc_risks_ref.keys():
-        ys.append(int(key.split('-')[1]))
-    
-    for key in imc_risks_ref.keys():
-        if key.split('-')[1] == str(max(ys)):
-            imc_ref_final_risks[key.split('-')[0]] = imc_risks_ref[key]
+        ys.append(int(key.split("-")[1]))
 
-    
-    #Refinement with splitting
-    imc_ref_split_final_risks = {}  
+    for key in imc_risks_ref.keys():
+        if key.split("-")[1] == str(max(ys)):
+            imc_ref_final_risks[key.split("-")[0]] = imc_risks_ref[key]
+
+    # Refinement with splitting
+    imc_ref_split_final_risks = {}
 
     ys_splitting = []
     for key in imc_risks_ref_splitting.keys():
-        ys_splitting(int(key.split('-')[1]))
-    
+        ys_splitting(int(key.split("-")[1]))
+
     for key in imc_risks_ref_splitting.keys():
-        if key.split('-')[1] == str(max(ys_splitting)):
-            imc_ref_split_final_risks[key.split('-')[0]] = imc_risks_ref_splitting[key]
-
-
+        if key.split("-")[1] == str(max(ys_splitting)):
+            imc_ref_split_final_risks[key.split("-")[0]] = imc_risks_ref_splitting[key]
 
     plt.figure()
     fig, ax = plt.subplots(figsize=(16, 12))
 
-
-    #REFINEMENT WITH SPLITTING MEAN PERFORMANCE
+    # REFINEMENT WITH SPLITTING MEAN PERFORMANCE
     ref_splitting_imc_roc_data_mean = {}
-    
-    for key in imc_ref_split_final_risks.keys(): 
+
+    for key in imc_ref_split_final_risks.keys():
 
         fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_ref_split_final_risks[key])
         roc_auc = metrics.auc(fpr, tpr)
@@ -490,18 +620,28 @@ def roc_curve_model_based(coarse, current_threashold, alarms, imc_risks, imc_ris
     tprs = []
     aucs = []
 
-    for key in ref_splitting_imc_roc_data_mean.keys(): 
-        interp_tpr = np.interp(mean_fpr, ref_splitting_imc_roc_data_mean[key][0], ref_splitting_imc_roc_data_mean[key][1])
+    for key in ref_splitting_imc_roc_data_mean.keys():
+        interp_tpr = np.interp(
+            mean_fpr,
+            ref_splitting_imc_roc_data_mean[key][0],
+            ref_splitting_imc_roc_data_mean[key][1],
+        )
         aucs.append(ref_splitting_imc_roc_data_mean[key][2])
         interp_tpr[0] = 0.0
         tprs.append(interp_tpr)
 
-        
     mean_tpr = np.mean(tprs, axis=0)
-    mean_tpr[-1] = 1.0  
+    mean_tpr[-1] = 1.0
     mean_auc = np.mean(aucs)
 
-    plt.plot(mean_fpr, mean_tpr, color = 'aqua',  label = f'Refinement with splitting, (Mean AUC = {mean_auc:.2f})', linewidth=5, linestyle= '-.')
+    plt.plot(
+        mean_fpr,
+        mean_tpr,
+        color="aqua",
+        label=f"Refinement with splitting, (Mean AUC = {mean_auc:.2f})",
+        linewidth=5,
+        linestyle="-.",
+    )
 
     std_tpr = np.std(tprs, axis=0)
     tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
@@ -514,32 +654,40 @@ def roc_curve_model_based(coarse, current_threashold, alarms, imc_risks, imc_ris
         alpha=0.2,
     )
 
-    #REFINEMENT MEAN PERFORMANCE
+    # REFINEMENT MEAN PERFORMANCE
     ref_imc_roc_data_mean = {}
-    
-    for key in imc_ref_final_risks.keys(): 
+
+    for key in imc_ref_final_risks.keys():
 
         fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_ref_final_risks[key])
         roc_auc = metrics.auc(fpr, tpr)
         ref_imc_roc_data_mean[key] = [fpr, tpr, roc_auc]
 
     mean_fpr = np.linspace(0, 1, 100)
- 
+
     tprs = []
     aucs = []
 
-    for key in ref_imc_roc_data_mean.keys(): 
-        interp_tpr = np.interp(mean_fpr, ref_imc_roc_data_mean[key][0], ref_imc_roc_data_mean[key][1])
+    for key in ref_imc_roc_data_mean.keys():
+        interp_tpr = np.interp(
+            mean_fpr, ref_imc_roc_data_mean[key][0], ref_imc_roc_data_mean[key][1]
+        )
         aucs.append(ref_imc_roc_data_mean[key][2])
         interp_tpr[0] = 0.0
         tprs.append(interp_tpr)
 
-     
     mean_tpr = np.mean(tprs, axis=0)
-    mean_tpr[-1] = 1.0  
+    mean_tpr[-1] = 1.0
     mean_auc = np.mean(aucs)
 
-    plt.plot(mean_fpr, mean_tpr, color = 'blue',  label = f'Refinement, (Mean AUC = {mean_auc:.2f})', linewidth=5, linestyle= ':')
+    plt.plot(
+        mean_fpr,
+        mean_tpr,
+        color="blue",
+        label=f"Refinement, (Mean AUC = {mean_auc:.2f})",
+        linewidth=5,
+        linestyle=":",
+    )
 
     std_tpr = np.std(tprs, axis=0)
     tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
@@ -552,10 +700,10 @@ def roc_curve_model_based(coarse, current_threashold, alarms, imc_risks, imc_ris
         alpha=0.2,
     )
 
-    #NO REFINEMENT MEAN PERFORMANCE
+    # NO REFINEMENT MEAN PERFORMANCE
     imc_roc_data_mean = {}
-    
-    for key in imc_final_risks.keys(): 
+
+    for key in imc_final_risks.keys():
         fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_final_risks[key])
         roc_auc = metrics.auc(fpr, tpr)
         imc_roc_data_mean[key] = [fpr, tpr, roc_auc]
@@ -564,19 +712,26 @@ def roc_curve_model_based(coarse, current_threashold, alarms, imc_risks, imc_ris
     tprs = []
     aucs = []
 
-    for key in imc_roc_data_mean.keys(): 
-        interp_tpr = np.interp(mean_fpr, imc_roc_data_mean[key][0], imc_roc_data_mean[key][1])
+    for key in imc_roc_data_mean.keys():
+        interp_tpr = np.interp(
+            mean_fpr, imc_roc_data_mean[key][0], imc_roc_data_mean[key][1]
+        )
         aucs.append(imc_roc_data_mean[key][2])
         interp_tpr[0] = 0.0
         tprs.append(interp_tpr)
 
-    
     mean_tpr = np.mean(tprs, axis=0)
-    mean_tpr[-1] = 1.0  
+    mean_tpr[-1] = 1.0
     mean_auc = np.mean(aucs)
 
-
-    plt.plot(mean_fpr, mean_tpr, color = 'red',  label = f'No Refinement, (Mean AUC = {mean_auc:.2f})', linewidth=5, linestyle= '--')
+    plt.plot(
+        mean_fpr,
+        mean_tpr,
+        color="red",
+        label=f"No Refinement, (Mean AUC = {mean_auc:.2f})",
+        linewidth=5,
+        linestyle="--",
+    )
 
     std_tpr = np.std(tprs, axis=0)
     tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
@@ -589,17 +744,24 @@ def roc_curve_model_based(coarse, current_threashold, alarms, imc_risks, imc_ris
         alpha=0.2,
     )
 
-
     fpr, tpr, threshold = metrics.roc_curve(alarms, target_risks)
     roc_auc = metrics.auc(fpr, tpr)
     target_auc = roc_auc
 
-    ax.plot(fpr, tpr, color = 'black', label = f'Target Monitor, AUC = {target_auc:.2f}', linewidth=5, linestyle='-', marker='D')
+    ax.plot(
+        fpr,
+        tpr,
+        color="black",
+        label=f"Target Monitor, AUC = {target_auc:.2f}",
+        linewidth=5,
+        linestyle="-",
+        marker="D",
+    )
 
     plt.plot([0, 1], [0, 1], "r--")
     plt.xlim((0, 1))
     plt.ylim((0, 1))
-    plt.xticks(fontsize=25)  
+    plt.xticks(fontsize=25)
     plt.yticks(fontsize=25)
     plt.ylabel("True Positive Rate", fontsize=35)
     plt.xlabel("False Positive Rate", fontsize=35)
@@ -609,66 +771,81 @@ def roc_curve_model_based(coarse, current_threashold, alarms, imc_risks, imc_ris
     plt.tight_layout()
 
     if coarse:
-        plt.savefig(f"{out_path}/rq2_{args.mc}_coarse_ROC_threashold_comparison_{current_threashold}.pdf", dpi=300,  bbox_inches='tight')
+        plt.savefig(
+            f"{out_path}/rq2_{args.mc}_coarse_ROC_threashold_comparison_{current_threashold}.pdf",
+            dpi=300,
+            bbox_inches="tight",
+        )
     else:
-        plt.savefig(f"{out_path}/rq2_{args.mc}_ROC_threashold_comparison_{current_threashold}.pdf", dpi=300,  bbox_inches='tight')
+        plt.savefig(
+            f"{out_path}/rq2_{args.mc}_ROC_threashold_comparison_{current_threashold}.pdf",
+            dpi=300,
+            bbox_inches="tight",
+        )
     plt.show()
 
 
+def plot_roc_curve(
+    stopping_threashold,
+    high_st,
+    coarse,
+    alarms,
+    imc_risks_ref,
+    imc_risks_ref_splitting,
+    regression_risks,
+    conformal_risks,
+    regression_ys,
+    conformal_ys,
+    target_risks,
+    out_path,
+):
 
-def plot_roc_curve(stopping_threashold, high_st, coarse, alarms, imc_risks_ref, imc_risks_ref_splitting, regression_risks, conformal_risks, regression_ys, conformal_ys, target_risks, out_path):  
-
-    #Refinement
+    # Refinement
     imc_ref_final_risks = {}
 
     ys = []
     for key in imc_risks_ref.keys():
-        ys.append(int(key.split('-')[1]))
-    
-    for key in imc_risks_ref.keys():
-        if key.split('-')[1] == str(max(ys)):
-            imc_ref_final_risks[key.split('-')[0]] = imc_risks_ref[key]
+        ys.append(int(key.split("-")[1]))
 
-    
-    #Refinement with splitting
-    imc_ref_split_final_risks = {}  
+    for key in imc_risks_ref.keys():
+        if key.split("-")[1] == str(max(ys)):
+            imc_ref_final_risks[key.split("-")[0]] = imc_risks_ref[key]
+
+    # Refinement with splitting
+    imc_ref_split_final_risks = {}
 
     ys_splitting = []
     for key in imc_risks_ref_splitting.keys():
-        ys_splitting(int(key.split('-')[1]))
-    
+        ys_splitting(int(key.split("-")[1]))
+
     for key in imc_risks_ref_splitting.keys():
-        if key.split('-')[1] == str(max(ys_splitting)):
-            imc_ref_split_final_risks[key.split('-')[0]] = imc_risks_ref_splitting[key]
+        if key.split("-")[1] == str(max(ys_splitting)):
+            imc_ref_split_final_risks[key.split("-")[0]] = imc_risks_ref_splitting[key]
 
-
-    #Regression
+    # Regression
     reg_final_risks = {}
 
-    for x in range(1,11):
-    #for x in range(5,7): 
-        for key in regression_risks.keys(): 
-            if int(key.split('-')[1]) == max(regression_ys[str(x)]): 
+    for x in range(1, 11):
+        # for x in range(5,7):
+        for key in regression_risks.keys():
+            if int(key.split("-")[1]) == max(regression_ys[str(x)]):
                 reg_final_risks[str(x)] = regression_risks[key]
 
-    
-    #Confromal Prediction
+    # Confromal Prediction
     conformal_final_risks = {}
 
-    for x in range(8,9): 
-        for key in conformal_risks.keys(): 
-            if int(key.split('-')[1]) == max(conformal_ys[str(x)]): 
+    for x in range(8, 9):
+        for key in conformal_risks.keys():
+            if int(key.split("-")[1]) == max(conformal_ys[str(x)]):
                 conformal_final_risks[str(x)] = conformal_risks[key]
-
-
 
     plt.figure()
     fig, ax = plt.subplots(figsize=(16, 12))
-    
-    #REFINEMENT MEAN PERFORMANCE
+
+    # REFINEMENT MEAN PERFORMANCE
     ref_imc_roc_data = {}
-    
-    for key in imc_ref_final_risks.keys(): 
+
+    for key in imc_ref_final_risks.keys():
 
         fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_ref_final_risks[key])
         roc_auc = metrics.auc(fpr, tpr)
@@ -678,18 +855,26 @@ def plot_roc_curve(stopping_threashold, high_st, coarse, alarms, imc_risks_ref, 
     tprs = []
     aucs = []
 
-    for key in ref_imc_roc_data.keys(): 
-        interp_tpr = np.interp(mean_fpr, ref_imc_roc_data[key][0], ref_imc_roc_data[key][1])
+    for key in ref_imc_roc_data.keys():
+        interp_tpr = np.interp(
+            mean_fpr, ref_imc_roc_data[key][0], ref_imc_roc_data[key][1]
+        )
         aucs.append(ref_imc_roc_data[key][2])
         interp_tpr[0] = 0.0
         tprs.append(interp_tpr)
 
-        
     mean_tpr = np.mean(tprs, axis=0)
-    mean_tpr[-1] = 1.0  
+    mean_tpr[-1] = 1.0
     mean_auc = np.mean(aucs)
 
-    plt.plot(mean_fpr, mean_tpr, color = 'blue',  label = f'Refinement, (Mean AUC = {mean_auc:.2f})', linewidth=5, linestyle= ':')
+    plt.plot(
+        mean_fpr,
+        mean_tpr,
+        color="blue",
+        label=f"Refinement, (Mean AUC = {mean_auc:.2f})",
+        linewidth=5,
+        linestyle=":",
+    )
 
     std_tpr = np.std(tprs, axis=0)
     tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
@@ -702,10 +887,10 @@ def plot_roc_curve(stopping_threashold, high_st, coarse, alarms, imc_risks_ref, 
         alpha=0.2,
     )
 
-    #REFINEMENT WITH SPLITTING MEAN PERFORMANCE
+    # REFINEMENT WITH SPLITTING MEAN PERFORMANCE
     ref_splitting_imc_roc_data = {}
-    
-    for key in imc_ref_split_final_risks.keys(): 
+
+    for key in imc_ref_split_final_risks.keys():
 
         fpr, tpr, thresholds = metrics.roc_curve(alarms, imc_ref_split_final_risks[key])
         roc_auc = metrics.auc(fpr, tpr)
@@ -715,18 +900,28 @@ def plot_roc_curve(stopping_threashold, high_st, coarse, alarms, imc_risks_ref, 
     tprs = []
     aucs = []
 
-    for key in ref_splitting_imc_roc_data.keys(): 
-        interp_tpr = np.interp(mean_fpr, ref_splitting_imc_roc_data[key][0], ref_splitting_imc_roc_data[key][1])
+    for key in ref_splitting_imc_roc_data.keys():
+        interp_tpr = np.interp(
+            mean_fpr,
+            ref_splitting_imc_roc_data[key][0],
+            ref_splitting_imc_roc_data[key][1],
+        )
         aucs.append(ref_splitting_imc_roc_data[key][2])
         interp_tpr[0] = 0.0
         tprs.append(interp_tpr)
 
-        
     mean_tpr = np.mean(tprs, axis=0)
-    mean_tpr[-1] = 1.0  
+    mean_tpr[-1] = 1.0
     mean_auc = np.mean(aucs)
 
-    plt.plot(mean_fpr, mean_tpr, color = 'aqua',  label = f'Refinement with splitting, (Mean AUC = {mean_auc:.2f})', linewidth=5, linestyle= '-.')
+    plt.plot(
+        mean_fpr,
+        mean_tpr,
+        color="aqua",
+        label=f"Refinement with splitting, (Mean AUC = {mean_auc:.2f})",
+        linewidth=5,
+        linestyle="-.",
+    )
 
     std_tpr = np.std(tprs, axis=0)
     tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
@@ -739,10 +934,10 @@ def plot_roc_curve(stopping_threashold, high_st, coarse, alarms, imc_risks_ref, 
         alpha=0.2,
     )
 
-    #REGRESSION MEAN PERFORMANCE
+    # REGRESSION MEAN PERFORMANCE
     regression_roc_data = {}
-    
-    for key in reg_final_risks.keys(): 
+
+    for key in reg_final_risks.keys():
 
         fpr, tpr, thresholds = metrics.roc_curve(alarms, reg_final_risks[key])
         roc_auc = metrics.auc(fpr, tpr)
@@ -752,18 +947,26 @@ def plot_roc_curve(stopping_threashold, high_st, coarse, alarms, imc_risks_ref, 
     tprs = []
     aucs = []
 
-    for key in regression_roc_data.keys(): 
-        interp_tpr = np.interp(mean_fpr, regression_roc_data[key][0], regression_roc_data[key][1])
+    for key in regression_roc_data.keys():
+        interp_tpr = np.interp(
+            mean_fpr, regression_roc_data[key][0], regression_roc_data[key][1]
+        )
         aucs.append(regression_roc_data[key][2])
         interp_tpr[0] = 0.0
         tprs.append(interp_tpr)
 
-        
     mean_tpr = np.mean(tprs, axis=0)
-    mean_tpr[-1] = 1.0  
+    mean_tpr[-1] = 1.0
     mean_auc = np.mean(aucs)
 
-    plt.plot(mean_fpr, mean_tpr, color = 'green',  label = f'Regression, (Mean AUC = {mean_auc:.2f})', linewidth=5, linestyle='--')
+    plt.plot(
+        mean_fpr,
+        mean_tpr,
+        color="green",
+        label=f"Regression, (Mean AUC = {mean_auc:.2f})",
+        linewidth=5,
+        linestyle="--",
+    )
 
     std_tpr = np.std(tprs, axis=0)
     tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
@@ -776,10 +979,10 @@ def plot_roc_curve(stopping_threashold, high_st, coarse, alarms, imc_risks_ref, 
         alpha=0.2,
     )
 
-    #CONFORMAL MEAN PERFORMANCE 
+    # CONFORMAL MEAN PERFORMANCE
     conformal_roc_data = {}
-    
-    for key in conformal_final_risks.keys(): 
+
+    for key in conformal_final_risks.keys():
 
         fpr, tpr, thresholds = metrics.roc_curve(alarms, conformal_final_risks[key])
         roc_auc = metrics.auc(fpr, tpr)
@@ -789,17 +992,25 @@ def plot_roc_curve(stopping_threashold, high_st, coarse, alarms, imc_risks_ref, 
     tprs = []
     aucs = []
 
-    for key in conformal_roc_data.keys(): 
-        interp_tpr = np.interp(mean_fpr, conformal_roc_data[key][0], conformal_roc_data[key][1])
+    for key in conformal_roc_data.keys():
+        interp_tpr = np.interp(
+            mean_fpr, conformal_roc_data[key][0], conformal_roc_data[key][1]
+        )
         aucs.append(conformal_roc_data[key][2])
         interp_tpr[0] = 0.0
         tprs.append(interp_tpr)
-        
+
     mean_tpr = np.mean(tprs, axis=0)
-    mean_tpr[-1] = 1.0  
+    mean_tpr[-1] = 1.0
     mean_auc = np.mean(aucs)
 
-    plt.plot(mean_fpr, mean_tpr, color = 'orange',  label = f'Conformal Prediction, (Mean AUC = {mean_auc:.2f})', linewidth=5)
+    plt.plot(
+        mean_fpr,
+        mean_tpr,
+        color="orange",
+        label=f"Conformal Prediction, (Mean AUC = {mean_auc:.2f})",
+        linewidth=5,
+    )
 
     std_tpr = np.std(tprs, axis=0)
     tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
@@ -816,12 +1027,20 @@ def plot_roc_curve(stopping_threashold, high_st, coarse, alarms, imc_risks_ref, 
     roc_auc = metrics.auc(fpr, tpr)
     target_auc = roc_auc
 
-    ax.plot(fpr, tpr, color = 'black', label = f'Target Monitor, AUC = {target_auc:.2f}', linewidth=5, linestyle='-', marker='D')
+    ax.plot(
+        fpr,
+        tpr,
+        color="black",
+        label=f"Target Monitor, AUC = {target_auc:.2f}",
+        linewidth=5,
+        linestyle="-",
+        marker="D",
+    )
 
     plt.plot([0, 1], [0, 1], "r--")
     plt.xlim((0, 1))
     plt.ylim((0, 1))
-    plt.xticks(fontsize=25)  
+    plt.xticks(fontsize=25)
     plt.yticks(fontsize=25)
     plt.ylabel("True Positive Rate", fontsize=35)
     plt.xlabel("False Positive Rate", fontsize=35)
@@ -832,20 +1051,43 @@ def plot_roc_curve(stopping_threashold, high_st, coarse, alarms, imc_risks_ref, 
 
     if coarse:
         if high_st:
-            plt.savefig(f"{out_path}/rq_3_high-st-{args.mc}_coarse_model_based_model_free_ROC.pdf", dpi=300,  bbox_inches='tight')
+            plt.savefig(
+                f"{out_path}/rq_3_high-st-{args.mc}_coarse_model_based_model_free_ROC.pdf",
+                dpi=300,
+                bbox_inches="tight",
+            )
         else:
-            plt.savefig(f"{out_path}/rq_3_{args.mc}_coarse_model_based_model_free_ROC.pdf", dpi=300,  bbox_inches='tight')
-    else: 
+            plt.savefig(
+                f"{out_path}/rq_3_{args.mc}_coarse_model_based_model_free_ROC.pdf",
+                dpi=300,
+                bbox_inches="tight",
+            )
+    else:
         if high_st:
-            plt.savefig(f"{out_path}/rq_3_high-st-{args.mc}_model_based_model_free_ROC.pdf", dpi=300,  bbox_inches='tight')
+            plt.savefig(
+                f"{out_path}/rq_3_high-st-{args.mc}_model_based_model_free_ROC.pdf",
+                dpi=300,
+                bbox_inches="tight",
+            )
         else:
-            plt.savefig(f"{out_path}/rq_3_{args.mc}_model_based_model_free_ROC.pdf", dpi=300,  bbox_inches='tight')
+            plt.savefig(
+                f"{out_path}/rq_3_{args.mc}_model_based_model_free_ROC.pdf",
+                dpi=300,
+                bbox_inches="tight",
+            )
 
     plt.show()
 
 
-
-def auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transition_counts_ref, imc_risks_ref_splitting, imc_transition_counts_ref_splitting): 
+def auc_graph_prep(
+    imc_risks,
+    target_risks,
+    alarms,
+    imc_risks_ref,
+    imc_transition_counts_ref,
+    imc_risks_ref_splitting,
+    imc_transition_counts_ref_splitting,
+):
 
     # Extract unique experiment numbers from IMC data
     imc_experiment_numbers = set()
@@ -858,41 +1100,40 @@ def auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transitio
     for key in imc_risks_ref.keys():
         exp_num = int(key.split("-")[0])
         imc_ref_experiment_numbers.add(exp_num)
-    
+
     # Extract unique experiment numbers from IMC data
     imc_ref_split_experiment_numbers = set()
     for key in imc_risks_ref_splitting.keys():
         exp_num = int(key.split("-")[0])
         imc_ref_split_experiment_numbers.add(exp_num)
-    
-
 
     fpr, tpr, threshold = metrics.roc_curve(alarms, target_risks)
     roc_auc = metrics.auc(fpr, tpr)
     target_auc = roc_auc
-    
+
     imc_auc = {}
 
-    for imc_key in imc_risks.keys(): 
+    for imc_key in imc_risks.keys():
         fpr, tpr, threshold = metrics.roc_curve(alarms, imc_risks[imc_key])
         roc_auc = metrics.auc(fpr, tpr)
         imc_auc[imc_key] = roc_auc
 
     imc_ref_auc = {}
 
-    for imc_ref_key in imc_risks_ref.keys(): 
+    for imc_ref_key in imc_risks_ref.keys():
         fpr, tpr, threshold = metrics.roc_curve(alarms, imc_risks_ref[imc_ref_key])
         roc_auc = metrics.auc(fpr, tpr)
         imc_ref_auc[imc_ref_key] = roc_auc
 
     imc_ref_splitting_auc = {}
 
-    for imc_ref_key_splitting in imc_risks_ref_splitting.keys(): 
-        fpr, tpr, threshold = metrics.roc_curve(alarms, imc_risks_ref_splitting[imc_ref_key_splitting])
+    for imc_ref_key_splitting in imc_risks_ref_splitting.keys():
+        fpr, tpr, threshold = metrics.roc_curve(
+            alarms, imc_risks_ref_splitting[imc_ref_key_splitting]
+        )
         roc_auc = metrics.auc(fpr, tpr)
         imc_ref_splitting_auc[imc_ref_key_splitting] = roc_auc
 
-    
     """ reg_auc = {}
 
     for reg_key in regression_risks.keys(): 
@@ -908,7 +1149,6 @@ def auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transitio
         roc_auc = metrics.auc(fpr, tpr)
         conformal_auc[conformal_key] = roc_auc """
 
-
     imc_results = {}
 
     for x in imc_experiment_numbers:
@@ -916,11 +1156,9 @@ def auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transitio
 
     for key in imc_auc.keys():
         for entry in imc_results.keys():
-            x = key.split('-')[0]
+            x = key.split("-")[0]
             if x == entry:
                 imc_results[x].append(imc_auc[key])
- 
-
 
     imc_ref_results = {}
 
@@ -929,11 +1167,9 @@ def auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transitio
 
     for key in imc_ref_auc.keys():
         for entry in imc_ref_results.keys():
-            x = key.split('-')[0]
+            x = key.split("-")[0]
             if x == entry:
                 imc_ref_results[x].append(imc_ref_auc[key])
-
-
 
     imc_ref_splitting_results = {}
 
@@ -942,11 +1178,10 @@ def auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transitio
 
     for key in imc_ref_splitting_auc.keys():
         for entry in imc_ref_splitting_results.keys():
-            x = key.split('-')[0]
+            x = key.split("-")[0]
             if x == entry:
                 imc_ref_splitting_results[x].append(imc_ref_splitting_auc[key])
 
-    
     """ reg_results = {}
 
     for x in range(1,11):
@@ -971,49 +1206,64 @@ def auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transitio
             if x == entry: 
                 conformal_results[x].append(conformal_auc[key]) """
 
+    return (
+        target_auc,
+        imc_results,
+        imc_ref_results,
+        imc_transition_counts_ref,
+        imc_ref_splitting_results,
+        imc_transition_counts_ref_splitting,
+    )
 
-    return target_auc, imc_results, imc_ref_results, imc_transition_counts_ref,  imc_ref_splitting_results, imc_transition_counts_ref_splitting
 
-
-def plotting(coarse, target_auc, imc_results, imc_transition_counts, imc_ref_results, imc_transition_counts_ref, horizon, initial_amount, imc_ref_splitting_results, imc_transition_counts_ref_splitting, out_path): 
+def plotting(
+    coarse,
+    target_auc,
+    imc_results,
+    imc_transition_counts,
+    imc_ref_results,
+    imc_transition_counts_ref,
+    horizon,
+    initial_amount,
+    imc_ref_splitting_results,
+    imc_transition_counts_ref_splitting,
+    out_path,
+):
 
     RS_sets = []
     R_sets = []
     NR_sets = []
 
-    #REG_sets = []
-    #CONF_sets = []
+    # REG_sets = []
+    # CONF_sets = []
 
-    for key in imc_ref_splitting_results.keys(): 
+    for key in imc_ref_splitting_results.keys():
         total_state_count = []
         total = 0
         for val in imc_transition_counts_ref_splitting[key]:
             total += val
             total_state_count.append(total)
-        
+
         RS_sets.append((total_state_count, imc_ref_splitting_results[key]))
 
-
-    for key in imc_ref_results.keys(): 
+    for key in imc_ref_results.keys():
         total_state_count = []
         total = 0
         for val in imc_transition_counts_ref[key]:
             total += val
             total_state_count.append(total)
-        
+
         R_sets.append((total_state_count, imc_ref_results[key]))
 
-
-    for key in imc_results.keys(): 
+    for key in imc_results.keys():
         total_state_count = []
         total = 0
         for val in imc_transition_counts[key]:
             total += val
             total_state_count.append(total)
 
-        NR_sets.append((total_state_count, imc_results[key])) 
+        NR_sets.append((total_state_count, imc_results[key]))
 
-    
     """ for key in reg_results.keys():
         total_state_count = []
   
@@ -1030,12 +1280,12 @@ def plotting(coarse, target_auc, imc_results, imc_transition_counts, imc_ref_res
             total_state_count.append(val*(horizon+initial_amount))
 
         CONF_sets.append((total_state_count, conformal_results[key])) 
-    """        
+    """
 
-    #log = True
+    # log = True
     log = False
 
-    #REFINEMENT AVERAGE PERFORMANCE
+    # REFINEMENT AVERAGE PERFORMANCE
     transitions_data = []
     auc_data = []
 
@@ -1070,29 +1320,37 @@ def plotting(coarse, target_auc, imc_results, imc_transition_counts, imc_ref_res
 
     plt.figure()
     fig, ax = plt.subplots(figsize=(20, 10))
-    y = np.full_like(x_values, target_auc) 
-    ax.plot(x_values, y, color = 'black', label = 'Target Monitor', linewidth=5, linestyle='-', marker='D')
+    y = np.full_like(x_values, target_auc)
+    ax.plot(
+        x_values,
+        y,
+        color="black",
+        label="Target Monitor",
+        linewidth=5,
+        linestyle="-",
+        marker="D",
+    )
 
-    #Plot mean line
+    # Plot mean line
     ax.plot(
         x_values,
         mean_auc,
-        color='blue',
-        label = 'Refinement',
+        color="blue",
+        label="Refinement",
         linewidth=5,
-        linestyle=':',
-        )
+        linestyle=":",
+    )
 
-    #Add shaded area for spread
+    # Add shaded area for spread
     ax.fill_between(
-            x_values,
-            mean_auc - std_auc,
-            mean_auc + std_auc,
-            alpha=0.2,
-            color='blue',
-        )
+        x_values,
+        mean_auc - std_auc,
+        mean_auc + std_auc,
+        alpha=0.2,
+        color="blue",
+    )
 
-    #REFINEMENT WITH SPLITTING AVERAGE PERFORMANCE
+    # REFINEMENT WITH SPLITTING AVERAGE PERFORMANCE
     transitions_data = []
     auc_data = []
 
@@ -1124,28 +1382,27 @@ def plotting(coarse, target_auc, imc_results, imc_transition_counts, imc_ref_res
     std_auc = np.std(auc_array, axis=0)
     min_auc = np.min(auc_array, axis=0)
     max_auc = np.max(auc_array, axis=0)
- 
 
-    #Plot mean line
+    # Plot mean line
     ax.plot(
         x_values,
         mean_auc,
-        color='aqua',
-        label = 'Refinement with splitting',
+        color="aqua",
+        label="Refinement with splitting",
         linewidth=5,
-        linestyle='-.',
-        )
+        linestyle="-.",
+    )
 
-    #Add shaded area for spread
+    # Add shaded area for spread
     ax.fill_between(
-            x_values,
-            mean_auc - std_auc,
-            mean_auc + std_auc,
-            alpha=0.2,
-            color='aqua',
-        )
+        x_values,
+        mean_auc - std_auc,
+        mean_auc + std_auc,
+        alpha=0.2,
+        color="aqua",
+    )
 
-    #NO REFINEMENT AVERAGE PERFORMANCE
+    # NO REFINEMENT AVERAGE PERFORMANCE
 
     N_transitions_data = []
     N_auc_data = []
@@ -1179,25 +1436,24 @@ def plotting(coarse, target_auc, imc_results, imc_transition_counts, imc_ref_res
     N_min_auc = np.min(N_auc_array, axis=0)
     N_max_auc = np.max(N_auc_array, axis=0)
 
-
-    #Plot mean line
+    # Plot mean line
     ax.plot(
         N_x_values,
         N_mean_auc,
-        color='red',
-        label = 'No refinement',
-        linestyle='--',
+        color="red",
+        label="No refinement",
+        linestyle="--",
         linewidth=5,
-        )
+    )
 
-    #Add shaded area for spread
+    # Add shaded area for spread
     ax.fill_between(
-            N_x_values,
-            N_mean_auc - N_std_auc,
-            N_mean_auc + N_std_auc,
-            alpha=0.2,
-            color='red',
-        )
+        N_x_values,
+        N_mean_auc - N_std_auc,
+        N_mean_auc + N_std_auc,
+        alpha=0.2,
+        color="red",
+    )
 
     """ #REGRESSION MODEL AVERAGE PERFORMANCE
 
@@ -1251,7 +1507,7 @@ def plotting(coarse, target_auc, imc_results, imc_transition_counts, imc_ref_res
             alpha=0.2,
             color='green'
         ) """
-    
+
     """ 
     #CONFORMAL PREDICTION MODEL AVERAGE PERFORMANCE
 
@@ -1308,13 +1564,12 @@ def plotting(coarse, target_auc, imc_results, imc_transition_counts, imc_ref_res
     formatter = ticker.ScalarFormatter(useMathText=True)
     formatter.set_powerlimits((4, 4))  # Force 10^4 scale
     ax.xaxis.set_major_formatter(formatter)
-    ax.tick_params(axis='both', labelsize=30)
+    ax.tick_params(axis="both", labelsize=30)
     ax.xaxis.get_offset_text().set_size(30)
-
 
     ax.set_xlabel("State count", fontsize=35)
     ax.set_ylabel("AUC", fontsize=35)
-    ax.legend(loc="lower right", fontsize = 30)
+    ax.legend(loc="lower right", fontsize=30)
     if log:
         plt.yscale("log")
     else:
@@ -1324,9 +1579,17 @@ def plotting(coarse, target_auc, imc_results, imc_transition_counts, imc_ref_res
     plt.tight_layout()
 
     if coarse:
-        plt.savefig(f"{out_path}/rq_2_{args.mc}_coarse_AUC_ref_no_ref.pdf", dpi=300, bbox_inches='tight')
-    else: 
-        plt.savefig(f"{out_path}/rq_2_{args.mc}_AUC_ref_no_ref.pdf", dpi=300, bbox_inches='tight')
+        plt.savefig(
+            f"{out_path}/rq_2_{args.mc}_coarse_AUC_ref_no_ref.pdf",
+            dpi=300,
+            bbox_inches="tight",
+        )
+    else:
+        plt.savefig(
+            f"{out_path}/rq_2_{args.mc}_AUC_ref_no_ref.pdf",
+            dpi=300,
+            bbox_inches="tight",
+        )
 
     plt.show()
 
@@ -1342,12 +1605,11 @@ def main_imc(args: argparse.Namespace):
 
     testing_samples = []
     for x in range(args.testing_samples):
-            path = suo.generate_random_traces([], length)[0]
-            testing_samples.append(tuple(path))
-
+        path = suo.generate_random_traces([], length)[0]
+        testing_samples.append(tuple(path))
 
     models_dict = {"IP": InvertedPendulum(), "MC": mc_model(horizon)}
-    model = models_dict['MC']
+    model = models_dict["MC"]
     model = mc_model(horizon)
 
     noisy_measurements = model.get_noisy_measurments(testing_samples, horizon)
@@ -1361,29 +1623,145 @@ def main_imc(args: argparse.Namespace):
     stats_path = args.stats_path
     args.high_st
 
+    (
+        imc_risks_ref_splitting,
+        imc_transition_counts_ref_splitting,
+        imc_stopping_threashold_ref_splitting,
+        imc_distances_ref_splitting,
+    ) = aggregated_stats_imc(
+        args.high_st,
+        coarse,
+        "refsplit",
+        mc,
+        stats_path,
+        initial_amount,
+        horizon,
+        args,
+        testing_samples,
+    )
+    imc_risks, imc_transition_counts, imc_stopping_threashold, imc_distances = (
+        aggregated_stats_imc(
+            args.high_st,
+            coarse,
+            "noref",
+            mc,
+            stats_path,
+            initial_amount,
+            horizon,
+            args,
+            testing_samples,
+        )
+    )
+    (
+        imc_risks_ref,
+        imc_transition_counts_ref,
+        imc_stopping_threashold_ref,
+        imc_distances_ref,
+    ) = aggregated_stats_imc(
+        args.high_st,
+        coarse,
+        "ref",
+        mc,
+        stats_path,
+        initial_amount,
+        horizon,
+        args,
+        testing_samples,
+    )
 
-    imc_risks_ref_splitting, imc_transition_counts_ref_splitting, imc_stopping_threashold_ref_splitting, imc_distances_ref_splitting = aggregated_stats_imc(args.high_st, coarse, 'refsplit', mc, stats_path, initial_amount, horizon, args, testing_samples)
-    imc_risks, imc_transition_counts, imc_stopping_threashold, imc_distances = aggregated_stats_imc(args.high_st, coarse, 'noref', mc, stats_path, initial_amount, horizon, args, testing_samples)
-    imc_risks_ref, imc_transition_counts_ref, imc_stopping_threashold_ref, imc_distances_ref = aggregated_stats_imc(args.high_st, coarse, 'ref', mc, stats_path, initial_amount, horizon, args, testing_samples)
+    regression_risks, regression_ys = aggregated_stats_regression(
+        args.high_st,
+        coarse,
+        mc,
+        model_path,
+        stats_path,
+        testing_samples,
+        horizon,
+        initial_amount,
+    )
+    conformal_risks, conformal_ys = aggreagted_stats_conformal(
+        args.high_st, noisy_measurements, coarse, mc, model_path, stats_path
+    )
 
-    regression_risks, regression_ys = aggregated_stats_regression(args.high_st, coarse, mc, model_path, stats_path, testing_samples, horizon, initial_amount)
-    conformal_risks, conformal_ys = aggreagted_stats_conformal(args.high_st, noisy_measurements, coarse, mc, model_path, stats_path)   
+    roc_curve_model_based(
+        coarse,
+        imc_stopping_threashold_ref,
+        alarms,
+        imc_risks,
+        imc_risks_ref,
+        target_risks,
+        imc_distances,
+        imc_distances_ref,
+        imc_risks_ref_splitting,
+        imc_distances_ref_splitting,
+        args.out,
+    )
+    plot_roc_curve(
+        imc_stopping_threashold_ref,
+        args.high_st,
+        coarse,
+        alarms,
+        imc_risks_ref,
+        regression_risks,
+        regression_ys,
+        target_risks,
+        args.out,
+    )
 
-    roc_curve_model_based(coarse, imc_stopping_threashold_ref, alarms, imc_risks, imc_risks_ref, target_risks, imc_distances, imc_distances_ref, imc_risks_ref_splitting, imc_distances_ref_splitting, args.out)
-    plot_roc_curve(imc_stopping_threashold_ref ,args.high_st, coarse, alarms, imc_risks_ref, regression_risks, regression_ys, target_risks, args.out)
+    if args.high_st == False:
+        (
+            target_auc,
+            imc_results,
+            imc_ref_results,
+            imc_transition_counts_ref,
+            imc_ref_splitting_results,
+            imc_transition_counts_ref_splitting,
+        ) = auc_graph_prep(
+            imc_risks,
+            target_risks,
+            alarms,
+            imc_risks_ref,
+            imc_transition_counts_ref,
+            imc_risks_ref_splitting,
+            imc_transition_counts_ref_splitting,
+        )
+        plotting(
+            coarse,
+            target_auc,
+            imc_results,
+            imc_transition_counts,
+            imc_ref_results,
+            imc_transition_counts_ref,
+            horizon,
+            initial_amount,
+            imc_ref_splitting_results,
+            imc_transition_counts_ref_splitting,
+            args.out,
+        )
 
-    if args.high_st == False:     
-        target_auc, imc_results, imc_ref_results, imc_transition_counts_ref,  imc_ref_splitting_results, imc_transition_counts_ref_splitting = auc_graph_prep(imc_risks, target_risks, alarms, imc_risks_ref, imc_transition_counts_ref, imc_risks_ref_splitting, imc_transition_counts_ref_splitting)
-        plotting(coarse, target_auc, imc_results, imc_transition_counts, imc_ref_results, imc_transition_counts_ref, horizon, initial_amount, imc_ref_splitting_results, imc_transition_counts_ref_splitting, args.out)
-    
-    
-    
+
 def build_learning_parser(parser: argparse.ArgumentParser):
     group = parser.add_argument_group("Learning Parameters")
 
-    group.add_argument("--model_name", type=str, default="MC", help="Name of the conformal prediction model (first letters code).")
-    group.add_argument("-s", "--testing_samples", type=int, default = 200, help="Total number of samples used in learning")
-    group.add_argument("--no-target", action="store_true", default=False, help="Do not use the target monitor" )
+    group.add_argument(
+        "--model_name",
+        type=str,
+        default="MC",
+        help="Name of the conformal prediction model (first letters code).",
+    )
+    group.add_argument(
+        "-s",
+        "--testing_samples",
+        type=int,
+        default=200,
+        help="Total number of samples used in learning",
+    )
+    group.add_argument(
+        "--no-target",
+        action="store_true",
+        default=False,
+        help="Do not use the target monitor",
+    )
 
 
 def testing_argsparser():
@@ -1399,33 +1777,41 @@ def testing_argsparser():
         help="Increase verbosity level (can be used multiple times)",
     )
 
-    parser.add_argument('--model-path', 
-                        type = str, 
-                        help = 'Path to models',
+    parser.add_argument(
+        "--model-path",
+        type=str,
+        help="Path to models",
     )
 
-    parser.add_argument('--stats-path', 
-                        type = str, 
-                        help ='Path to stats',
+    parser.add_argument(
+        "--stats-path",
+        type=str,
+        help="Path to stats",
     )
 
-    parser.add_argument("-c",
-                        "--coarse",
-                        type = bool, 
-                        default= False, 
-                        help = "If the leared model is coarse or not")
-    
-    parser.add_argument( "-ht",
-                        "--high-st", 
-                        type = bool, 
-                        default = False, 
-                        help = "If higher stopping threashold is used")
-    
-    parser.add_argument("-o",
-                        "--out",
-                        type=str,
-                        default="out/results",
-                        help="Output path for the results")
+    parser.add_argument(
+        "-c",
+        "--coarse",
+        type=bool,
+        default=False,
+        help="If the leared model is coarse or not",
+    )
+
+    parser.add_argument(
+        "-ht",
+        "--high-st",
+        type=bool,
+        default=False,
+        help="If higher stopping threashold is used",
+    )
+
+    parser.add_argument(
+        "-o",
+        "--out",
+        type=str,
+        default="out/results",
+        help="Output path for the results",
+    )
 
     return parser
 
@@ -1436,8 +1822,5 @@ if __name__ == "__main__":
     main_imc(args)
 
 
-# python -m premise.interval.rq_3 --mc airportA-7-10-10 --model_path /workspaces/premise/out/models/2025-07-17 --stats_path /workspaces/premise/out/stats/2025-07-17 --coarse 
+# python -m premise.interval.rq_3 --mc airportA-7-10-10 --model_path /workspaces/premise/out/models/2025-07-17 --stats_path /workspaces/premise/out/stats/2025-07-17 --coarse
 # python -m premise.interval.rq_3 --mc evadeV-5-3 --model_path /workspaces/premise/out/models/2025-07-17 --stats_path /workspaces/premise/out/stats/2025-07-17
-
-
-
