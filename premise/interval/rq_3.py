@@ -875,7 +875,7 @@ def plot_roc_curve(
 
     ys_splitting = []
     for key in imc_risks_ref_splitting.keys():
-        ys_splitting(int(key.split("-")[1]))
+        ys_splitting.append(int(key.split("-")[1]))
 
     for key in imc_risks_ref_splitting.keys():
         if key.split("-")[1] == str(max(ys_splitting)):
