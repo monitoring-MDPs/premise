@@ -902,7 +902,7 @@ def roc_curve_model_based(
     plt.plot(
         mean_fpr,
         mean_tpr,
-        color="chartruse",
+        color="chartreuse",
         label=f"HMM, (Mean AUC = {mean_auc:.2f})",
         linewidth=5,
         linestyle=":",
@@ -915,7 +915,7 @@ def roc_curve_model_based(
         mean_fpr,
         tprs_lower,
         tprs_upper,
-        color="chartruse",
+        color="chartreuse",
         alpha=0.2,
     )
 

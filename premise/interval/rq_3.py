@@ -235,8 +235,8 @@ def aggregated_stats_imc(
         model_path = obj["args"]["model_path"]
 
         for y in range(1, len(imc_transition_count) + 1):
-            initial_distribution = f"{model_path}-{y}-initial_interval.npy"
-            transition_intervals = f"{model_path}-{y}-interval.npy"
+            args.init_path = f"{model_path}-{y}-initial_interval.npy"
+            args.trans_path = f"{model_path}-{y}-interval.npy"
 
             transition_intervals, initial_distribution = load_imc(args)
 
@@ -1827,7 +1827,7 @@ def testing_argsparser():
     parser.add_argument(
         "-c",
         "--coarse",
-        type=bool,
+        action="store_true",
         default=False,
         help="If the leared model is coarse or not",
     )
@@ -1835,7 +1835,7 @@ def testing_argsparser():
     parser.add_argument(
         "-ht",
         "--high-st",
-        type=bool,
+        action="store_true",
         default=False,
         help="If higher stopping threashold is used",
     )
