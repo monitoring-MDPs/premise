@@ -565,6 +565,9 @@ def main_imc(args: argparse.Namespace):
         args,
         testing_samples,
     )
+    if len(imc_risks) == 0 or len(mc_risks) == 0:
+        print("No data for IMC or MC risks, skipping graph generation.")
+        return
 
     distance_graph(
         args.high_st,
