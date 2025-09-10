@@ -268,6 +268,95 @@ def aggregated_stats_imc(
 
     return imc_risks, imc_transition_counts, stopping_threshold, imc_distances
 
+def aggregated_stats_regression_new(
+    high_st,
+    coarse,
+    mc,
+    model_path,
+    stats_path,
+    testing_samples,
+    horizon,
+    initial_amount,
+):
+
+    regression_risks = {}
+
+    for x in range(1, 11):
+        regression_risks[f"{x}"] = []
+
+        try:
+                if coarse:
+                    if high_st:
+                        if args.mc == "SnLw-10x10":
+                            statistics = np.load(
+                                f"{stats_path}/high-st-SnL-coarse-comp-reg-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+
+                        elif args.mc == "evadeV-6-3-coarse":
+                            statistics = np.load(
+                                f"{stats_path}/high-st-evadeV-6-3-coarse-comp-reg-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+
+                        else:
+                            statistics = np.load(
+                                f"{stats_path}/high-st-{mc}-coarse-comp-reg-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                    else:
+                        if args.mc == "SnLw-10x10":
+                            statistics = np.load(
+                                f"{stats_path}/SnL-coarse-comp-reg-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        elif args.mc == "evadeV-6-3-coarse":
+                            statistics = np.load(
+                                f"{stats_path}/evadeV-6-3-coarse-comp-reg-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        else:
+                            statistics = np.load(
+                                f"{stats_path}/{mc}-coarse-comp-reg-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                else:
+                    if high_st:
+                        statistics = np.load(
+                            f"{stats_path}/high-st-{mc}-comp-reg-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    else:
+                        statistics = np.load(
+                            f"{stats_path}/{mc}-comp-reg-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+
+        except FileNotFoundError:
+                print(f"Statistics file for {x} not found, skipping.")
+                continue
+
+        obj = statistics.item()
+        observations = obj["observations"]
+        model_path = obj["args"]["model_path"]
+        ohe = obj["one_hot_encoder"]
+
+      
+        reg_model = np.load(f"{model_path}.npy", allow_pickle=True).item()
+
+        column_names = [
+                f"Step{s}_Obs{o}" for s in range(initial_amount) for o in observations
+        ]
+
+        reg_sub_trace = prep_traces_onehot_encoder(
+                    ohe, testing_samples, initial_amount)
+
+        X = pd.DataFrame(reg_sub_trace, columns=column_names)
+        regression_risks = reg_model.predict(X)
+    
+    return regression_risks
+
+
 
 def aggregated_stats_regression(
     high_st,
