@@ -268,7 +268,7 @@ def aggregated_stats_imc(
 
     return imc_risks, imc_transition_counts, stopping_threshold, imc_distances
 
-def aggregated_stats_regression_new(
+def aggregated_stats_regression(
     high_st,
     coarse,
     mc,
@@ -350,15 +350,16 @@ def aggregated_stats_regression_new(
 
         reg_sub_trace = prep_traces_onehot_encoder(
                     ohe, testing_samples, initial_amount)
+        X = prep_traces_onehot_encoder(ohe, testing_samples, initial_amount)
+        regression_risks[f'{x}'] = reg_model.predict(X)
 
-        X = pd.DataFrame(reg_sub_trace, columns=column_names)
-        regression_risks = reg_model.predict(X)
+        print(regression_risks)
     
     return regression_risks
 
 
 
-def aggregated_stats_regression(
+def aggregated_stats_regression_old(
     high_st,
     coarse,
     mc,
@@ -1812,7 +1813,7 @@ def main_imc(args: argparse.Namespace):
         testing_samples,
     )
 
-    regression_risks, regression_ys = aggregated_stats_regression(
+    regression_risks = aggregated_stats_regression(
         args.high_st,
         coarse,
         mc,
