@@ -223,6 +223,7 @@ def aggregated_stats_imc(
                             allow_pickle=True,
                         )
         except FileNotFoundError:
+            print(f"Statistics file for {x} not found, skipping.")
             logger.warning(f"Statistics file for {x} not found, skipping.")
             continue
 
@@ -1562,7 +1563,7 @@ def plotting(
     #         color='green'
     #     )
 
-    # CONFORMAL PREDICTION MODEL AVERAGE PERFORMANCE
+    """ # CONFORMAL PREDICTION MODEL AVERAGE PERFORMANCE
 
     CONF_transitions_data = []
     CONF_auc_data = []
@@ -1612,7 +1613,7 @@ def plotting(
         CONF_mean_auc + CONF_std_auc,
         alpha=0.2,
         color="yellow",
-    )
+    ) """
 
     # formatter = ticker.ScalarFormatter(useMathText=True)
     # formatter.set_powerlimits((4, 4))  # Force 10^4 scale
@@ -1736,6 +1737,44 @@ def main_imc(args: argparse.Namespace):
         args.high_st, noisy_measurements, coarse, mc, model_path, stats_path
     )
 
+    test_data = {}
+    test_data['model'] = args.mc
+    test_data['coarse'] = args.coarse
+    test_data['high_st'] = args.high_st
+    test_data['stopping_threshold'] =  imc_stopping_threshold_ref
+    test_data['horizon'] = horizon
+    test_data['initial_amount'] = initial_amount
+    test_data['testing_samples'] = testing_samples
+    test_data['alarms'] = alarms 
+    test_data['target_risks'] = target_risks
+    test_data['imc_risks'] = imc_risks
+    test_data['imc_risks_ref'] = imc_risks_ref
+    test_data['imc_risks_ref_splitting'] = imc_risks_ref_splitting
+    test_data['imc_distances'] = imc_distances
+    test_data['imc_distances_ref'] = imc_distances_ref
+    test_data['imc_distances_ref_splitting'] = imc_distances_ref_splitting
+    test_data['regression_risks'] = regression_risks
+    test_data['regression_ys'] = regression_ys
+    test_data['conformal_risks'] = conformal_risks
+    test_data['conformal_ys'] = conformal_ys
+   
+
+    if args.coarse: 
+        if args.high_st: 
+            file_name = os.path.join(args.out, f"testdata_rq_3_{args.mc}_coarse_high_st.pkl")
+        else: 
+            file_name = os.path.join(args.out, f"testdata_rq_3_{args.mc}_coarse.pkl")
+    else: 
+        if args.high_st: 
+            file_name = os.path.join(args.out, f"testdata_rq_3_{args.mc}_high_st.pkl")
+        else:
+            file_name = os.path.join(args.out, f"testdata_rq_3_{args.mc}.pkl")
+
+
+    # Save dictionary
+    with open(file_name, 'wb') as f:
+        pickle.dump(test_data, f)
+
     roc_curve_model_based(
         coarse,
         imc_stopping_threshold_ref,
@@ -1809,7 +1848,7 @@ def build_learning_parser(parser: argparse.ArgumentParser):
         "-s",
         "--testing_samples",
         type=int,
-        default=100,
+        default=500,
         help="Total number of samples used in learning",
     )
     group.add_argument(
@@ -1878,5 +1917,5 @@ if __name__ == "__main__":
     main_imc(args)
 
 
-# python -m premise.interval.rq_3 --mc airportA-7-10-10 --model_path /workspaces/premise/out/models/2025-07-17 --stats_path /workspaces/premise/out/stats/2025-07-17 --coarse
-# python -m premise.interval.rq_3 --mc evadeV-5-3 --model_path /workspaces/premise/out/models/2025-07-17 --stats_path /workspaces/premise/out/stats/2025-07-17
+# python -m premise.interval.rq_3 --mc airportA-7-10-10 --stats-path /workspaces/premise/out/stats/2025-07-17 --coarse
+# python -m premise.interval.rq_3 --mc evadeV-5-3 --stats-path /workspaces/premise/out/stats/2025-07-17

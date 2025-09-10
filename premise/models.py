@@ -103,7 +103,7 @@ default_models = {
     ),
     "SnL-10x10": ModelDescription(
         Path(__file__).parent / "examples/SnL-weighted.nm",
-        "n=100, l1s=1, l1d=38, l2s=4, l2d=14, l3s=9, l3d=31, l4s=28, l4d=64, l5s=40, l5d=42, l6s=36, l6d=44, l7s=51, l7d=67, l8d=91, l8s=71, l9s=80, l9d=100, l10s=-1, l10d=-1, s1s=98, s1d=76, s2s=95, s2d=75, s3s=93, s3d=73, s4s=87, s4d=24, s5s=64, s5d=60, s6s=62, s6d=19, s7s=55, s7d=53, s8d=11, s8s=49, s9s=47, s9d=26, s10s=16, s10d=6",
+        "n=100, l1s=1, l1d=38, l2s=4, l2d=14, l2d=9, l3d=31, l4s=28, l4d=64, l5s=40, l5d=42, l6s=36, l6d=44, l7s=51, l7d=67, l8d=91, l8s=71, l9s=80, l9d=100, l10s=-1, l10d=-1, s1s=98, s1d=76, s2s=95, s2d=75, s3s=93, s3d=73, s4s=87, s4d=24, s5s=64, s5d=60, s6s=62, s6d=19, s7s=55, s7d=53, s8d=11, s8s=49, s9s=47, s9d=26, s10s=16, s10d=6",
         'Pmax=? [F<3 "good" ]',
         target_label="good",
         # horizon=12,
@@ -114,6 +114,16 @@ default_models = {
     "SnLw-10x10": ModelDescription(
         Path(__file__).parent / "examples/SnL-weighted.nm",
         "n=100, l1s=1, l1d=38, l2s=4, l2d=14, l3s=9, l3d=31, l4s=28, l4d=64, l5s=40, l5d=42, l6s=36, l6d=44, l7s=51, l7d=67, l8d=91, l8s=71, l9s=80, l9d=100, l10s=-1, l10d=-1, s1s=98, s1d=76, s2s=95, s2d=75, s3s=93, s3d=73, s4s=87, s4d=24, s5s=64, s5d=60, s6s=62, s6d=19, s7s=55, s7d=53, s8d=11, s8s=49, s9s=47, s9d=26, s10s=16, s10d=6",
+        'Pmax=? [F<3 "good" ]',
+        target_label="good",
+        # horizon=12,
+        # initial_amount=10,
+        initial_amount=15,
+        horizon=5,
+    ),
+    "SnL-test": ModelDescription(
+        Path(__file__).parent / "examples/test.nm",
+        "n=9, l1s=1, l1d=38, l2s=4, l2d=14, l3s=9, l3d=31, l4s=28, l4d=64, s1s=98, s1d=76",
         'Pmax=? [F<3 "good" ]',
         target_label="good",
         # horizon=12,

@@ -7,357 +7,63 @@ from tqdm import tqdm, trange
 import matplotlib.ticker as ticker
 import pickle
 import numpy as np
-from premise.models import *
-from premise.interval.maximum_likelihood import *
+#from premise.models import *
+#from premise.interval.maximum_likelihood import *
 from itertools import groupby
 from operator import itemgetter
 
+from premise.interval.loading import build_suo_args_parser
 
-from premise.interval.loading import (
-    build_suo,
-    build_suo_args_parser,
-    load_imc,
-)
-from premise.interval.conformence import test_monitor
-from premise.interval.interval import (
-    Trace,
-    create_monitor,
-)
-from premise.interval.maximum_likelihood import dict_to_pomdp, create_mle_monitor
+#from premise.interval.conformence import test_monitor
+#from premise.interval.interval import (
+#    Trace,
+#    create_monitor,
+#)
+#from premise.interval.maximum_likelihood import dict_to_pomdp, create_mle_monitor
 
 
-def aggregted_alarms(testing_samples):
-    alarms = []
+def aggregted_alarms(testdata_rq_1):
 
-    for trace in tqdm(testing_samples):
-        alarms.append(any([s[2] for s in trace]))
-
-    alarms = np.array(alarms).astype(int)
+    with open(testdata_rq_1, 'rb') as f:
+        data = pickle.load(f)
+    
+    alarms = data['alarms']
 
     return alarms
 
 
-def stats_true(horizon, initial_amount, testing_samples, suo):
+def stats_true(testdata_rq_1):
 
-    target_risks = []
+    with open(testdata_rq_1, 'rb') as f:
+        data = pickle.load(f)
 
-    mon = suo.create_target_monitor()
-
-    for trace in tqdm(testing_samples):
-        sub_trace: Trace = trace[:initial_amount]
-
-        target_risk, risks = test_monitor(
-            mon,
-            [sub_trace],
-            with_tqdm=False,
-            intermediate_results=True,
-        )
-
-        target_risks.append(float(target_risk[sub_trace]))
+    target_risks = data['target_risks']
 
     return target_risks
 
 
-def aggregated_stats_imc(
-    method, coarse, stats_path, initial_amount, horizon, args, testing_samples
-):
-    imc_risks = {}
+def aggregated_stats_imc(testdata_rq_1):
 
-    imc_transition_counts = {}
+    with open(testdata_rq_1, 'rb') as f:
+        data = pickle.load(f)
 
-    for x in range(1, 11):
-        print(f"Experiment number {x}")
-        try:
-            if coarse:
-                """ if high_st:
-                    if method == "noref":
-                        if args.mc == " SnLw-10x10":
-                            statistics = np.load(
-                                f"{stats_path}/high-st-SnL-coarse_norefinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        elif args.mc == "evadeV-6-3-coarse":
-                            statistics = np.load(
-                                f"{stats_path}/high-st-evadeV-6-3-coarse_norefinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        else:
-                            statistics = np.load(
-                                f"{stats_path}/high-st-{args.mc}-coarse_norefinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                    if method == "ref":
-                        if args.mc == " SnLw-10x10":
-                            statistics = np.load(
-                                f"{stats_path}/high-st-SnL-coarse_refinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        elif args.mc == "evadeV-6-3-coarse":
-                            statistics = np.load(
-                                f"{stats_path}/high-st-evadeV-6-3-coarse_refinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        else:
-                            statistics = np.load(
-                                f"{stats_path}/high-st-{args.mc}-coarse_refinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                    if method == "refsplit":
-                        if args.mc == " SnLw-10x10":
-                            statistics = np.load(
-                                f"{stats_path}/high-st-SnL-coarse_refsplitinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        elif args.mc == "evadeV-6-3-coarse":
-                            statistics = np.load(
-                                f"{stats_path}/high-st-evadeV-6-3-coarse_refsplitinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        else:
-                            statistics = np.load(
-                                f"{stats_path}/high-st-{args.mc}-coarse_refsplitinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                else: """
-                if method == "noref":
-                        if args.mc == " SnLw-10x10":
-                            statistics = np.load(
-                                f"{stats_path}/SnL-coarse_norefinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        elif args.mc == "evadeV-6-3-coarse":
-                            statistics = np.load(
-                                f"{stats_path}/evadeV-6-3-coarse_norefinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        else:
-                            statistics = np.load(
-                                f"{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                if method == "ref":
-                        if args.mc == " SnLw-10x10":
-                            statistics = np.load(
-                                f"{stats_path}/SnL-coarse_refinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        elif args.mc == "evadeV-6-3-coarse":
-                            statistics = np.load(
-                                f"{stats_path}/evadeV-6-3-coarse_refinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        else:
-                            statistics = np.load(
-                                f"{stats_path}/{args.mc}-coarse_refinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                if method == "refsplit":
-                        if args.mc == " SnLw-10x10":
-                            statistics = np.load(
-                                f"{stats_path}/SnL-coarse_refsplitinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        elif args.mc == "evadeV-6-3-coarse":
-                            statistics = np.load(
-                                f"{stats_path}/evadeV-6-3-coarse_refsplitinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        else:
-                            statistics = np.load(
-                                f"{stats_path}/{args.mc}-coarse_refsplitinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-            else:
-                """ if high_st:
-                    if method == "noref":
-                        statistics = np.load(
-                            f"{stats_path}/high-st-{args.mc}-comp-noref-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-                    if method == "ref":
-                        statistics = np.load(
-                            f"{stats_path}/high-st-{args.mc}-comp-ref-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-                    if method == "refsplit":
-                        statistics = np.load(
-                            f"{stats_path}/high-st-{args.mc}-comp-refsplit-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-                else: """
-                if method == "noref":
-                        statistics = np.load(
-                            f"{stats_path}/{args.mc}-comp-noref-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-                if method == "ref":
-                        statistics = np.load(
-                            f"{stats_path}/{args.mc}-comp-ref-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-                if method == "refsplit":
-                        statistics = np.load(
-                            f"{stats_path}/{args.mc}-comp-refsplit-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-        except FileNotFoundError:
-            print(f"Statistics file for {x} not found, skipping.")
-            continue
-
-        obj = statistics.item()
-        imc_transition_count_iters = obj["transitions_learned"]
-        #stopping_threshold = obj["args"]["stopping_threshold"]
-
-        imc_transition_counts[str(x)] = np.cumsum(imc_transition_count_iters).tolist()
-
-        model_path = obj["args"]["model_path"]
-
-        for y in trange(1, len(imc_transition_count_iters) + 1):
-            initial_distribution = f"{model_path}-{y}-initial_interval.npy"
-            transition_intervals = f"{model_path}-{y}-interval.npy"
-
-            args.trans_path = transition_intervals
-            args.init_path = initial_distribution
-
-            transition_intervals, initial_distribution = load_imc(args)
-
-            mon, mon_comps = create_monitor(
-                transition_intervals,
-                initial_distribution,
-                "min",
-                True,
-                horizon,
-                None,
-            )
-
-            imc_risks[f"{x}-{y}"] = []
-
-            for t in testing_samples:
-                sub_trace: Trace = t[:initial_amount]
-                risk = test_monitor(
-                    mon,
-                    [sub_trace],
-                    obs_func=lambda x: mon_comps.observation_map[x],
-                    skip_initial=True,
-                    with_tqdm=False,
-                )[sub_trace]
-
-                imc_risks[f"{x}-{y}"].append(float(risk))
-
+    imc_risks = data['imc_risks'] 
+    imc_transition_counts = data['imc_transition_counts']
+   
     return imc_risks, imc_transition_counts
 
 
-def aggregated_stats_mc(
-    coarse, stats_path, initial_amount, horizon, args, testing_samples
-):
-    mc_risks = {}
+def aggregated_stats_mc(testdata_rq_1):
 
-    mc_transition_counts = {}
+    with open(testdata_rq_1, 'rb') as f:
+        data = pickle.load(f)
 
-    for x in range(1, 11):
-        print(f"Experiment number {x}")
-        try:
-            if coarse:
-                """ if high_st:
-                    if args.mc == " SnLw-10x10":
-                        statistics = np.load(
-                            f"{stats_path}/high-st-SnL-coarse-comp-mle-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-                    elif args.mc == "evadeV-6-3-coarse":
-                        statistics = np.load(
-                            f"{stats_path}/high-st-evadeV-6-3-coarse-comp-mle-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-                    else:
-                        statistics = np.load(
-                            f"{stats_path}/high-st-{args.mc}-coarse-comp-mle-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-                else: """
-                if args.mc == "SnLw-10x10":
-                        statistics = np.load(
-                            f"{stats_path}/SnL-coarse-comp-mle-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-                elif args.mc == "evadeV-6-3-coarse":
-                        statistics = np.load(
-                            f"{stats_path}/evadeV-6-3-coarse-comp-mle-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-                else:
-                        statistics = np.load(
-                            f"{stats_path}/{args.mc}-coarse-comp-mle-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-            else:
-                """ if high_st:
-                    statistics = np.load(
-                        f"{stats_path}/high-st-{args.mc}-comp-mle-stats-{x}.npy",
-                        allow_pickle=True,
-                    )
-                else: """
-                statistics = np.load(
-                        f"{stats_path}/{args.mc}-comp-mle-stats-{x}.npy",
-                        allow_pickle=True,
-                    )
-        except FileNotFoundError:
-            print(f"Statistics file for {x} not found, skipping.")
-
-            continue
-
-        mc_sample_count = statistics["sample_counts"]
-
-        mc_transition_count = []
-
-        for a in mc_sample_count:
-            mc_transition_count.append(a * (horizon + initial_amount))
-
-        mc_transition_counts[str(x)] = mc_transition_count
-
-        model_path = statistics["args"]["dump_model"]
-
-        for y in trange(0, len(mc_transition_count)):
-            model = f"{model_path}-{y}.pickl"
-
-            with open(model, "rb") as file:
-                data = pickle.load(file)
-
-            model, observation_map, state_index_map = dict_to_pomdp(
-                data[1], data[0], target_label=True, use_exact=True
-            )
-
-            monitor = create_mle_monitor(horizon, model)
-
-            mc_risks[f"{x}-{y}"] = []
-
-            for sample in testing_samples:
-                subtrace = sample[:initial_amount]
-
-                risk = test_monitor(
-                    monitor,
-                    [subtrace],
-                    lambda x: observation_map[x],
-                    skip_initial=True,
-                    with_tqdm=False,
-                )[subtrace]
-
-                mc_risks[f"{x}-{y}"].append(float(risk))
+    mc_risks = data['mc_risks'] 
+    mc_transition_counts = data['mc_transition_counts']
 
     return mc_risks, mc_transition_counts
 
 
-""" def distance_graph(
-    high_st,
-    coarse,
-    target_risks,
-    imc_risks,
-    imc_transition_counts,
-    mc_risks,
-    mc_transition_counts,
-    stopping_threshold,
-    out_path,
-): """
 
 def fn_fp_comparison(coarse,
         alarms,
@@ -461,8 +167,8 @@ def fn_fp_comparison(coarse,
 
     fig, ax = plt.subplots(figsize=(8, 5)) 
 
-    auc_fnr_target = np.trapz(target_fnr, thresholds)
-    auc_fpr_target = np.trapz(target_fpr, thresholds)
+    auc_fnr_target = np.trapezoid(target_fnr, thresholds)
+    auc_fpr_target = np.trapezoid(target_fpr, thresholds)
 
 
     ax.plot(thresholds, target_fnr, label=f'Target FNR: (AUC {auc_fnr_target:.3f})', color='black', linestyle= ':')
@@ -478,8 +184,8 @@ def fn_fp_comparison(coarse,
     for key in imc_final_risks.keys():
         imc_FNRs.append(imc_fnr[key]) 
         imc_FPRs.append(imc_fpr[key])
-        imc_fnr_aucs.append(np.trapz(imc_fnr[key], thresholds))
-        imc_fpr_aucs.append(np.trapz(imc_fpr[key], thresholds))
+        imc_fnr_aucs.append(np.trapezoid(imc_fnr[key], thresholds))
+        imc_fpr_aucs.append(np.trapezoid(imc_fpr[key], thresholds))
 
     imc_FNRs = np.array(imc_FNRs)    
 
@@ -529,8 +235,8 @@ def fn_fp_comparison(coarse,
     for key in mc_final_risks.keys():
         mc_FNRs.append(mc_fnr[key]) 
         mc_FPRs.append(mc_fpr[key])
-        mc_fnr_aucs.append(np.trapz(mc_fnr[key], thresholds))
-        mc_fpr_aucs.append(np.trapz(mc_fpr[key], thresholds))
+        mc_fnr_aucs.append(np.trapezoid(mc_fnr[key], thresholds))
+        mc_fpr_aucs.append(np.trapezoid(mc_fpr[key], thresholds))
 
     mc_FNRs = np.array(mc_FNRs)    
 
@@ -621,6 +327,7 @@ def fn_fp_comparison(coarse,
 def distance_graph(
     coarse,
     target_risks,
+    testing_samples,
     imc_risks,
     imc_transition_counts,
     imc_risks_ref,
@@ -658,7 +365,7 @@ def distance_graph(
             #    imc_risks[key][x] - target_risks[x]
             # )
             total_distance += abs(imc_risks[key][x] - target_risks[x])
-        distance_stats[key] = total_distance / args.testing_samples
+        distance_stats[key] = total_distance / testing_samples
 
     distance_graph_data = {}
     for x in imc_experiment_numbers:
@@ -686,7 +393,7 @@ def distance_graph(
         total_distance = 0
         for x in range(len(target_risks)):
             total_distance += abs(imc_risks_ref[key][x] - target_risks[x])
-        ref_distance_stats[key] = total_distance / args.testing_samples
+        ref_distance_stats[key] = total_distance / testing_samples
 
     ref_distance_graph_data = {}
     for x in ref_experiment_numbers:
@@ -719,7 +426,7 @@ def distance_graph(
             #    imc_risks[key][x] - target_risks[x]
             # )
             total_distance += abs(imc_risks_refsplit[key][x] - target_risks[x])
-        refsplit_distance_stats[key] = total_distance / args.testing_samples
+        refsplit_distance_stats[key] = total_distance / testing_samples
 
     refsplit_distance_graph_data = {}
     for x in refsplit_experiment_numbers:
@@ -1304,56 +1011,25 @@ def roc_curve_imc_mc(
 
 
 def main_imc(args: argparse.Namespace):
-    setup_logging("rq1:" + args.mc)
+    #setup_logging("rq1_from_testdata:" + args.mc)
 
-    suo, initial_amount, horizon = build_suo(args)
-
-    length = initial_amount + horizon
-
-    testing_samples = []
-    testing_samples_weights = []
-
-    for x in range(args.testing_samples):
-        path = suo.generate_random_traces_with_prob([], length)
-        testing_samples.append(tuple(path[0][0]))
-        testing_samples_weights.append(float(path[0][1]))
-
-    if args.sys_vars != None:
-        coarse = True
-    elif args.mc == "SnLw-10x10":
-        coarse = True
-    elif args.mc == "evadeV-6-3-coarse":
-        coarse = True
-    else:
-        coarse = False
-
-    alarms = aggregted_alarms(testing_samples)
-
-    target_risks = stats_true(
-        horizon,
-        initial_amount,
-        testing_samples,
-        suo,
-    )
-
-    imc_risks, imc_transition_counts = aggregated_stats_imc(
-        "noref",
-        coarse,
-        args.stats_path,
-        initial_amount,
-        horizon,
-        args,
-        testing_samples,
-    )
-
-    mc_risks, mc_transition_counts = aggregated_stats_mc(
-        coarse,
-        args.stats_path,
-        initial_amount,
-        horizon,
-        args,
-        testing_samples,
-    )
+    with open(args.testdata_rq_1, 'rb') as f:
+        data = pickle.load(f)
+    
+    coarse = data['coarse']
+    model = data['model']
+    testing_samples = data['testing_samples']
+    testing_samples_amount = data['testing_samples_amount']
+    alarms = data['alarms']
+    target_risks = data['target_risks']
+    imc_risks = data['imc_risks']
+    imc_transition_counts = data['imc_transition_counts']
+    mc_risks = data['mc_risks']
+    mc_transition_counts = data['mc_transition_counts']
+    imc_risks_ref = data['imc_risks_ref']
+    imc_transition_counts_ref = data['imc_transition_counts_ref']
+    imc_risks_refsplit = data['imc_risks_refsplit']
+    imc_transition_counts_refsplit = data['imc_transition_counts_refsplit']
 
     if len(imc_risks) == 0 or len(mc_risks) == 0:
         print("No data for IMC or MC risks, skipping graph generation.")
@@ -1386,36 +1062,11 @@ def main_imc(args: argparse.Namespace):
         target_risks,
         args.out,
     )
-
-   
-
-    imc_risks_ref, imc_transition_counts_ref = (
-        aggregated_stats_imc(
-            "ref",
-            coarse,
-            args.stats_path,
-            initial_amount,
-            horizon,
-            args,
-            testing_samples,
-        )
-    )
-
-    imc_risks_refsplit, imc_transition_counts_refsplit = (
-        aggregated_stats_imc(
-            "refsplit",
-            coarse,
-            args.stats_path,
-            initial_amount,
-            horizon,
-            args,
-            testing_samples,
-        )
-    )
     
     distance_graph(
         coarse,
         target_risks,
+        testing_samples_amount,
         imc_risks,
         imc_transition_counts,
         imc_risks_ref,
@@ -1426,49 +1077,9 @@ def main_imc(args: argparse.Namespace):
     )
 
 
-    test_data = {}
-    test_data['model'] = args.mc
-    test_data['coarse'] = coarse
-    test_data['testing_samples'] = testing_samples
-    test_data['testing_samples_amount'] = args.testing_samples
-    test_data['alarms'] = alarms
-    test_data['target_risks'] = target_risks
-    test_data['mc_risks'] = mc_risks
-    test_data['mc_transition_counts'] = mc_transition_counts
-    test_data['imc_risks'] = imc_risks
-    test_data['imc_transition_counts'] = imc_transition_counts
-    test_data['imc_risks_ref'] = imc_risks_ref
-    test_data['imc_transition_counts_ref'] = imc_transition_counts_ref
-    test_data['imc_risks_refsplit'] = imc_risks_refsplit
-    test_data['imc_transition_counts_refsplit'] = imc_transition_counts_refsplit
-
-    if coarse == True:
-        file_name = os.path.join(args.out, f"testdata_rq_1_{args.mc}_coarse.pkl")
-    else: 
-        file_name = os.path.join(args.out, f"testdata_rq_1_{args.mc}.pkl")
-
-    # Save dictionary
-    with open(file_name, 'wb') as f:
-        pickle.dump(test_data, f)
-
-
-
-def build_learning_parser(parser: argparse.ArgumentParser):
-    group = parser.add_argument_group("Learning Parameters")
-
-    group.add_argument(
-        "-s",
-        "--testing-samples",
-        type=int,
-        default=500,
-        help="Total number of samples used in learning",
-    )
-
-
 def testing_argsparser():
     parser = argparse.ArgumentParser(description="Learn an IMC")
     build_suo_args_parser(parser)
-    build_learning_parser(parser)
 
     parser.add_argument(
         "-v",
@@ -1478,14 +1089,14 @@ def testing_argsparser():
         help="Increase verbosity level (can be used multiple times)",
     )
 
-    parser.add_argument("--stats-path", type=str, help="Path stats")
+    parser.add_argument("--testdata_rq_1", type=str, help="Path to test data")
 
 
     parser.add_argument(
         "-o",
         "--out",
         type=str,
-        default="out/results",
+        default="/workspaces/premise/premise/analysis",
         help="Output path for the results",
     )
 
@@ -1496,8 +1107,3 @@ if __name__ == "__main__":
     parser = testing_argsparser()
     args = parser.parse_args()
     main_imc(args)
-
-# See scripts/analysis.sh for the example commands
-
-
-#python -m premise.interval.rq_1 --mc evadeV-5-3 --stats-path /workspaces/premise/out/stats/2025-08-01_08-37-30 --out /workspaces/premise/premise/analysis

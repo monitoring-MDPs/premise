@@ -241,6 +241,7 @@ def save_imc(
     interval,
     model_path: str,
 ):
+    print(f'Saving at: {model_path}')
     np.save(f"{model_path}-initial_interval.npy", initial_interval)  # type: ignore
     np.save(f"{model_path}-interval.npy", interval)  # type: ignore
 
@@ -345,6 +346,8 @@ def ref_main(args: argparse.Namespace):
         args.verbose,
         stats_saver,
     )
+
+    print(f"INTERVAL: {interval}")
 
     stats_saver.create_stats(ref_stop_cond, ref_stats)
     stats = stats_saver.save_stats()

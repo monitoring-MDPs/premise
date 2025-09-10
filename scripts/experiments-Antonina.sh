@@ -9,7 +9,7 @@ mkdir -p out/stats/$now
 mkdir -p out/models/$now
 
 # Generate repeated commands with run_id replaced
-sed "s/date/${now}/g" scripts/commands_test.sh | sed '/^#/d' | \
+sed "s/date/${now}/g" scripts/commands-Antonina.sh | sed '/^#/d' | \
 while read -r cmd; do
     for i in $(seq 1 $n); do
         echo "$cmd" | sed "s/run_id/${i}/g"
