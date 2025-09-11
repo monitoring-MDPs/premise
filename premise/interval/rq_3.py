@@ -10,7 +10,7 @@ from sklearn import metrics
 import matplotlib.ticker as ticker
 
 
-from premise.interval.model_free.regression_model import prep_traces_onehot_encoder
+from premise.interval.model_free.regression_model import prep_traces_onehot_encoder, create_onehot_encoder
 from premise.interval.utils import setup_logging
 from premise.interval.conformal_prediction.train_stoch_seq_nsc import *
 from premise.interval.conformal_prediction.train_seq_se import *
@@ -268,6 +268,7 @@ def aggregated_stats_imc(
 
     return imc_risks, imc_transition_counts, stopping_threshold, imc_distances
 
+
 def aggregated_stats_regression(
     high_st,
     coarse,
@@ -353,149 +354,7 @@ def aggregated_stats_regression(
         X = prep_traces_onehot_encoder(ohe, testing_samples, initial_amount)
         regression_risks[f'{x}'] = reg_model.predict(X)
 
-        print(regression_risks)
-    
     return regression_risks
-
-
-
-def aggregated_stats_regression_old(
-    high_st,
-    coarse,
-    mc,
-    model_path,
-    stats_path,
-    testing_samples,
-    horizon,
-    initial_amount,
-):
-
-    regression_risks = {}
-    regression_ys = {}
-
-    for x in range(1, 11):
-        try:
-            if coarse:
-                if high_st:
-                    if args.mc == "SnLw-10x10":
-                        paths = glob.glob(
-                            f"{model_path}/high-st-SnL-coarse-comp-reg-{x}_*.npy"
-                        )
-                    elif args.mc == "evadeV-6-3-coarse":
-                        paths = glob.glob(
-                            f"{model_path}/high-st-evadeV-6-3-coarse-comp-reg-{x}_*.npy"
-                        )
-                    else:
-                        paths = glob.glob(
-                            f"{model_path}/high-st-{mc}-coarse-comp-reg-{x}_*.npy"
-                        )
-                else:
-                    if args.mc == "SnLw-10x10":
-                        paths = glob.glob(f"{model_path}/SnL-coarse-comp-reg-{x}_*.npy")
-                    elif args.mc == "evadeV-6-3-coarse":
-                        paths = glob.glob(
-                            f"{model_path}/evadeV-6-3-coarse-comp-reg-{x}_*.npy"
-                        )
-                    else:
-                        paths = glob.glob(
-                            f"{model_path}/{mc}-coarse-comp-reg-{x}_*.npy"
-                        )
-            else:
-                if high_st:
-                    paths = glob.glob(f"{model_path}/high-st-{mc}-comp-reg-{x}_*.npy")
-                else:
-                    paths = glob.glob(f"{model_path}/{mc}-comp-reg-{x}_*.npy")
-        except FileNotFoundError:
-            print(f"Statistics file for {x} not found, skipping.")
-            continue
-
-        regression_ys[str(x)] = []
-
-        for path in paths:
-            match = re.search(r"_(\d+)\.npy$", path)
-            if match:
-                regression_ys[str(x)].append(int(match.group(1)))
-
-        for key in regression_ys.keys():
-            regression_ys[key].sort()
-
-        for y in regression_ys[str(x)]:
-            regression_risks[f"{x}-{y}"] = []
-
-            try:
-                if coarse:
-                    if high_st:
-                        if args.mc == "SnLw-10x10":
-                            statistics = np.load(
-                                f"{stats_path}/high-st-SnL-coarse-comp-reg-stats-{x}.npy",
-                                allow_pickle=True,
-                            ).item()
-
-                        elif args.mc == "evadeV-6-3-coarse":
-                            statistics = np.load(
-                                f"{stats_path}/high-st-evadeV-6-3-coarse-comp-reg-stats-{x}.npy",
-                                allow_pickle=True,
-                            ).item()
-
-                        else:
-                            statistics = np.load(
-                                f"{stats_path}/high-st-{mc}-coarse-comp-reg-stats-{x}.npy",
-                                allow_pickle=True,
-                            ).item()
-                    else:
-                        if args.mc == "SnLw-10x10":
-                            statistics = np.load(
-                                f"{stats_path}/SnL-coarse-comp-reg-stats-{x}.npy",
-                                allow_pickle=True,
-                            ).item()
-                        elif args.mc == "evadeV-6-3-coarse":
-                            statistics = np.load(
-                                f"{stats_path}/evadeV-6-3-coarse-comp-reg-stats-{x}.npy",
-                                allow_pickle=True,
-                            ).item()
-                        else:
-                            statistics = np.load(
-                                f"{stats_path}/{mc}-coarse-comp-reg-stats-{x}.npy",
-                                allow_pickle=True,
-                            ).item()
-                else:
-                    if high_st:
-                        statistics = np.load(
-                            f"{stats_path}/high-st-{mc}-comp-reg-stats-{x}.npy",
-                            allow_pickle=True,
-                        ).item()
-                    else:
-                        statistics = np.load(
-                            f"{stats_path}/{mc}-comp-reg-stats-{x}.npy",
-                            allow_pickle=True,
-                        ).item()
-
-            except FileNotFoundError:
-                print(f"Statistics file for {x} not found, skipping.")
-                continue
-
-            obj = statistics.item()
-            observations = obj["observations"]
-            model_path = obj["args"]["model_path"]
-            ohe = obj["one_hot_encoder"]
-
-            for y in range(regression_ys[str(x)]):
-                reg_model = np.load(f"{model_path}_{y}.npy", allow_pickle=True).item()
-
-            column_names = [
-                f"Step{s}_Obs{o}" for s in range(initial_amount) for o in observations
-            ]
-
-            for t in testing_samples:
-                sub_trace: Trace = t[:initial_amount]
-                reg_sub_trace = prep_traces_onehot_encoder(
-                    ohe, sub_trace, initial_amount
-                )
-                X = pd.DataFrame([reg_sub_trace], columns=column_names)
-                prob = reg_model.predict_proba(X)
-                regression_risks[f"{x}-{y}"].append(float(prob[:, 1].item()))
-
-    return regression_risks, regression_ys
 
 
 def aggreagted_stats_conformal(high_st, new_noisy, coarse, mc, model_path, stats_path):
@@ -1767,6 +1626,18 @@ def main_imc(args: argparse.Namespace):
     stats_path = args.stats_path
     args.high_st
 
+    regression_risks = aggregated_stats_regression(
+        args.high_st,
+        coarse,
+        mc,
+        model_path,
+        stats_path,
+        testing_samples,
+        horizon,
+        initial_amount,
+    )
+
+
     (
         imc_risks_ref_splitting,
         imc_transition_counts_ref_splitting,
@@ -1813,16 +1684,7 @@ def main_imc(args: argparse.Namespace):
         testing_samples,
     )
 
-    regression_risks = aggregated_stats_regression(
-        args.high_st,
-        coarse,
-        mc,
-        model_path,
-        stats_path,
-        testing_samples,
-        horizon,
-        initial_amount,
-    )
+    
     conformal_risks, conformal_ys = aggreagted_stats_conformal(
         args.high_st, noisy_measurements, coarse, mc, model_path, stats_path
     )
@@ -1844,7 +1706,7 @@ def main_imc(args: argparse.Namespace):
     test_data['imc_distances_ref'] = imc_distances_ref
     test_data['imc_distances_ref_splitting'] = imc_distances_ref_splitting
     test_data['regression_risks'] = regression_risks
-    test_data['regression_ys'] = regression_ys
+    #test_data['regression_ys'] = regression_ys
     test_data['conformal_risks'] = conformal_risks
     test_data['conformal_ys'] = conformal_ys
    
@@ -2006,6 +1868,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
     main_imc(args)
 
-
-# python -m premise.interval.rq_3 --mc airportA-7-10-10 --stats-path /workspaces/premise/out/stats/2025-07-17 --coarse
-# python -m premise.interval.rq_3 --mc evadeV-5-3 --stats-path /workspaces/premise/out/stats/2025-07-17
