@@ -331,13 +331,13 @@ def build_learning_params_args_parser(parser: argparse.ArgumentParser):
     param_group.add_argument(
         "--trans-lower-strength",
         type=int,
-        default=10,
+        default=5,
         help="Initial lower bound of strength interval",
     )
     param_group.add_argument(
         "--trans-upper-strength",
         type=int,
-        default=20,
+        default=10,
         help="Initial upper bound of strength interval",
     )
     param_group.add_argument(

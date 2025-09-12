@@ -10,7 +10,7 @@ from sklearn import metrics
 import matplotlib.ticker as ticker
 
 
-from premise.interval.model_free.regression_model import prep_traces_onehot_encoder
+from premise.interval.model_free.regression_model import prep_traces_onehot_encoder, create_onehot_encoder
 from premise.interval.utils import setup_logging
 from premise.interval.conformal_prediction.train_stoch_seq_nsc import *
 from premise.interval.conformal_prediction.train_seq_se import *
@@ -281,137 +281,86 @@ def aggregated_stats_regression(
 ):
 
     regression_risks = {}
-    regression_ys = {}
 
     for x in range(1, 11):
+        regression_risks[f"{x}"] = []
+
         try:
-            if coarse:
-                if high_st:
-                    if args.mc == "SnLw-10x10":
-                        paths = glob.glob(
-                            f"{model_path}/high-st-SnL-coarse-comp-reg-{x}_*.npy"
-                        )
-                    elif args.mc == "evadeV-6-3-coarse":
-                        paths = glob.glob(
-                            f"{model_path}/high-st-evadeV-6-3-coarse-comp-reg-{x}_*.npy"
-                        )
-                    else:
-                        paths = glob.glob(
-                            f"{model_path}/high-st-{mc}-coarse-comp-reg-{x}_*.npy"
-                        )
-                else:
-                    if args.mc == "SnLw-10x10":
-                        paths = glob.glob(f"{model_path}/SnL-coarse-comp-reg-{x}_*.npy")
-                    elif args.mc == "evadeV-6-3-coarse":
-                        paths = glob.glob(
-                            f"{model_path}/evadeV-6-3-coarse-comp-reg-{x}_*.npy"
-                        )
-                    else:
-                        paths = glob.glob(
-                            f"{model_path}/{mc}-coarse-comp-reg-{x}_*.npy"
-                        )
-            else:
-                if high_st:
-                    paths = glob.glob(f"{model_path}/high-st-{mc}-comp-reg-{x}_*.npy")
-                else:
-                    paths = glob.glob(f"{model_path}/{mc}-comp-reg-{x}_*.npy")
-        except FileNotFoundError:
-            print(f"Statistics file for {x} not found, skipping.")
-            continue
-
-        regression_ys[str(x)] = []
-
-        for path in paths:
-            match = re.search(r"_(\d+)\.npy$", path)
-            if match:
-                regression_ys[str(x)].append(int(match.group(1)))
-
-        for key in regression_ys.keys():
-            regression_ys[key].sort()
-
-        for y in regression_ys[str(x)]:
-            regression_risks[f"{x}-{y}"] = []
-
-            try:
                 if coarse:
                     if high_st:
                         if args.mc == "SnLw-10x10":
                             statistics = np.load(
                                 f"{stats_path}/high-st-SnL-coarse-comp-reg-stats-{x}.npy",
                                 allow_pickle=True,
-                            ).item()
+                            )
 
                         elif args.mc == "evadeV-6-3-coarse":
                             statistics = np.load(
                                 f"{stats_path}/high-st-evadeV-6-3-coarse-comp-reg-stats-{x}.npy",
                                 allow_pickle=True,
-                            ).item()
+                            )
 
                         else:
                             statistics = np.load(
                                 f"{stats_path}/high-st-{mc}-coarse-comp-reg-stats-{x}.npy",
                                 allow_pickle=True,
-                            ).item()
+                            )
                     else:
                         if args.mc == "SnLw-10x10":
                             statistics = np.load(
                                 f"{stats_path}/SnL-coarse-comp-reg-stats-{x}.npy",
                                 allow_pickle=True,
-                            ).item()
+                            )
                         elif args.mc == "evadeV-6-3-coarse":
                             statistics = np.load(
                                 f"{stats_path}/evadeV-6-3-coarse-comp-reg-stats-{x}.npy",
                                 allow_pickle=True,
-                            ).item()
+                            )
                         else:
                             statistics = np.load(
                                 f"{stats_path}/{mc}-coarse-comp-reg-stats-{x}.npy",
                                 allow_pickle=True,
-                            ).item()
+                            )
                 else:
                     if high_st:
                         statistics = np.load(
                             f"{stats_path}/high-st-{mc}-comp-reg-stats-{x}.npy",
                             allow_pickle=True,
-                        ).item()
+                        )
                     else:
                         statistics = np.load(
                             f"{stats_path}/{mc}-comp-reg-stats-{x}.npy",
                             allow_pickle=True,
-                        ).item()
+                        )
 
-            except FileNotFoundError:
+        except FileNotFoundError:
                 print(f"Statistics file for {x} not found, skipping.")
                 continue
 
-            obj = statistics.item()
-            observations = obj["observations"]
-            model_path = obj["args"]["model_path"]
-            ohe = obj["one_hot_encoder"]
+        obj = statistics.item()
+        observations = obj["observations"]
+        model_path = obj["args"]["model_path"]
+        ohe = obj["one_hot_encoder"]
 
-            for y in range(regression_ys[str(x)]):
-                reg_model = np.load(f"{model_path}_{y}.npy", allow_pickle=True).item()
+      
+        reg_model = np.load(f"{model_path}.npy", allow_pickle=True).item()
 
-            column_names = [
+        column_names = [
                 f"Step{s}_Obs{o}" for s in range(initial_amount) for o in observations
-            ]
+        ]
 
-            for t in testing_samples:
-                sub_trace: Trace = t[:initial_amount]
-                reg_sub_trace = prep_traces_onehot_encoder(
-                    ohe, sub_trace, initial_amount
-                )
-                X = pd.DataFrame([reg_sub_trace], columns=column_names)
-                prob = reg_model.predict_proba(X)
-                regression_risks[f"{x}-{y}"].append(float(prob[:, 1].item()))
+        reg_sub_trace = prep_traces_onehot_encoder(
+                    ohe, testing_samples, initial_amount)
+        X = prep_traces_onehot_encoder(ohe, testing_samples, initial_amount)
+        regression_risks[f'{x}'] = reg_model.predict(X)
 
-    return regression_risks, regression_ys
+    return regression_risks
 
 
 def aggreagted_stats_conformal(high_st, new_noisy, coarse, mc, model_path, stats_path):
 
     conformal_risks = {}
-    conformal_ys = {}
+    #conformal_ys = {}
 
     for x in range(1, 11):
         try:
@@ -437,19 +386,19 @@ def aggreagted_stats_conformal(high_st, new_noisy, coarse, mc, model_path, stats
             print(f"Statistics file for {x} not found, skipping.")
             continue
 
-        conformal_ys[str(x)] = []
+        #conformal_ys[str(x)] = []
 
-        for path in paths:
-            match = re.search(r"_(\d+)\.pt$", path)
-            if match:
-                conformal_ys[str(x)].append(int(match.group(1)))
+        #for path in paths:
+        #    match = re.search(r"_(\d+)\.pt$", path)
+        #    if match:
+        #        conformal_ys[str(x)].append(int(match.group(1)))
 
-        for key in conformal_ys.keys():
-            conformal_ys[key].sort()
+        #for key in conformal_ys.keys():
+        #    conformal_ys[key].sort()
 
-        for y in conformal_ys[str(x)]:
-            conformal_risks[f"{x}-{y}"] = []
-            try:
+        #for y in conformal_ys[str(x)]:
+        conformal_risks[f"{x}"] = []
+        try:
                 if coarse:
                     if high_st:
                         state_estimator = torch.load(
@@ -562,40 +511,40 @@ def aggreagted_stats_conformal(high_st, new_noisy, coarse, mc, model_path, stats
                         ) as f:
                             conformal_stats = pickle.load(f)
 
-            except FileNotFoundError:
+        except FileNotFoundError:
                 print(f"Statistics file for {x} not found, skipping.")
                 continue
 
-            new_noisy_scaled = -1 + 2 * (
+        new_noisy_scaled = -1 + 2 * (
                 new_noisy - conformal_stats["dataset.MIN[1]"]
             ) / (conformal_stats["dataset.MAX[1]"] - conformal_stats["dataset.MIN[1]"])
-            Y1 = np.transpose(new_noisy_scaled, (0, 2, 1))
-            Y1t = Variable(FloatTensor(Y1))
+        Y1 = np.transpose(new_noisy_scaled, (0, 2, 1))
+        Y1t = Variable(FloatTensor(Y1))
 
-            state_estimator.eval()
-            state_estim = state_estimator(Y1t)
-            label_estimator.eval()
-            label_hypothesis = label_estimator(state_estim)
+        state_estimator.eval()
+        state_estim = state_estimator(Y1t)
+        label_estimator.eval()
+        label_hypothesis = label_estimator(state_estim)
 
-            label_prob = torch.nn.functional.softmax(label_hypothesis, dim=1)
-            error_prob = label_prob[:, 1]
-            error_prob = error_prob.tolist()
+        label_prob = torch.nn.functional.softmax(label_hypothesis, dim=1)
+        error_prob = label_prob[:, 1]
+        error_prob = error_prob.tolist()
 
-            pool_conf_cred = cp_classification.compute_confidence_credibility(
+        pool_conf_cred = cp_classification.compute_confidence_credibility(
                 np.transpose(new_noisy_scaled, (0, 2, 1))
-            )
-            keep_mask = utils.apply_svc_query_strategy(
+        )
+        keep_mask = utils.apply_svc_query_strategy(
                 rejection_classifier, pool_conf_cred
-            )
+        )
 
-            for u in range(len(error_prob)):
+        for u in range(len(error_prob)):
                 if keep_mask[u] == -1.0:
                     error_prob[u] = 1.0
 
-            for u in range(len(error_prob)):
+        for u in range(len(error_prob)):
                 conformal_risks[f"{x}-{y}"].append(error_prob[u])
 
-    return conformal_risks, conformal_ys
+    return conformal_risks, 
 
 
 def roc_curve_model_based(
@@ -854,8 +803,6 @@ def plot_roc_curve(
     imc_risks_ref_splitting,
     regression_risks,
     conformal_risks,
-    regression_ys,
-    conformal_ys,
     target_risks,
     out_path,
 ):
@@ -886,17 +833,16 @@ def plot_roc_curve(
     reg_final_risks = {}
 
     for x in range(1, 11):
-        # for x in range(5,7):
         for key in regression_risks.keys():
-            if int(key.split("-")[1]) == max(regression_ys[str(x)]):
-                reg_final_risks[str(x)] = regression_risks[key]
+            #if int(key.split("-")[1]) == max(regression_ys[str(x)]):
+            reg_final_risks[str(x)] = regression_risks[key]
 
     # Confromal Prediction
     conformal_final_risks = {}
 
     for x in range(8, 9):
         for key in conformal_risks.keys():
-            if int(key.split("-")[1]) == max(conformal_ys[str(x)]):
+            #if int(key.split("-")[1]) == max(conformal_ys[str(x)]):
                 conformal_final_risks[str(x)] = conformal_risks[key]
 
     plt.figure()
@@ -1648,6 +1594,307 @@ def plotting(
     plt.show()
 
 
+def fn_fp_comparison(
+        coarse,
+        imc_stopping_threshold_ref,
+        alarms,
+        imc_risks,
+        imc_risks_ref,
+        target_risks,
+        imc_distances,
+        imc_distances_ref,
+        imc_risks_ref_splitting,
+        imc_distances_ref_splitting,
+        args.out,):
+
+    
+    # iHMM
+    imc_final_risks = {}
+
+    ys = []
+    for key in imc_risks.keys():
+        ys.append(int(key.split("-")[1]))
+
+    for key in imc_risks.keys():
+        if key.split("-")[1] == str(max(ys)):
+            imc_final_risks[key.split("-")[0]] = imc_risks[key]
+
+    # iHMM ref
+    imc_ref_final_risks = {}
+
+    imc_ref_ys = []
+    for key in imc_risks_ref.keys():
+        imc_ref_ys.append(int(key.split("-")[1]))
+
+    for key in imc_risks_ref.keys():
+        if key.split("-")[1] == str(max(imc_ref_ys)):
+            imc_ref_final_risks[key.split("-")[0]] = imc_risks_ref[key]
+
+
+    # iHMM ref with splitting
+    imc_ref_splitting_final_risks = {}
+
+    imc_ref_splitting_ys = []
+    for key in imc_risks_ref_splitting.keys():
+        imc_ref_splitting_ys.append(int(key.split("-")[1]))
+
+    for key in imc_risks_ref_splitting.keys():
+        if key.split("-")[1] == str(max(imc_ref_splitting_ys)):
+            imc_ref_splitting_final_risks[key.split("-")[0]] = imc_risks_ref_splitting[key]
+
+        
+    thresholds = [t / 1000 for t in range(0, 1001)]
+    target_risks = np.array(target_risks,  dtype=float)
+    alarms = np.array(alarms)
+
+    target_fnr = []
+    target_fpr = []
+
+    imc_fnr = {}
+    imc_fpr = {}
+   
+    imc_ref_fnr = {}
+    imc_ref_fpr = {}
+
+    imc_ref_slitting_fnr = {}
+    imc_ref_splitting_fpr = {}
+
+
+    for key in imc_final_risks.keys(): 
+            imc_fnr[key] = []
+            imc_fpr[key] = []
+
+    for key in imc_ref_final_risks.keys(): 
+            imc_ref_fnr[key] = []
+            imc_ref_fpr[key] = []
+
+    for key in imc_ref_splitting_final_risks.keys(): 
+            imc_ref_slitting_fnr[key] = []
+            imc_ref_splitting_fpr[key] = []
+
+
+    for t in thresholds: 
+
+        actual_positives = np.sum(alarms == 1)
+        actual_negatives = np.sum(alarms == 0)
+        total = len(alarms)
+
+        #Target
+        predictions_target = target_risks >= t
+
+        fp_target = np.sum((predictions_target == 1) & (alarms == 0))
+        fn_target = np.sum((predictions_target == 0) & (alarms == 1))
+    
+        fnr_target = fn_target / actual_positives if actual_positives > 0 else 0.0
+        fpr_target = fp_target / actual_negatives if actual_negatives > 0 else 0.0
+        
+        target_fnr.append(fnr_target)
+        target_fpr.append(fpr_target)
+
+    
+        for key in imc_final_risks.keys(): 
+
+                predictions_imc = np.array(imc_final_risks[key], dtype=float) >= t
+
+                fp_imc = np.sum((predictions_imc == True) & (alarms == 0))
+                fn_imc = np.sum((predictions_imc == False) & (alarms == 1))
+                    
+                fnr_imc = fn_imc / actual_positives if actual_positives > 0 else 0.0
+                fpr_imc = fp_imc / actual_negatives if actual_negatives > 0 else 0.0
+
+                imc_fnr[key].append(fnr_imc)
+                imc_fpr[key].append(fpr_imc) 
+
+    
+        for key in imc_ref_final_risks.keys(): 
+                
+                predictions_imc_ref =  np.array(imc_ref_final_risks[key], dtype=float) >= t
+
+                fp_imc_ref = np.sum((predictions_imc_ref == 1) & (alarms == 0))
+                fn_imc_ref = np.sum((predictions_imc_ref == 0) & (alarms == 1))
+                    
+                fnr_imc_ref = fn_imc_ref / actual_positives if actual_positives > 0 else 0.0
+                fpr_imc_ref = fp_imc_ref / actual_negatives if actual_negatives > 0 else 0.0
+
+                imc_ref_fnr[key].append(fnr_imc_ref)
+                imc_ref_fpr[key].append(fpr_imc_ref)
+
+
+        for key in imc_ref_splitting_final_risks.keys(): 
+                
+                predictions_imc_ref_splitting =  np.array(imc_ref_splitting_final_risks[key], dtype=float) >= t
+
+                fp_imc_ref_splitting = np.sum((predictions_imc_ref_splitting == 1) & (alarms == 0))
+                fn_imc_ref_splitting = np.sum((predictions_imc_ref_splitting == 0) & (alarms == 1))
+                    
+                fnr_imc_ref_splitting = fn_imc_ref_splitting / actual_positives if actual_positives > 0 else 0.0
+                fpr_imc_ref_splitting = fp_imc_ref_splitting / actual_negatives if actual_negatives > 0 else 0.0
+
+                imc_ref_slitting_fnr[key].append(fnr_imc_ref_splitting)
+                imc_ref_slitting_fpr[key].append(fpr_imc_ref_splitting)
+
+
+    fig, ax = plt.subplots(figsize=(8, 5)) 
+
+    auc_fnr_target = np.trapz(target_fnr, thresholds)
+    auc_fpr_target = np.trapz(target_fpr, thresholds)
+
+
+    ax.plot(thresholds, target_fnr, label=f'Target FNR: (AUC {auc_fnr_target:.3f})', color='black', linestyle= ':')
+    ax.plot(thresholds, target_fpr, label=f'Target FPR: (AUC {auc_fpr_target:.3f})', color='black', linestyle= '--')
+
+    #No Refinement
+    
+    imc_FNRs = []
+    imc_FPRs = []
+
+    imc_fnr_aucs = []
+    imc_fpr_aucs = []
+
+
+    for key in imc_final_risks.keys():
+        imc_FNRs.append(imc_fnr[key]) 
+        imc_FPRs.append(imc_fpr[key])
+        imc_fnr_aucs.append(np.trapz(imc_fnr[key], thresholds))
+        imc_fpr_aucs.append(np.trapz(imc_fpr[key], thresholds))
+
+    imc_FNRs = np.array(imc_FNRs)    
+
+    imc_fnr_mean = np.mean(imc_FNRs, axis=0)
+    imc_fnr_std = np.std(imc_FNRs, axis=0)
+
+    imc_fnr_aucs = np.array(imc_fnr_aucs)
+    imc_fnr_auc = np.mean(imc_fnr_aucs, axis=0)
+
+    imc_fpr_aucs = np.array(imc_fpr_aucs)
+    imc_fpr_auc = np.mean(imc_fpr_aucs, axis=0)
+
+    ax.plot(thresholds, imc_fnr_mean, label=f'No refinement mean FNR: (AUC {imc_fnr_auc:.3f})', color='red', linestyle= ':')
+
+    plt.fill_between(
+    thresholds,
+    imc_fnr_mean - imc_fnr_std,   
+    imc_fnr_mean + imc_fnr_std,   
+    color="red",
+    alpha=0.2
+    )
+
+    imc_FPRs = np.array(imc_FPRs)
+
+    imc_fpr_mean = np.mean(imc_FPRs, axis=0)
+    imc_fpr_std = np.std(imc_FPRs, axis=0)
+
+    ax.plot(thresholds, imc_fpr_mean, label=f'No refinement mean FPR: (AUC {imc_fpr_auc:.3f})', color='red', linestyle= '--')
+
+    plt.fill_between(
+    thresholds,
+    imc_fpr_mean - imc_fpr_std,   
+    imc_fpr_mean + imc_fpr_std,   
+    color="red",
+    alpha=0.2
+    )
+
+    #Refinement
+
+
+    imc_ref_FNRs = []
+    imc_ref_FPRs = []
+
+    imc_ref_fnr_aucs = []
+    imc_ref_fpr_aucs = []
+
+
+    for key in imc_ref_final_risks.keys():
+        imc_ref_FNRs.append(imc_ref_fnr[key]) 
+        imc_ref_FPRs.append(imc_ref_fpr[key])
+        imc_ref_fnr_aucs.append(np.trapz(imc_ref_fnr[key], thresholds))
+        imc_ref_fpr_aucs.append(np.trapz(imc_ref_fpr[key], thresholds))
+
+    imc_ref_FNRs = np.array(imc_ref_FNRs)    
+
+    imc_ref_fnr_mean = np.mean(imc_ref_FNRs, axis=0)
+    imc_ref_fnr_std = np.std(imc_ref_FNRs, axis=0)
+
+    imc_ref_fnr_aucs = np.array(imc_ref_fnr_aucs)
+    imc_ref_fnr_auc = np.mean(imc_ref_fnr_aucs, axis=0)
+
+    imc_ref_fpr_aucs = np.array(imc_ref_fpr_aucs)
+    imc_ref_fpr_auc = np.mean(imc_ref_fpr_aucs, axis=0)
+
+
+    ax.plot(thresholds, imc_ref_fnr_mean, label=f'Refinement mean FNR: (AUC {imc_ref_fnr_auc:.3f})', color='green', linestyle= ':')
+
+    plt.fill_between(
+    thresholds,
+    imc_ref_fnr_mean - imc_ref_fnr_std,   
+    imc_ref_fnr_mean + imc_ref_fnr_std,   
+    color="green",
+    alpha=0.2
+    )
+
+    imc_ref_FPRs = np.array(imc_ref_FPRs)
+
+    imc_ref_fpr_mean = np.mean(imc_ref_FPRs, axis=0)
+    imc_ref_fpr_std = np.std(imc_ref_FPRs, axis=0)
+
+    ax.plot(thresholds, imc_ref_fpr_mean, label=f'Refinement mean FPR: (AUC {imc_ref_fpr_auc:.3f})', color='green', linestyle= '--')
+
+    plt.fill_between(
+    thresholds,
+    imc_ref_fpr_mean - imc_ref_fpr_std,   
+    imc_ref_fpr_mean + imc_ref_fpr_std,   
+    color="green",
+    alpha=0.2
+    )
+
+
+    #Refinement with splitting
+    #
+
+    #mc_fnr_mean = np.array(mc_fnr_mean)
+    #target_fnr = np.array(target_fnr)
+    #thresholds = np.array(thresholds)
+
+    #mask_2 = target_fnr < mc_fnr_mean
+
+    #count = 0 
+
+    #indices_2 = np.where(mask_2)[0]
+    #for k, g in groupby(enumerate(indices_2), lambda i: i[0]-i[1]):
+    #    count +=1 
+    #    group = list(map(itemgetter(1), g))
+    #    start = thresholds[group[0]]
+    #    end = thresholds[group[-1]]
+    #    if count < 1:
+    #        ax.axvspan(start, end, color='peachpuff', alpha=0.5,  label='HMM mean FNR > Target FNR')
+    #    else:
+    #        ax.axvspan(start, end, color='peachpuff', alpha=0.5) 
+
+
+    ax.set_xlabel('Threshold')
+    ax.set_ylabel('Rate')
+    ax.legend()
+    ax.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
+    if coarse:
+        fig.savefig(
+                f"{out_path}/rq_1_{args.mc}_coarse_FN_FP_multi.pdf",
+                dpi=300,
+                bbox_inches="tight",
+            )
+    else:
+        fig.savefig(
+                f"{out_path}/rq_1_{args.mc}_FN_FP_multi.pdf",
+                dpi=300,
+                bbox_inches="tight",
+            )
+
+    plt.show()
+
+
 def main_imc(args: argparse.Namespace):
     setup_logging("rq3:" + args.mc + str(args.coarse) + str(args.high_st))
 
@@ -1675,7 +1922,19 @@ def main_imc(args: argparse.Namespace):
     mc = args.mc
     model_path = args.model_path
     stats_path = args.stats_path
-    args.high_st
+    high_st = args.high_st
+
+    regression_risks = aggregated_stats_regression(
+        args.high_st,
+        coarse,
+        mc,
+        model_path,
+        stats_path,
+        testing_samples,
+        horizon,
+        initial_amount,
+    )
+
 
     (
         imc_risks_ref_splitting,
@@ -1723,17 +1982,8 @@ def main_imc(args: argparse.Namespace):
         testing_samples,
     )
 
-    regression_risks, regression_ys = aggregated_stats_regression(
-        args.high_st,
-        coarse,
-        mc,
-        model_path,
-        stats_path,
-        testing_samples,
-        horizon,
-        initial_amount,
-    )
-    conformal_risks, conformal_ys = aggreagted_stats_conformal(
+    
+    conformal_risks = aggreagted_stats_conformal(
         args.high_st, noisy_measurements, coarse, mc, model_path, stats_path
     )
 
@@ -1754,9 +2004,9 @@ def main_imc(args: argparse.Namespace):
     test_data['imc_distances_ref'] = imc_distances_ref
     test_data['imc_distances_ref_splitting'] = imc_distances_ref_splitting
     test_data['regression_risks'] = regression_risks
-    test_data['regression_ys'] = regression_ys
+    #test_data['regression_ys'] = regression_ys
     test_data['conformal_risks'] = conformal_risks
-    test_data['conformal_ys'] = conformal_ys
+    #test_data['conformal_ys'] = conformal_ys
    
 
     if args.coarse: 
@@ -1788,6 +2038,9 @@ def main_imc(args: argparse.Namespace):
         imc_distances_ref_splitting,
         args.out,
     )
+
+
+
     plot_roc_curve(
         imc_stopping_threshold_ref,
         args.high_st,
@@ -1797,8 +2050,6 @@ def main_imc(args: argparse.Namespace):
         imc_risks_ref_splitting,
         regression_risks,
         conformal_risks,
-        regression_ys,
-        conformal_ys,
         target_risks,
         args.out,
     )
@@ -1917,5 +2168,3 @@ if __name__ == "__main__":
     main_imc(args)
 
 
-# python -m premise.interval.rq_3 --mc airportA-7-10-10 --stats-path /workspaces/premise/out/stats/2025-07-17 --coarse
-# python -m premise.interval.rq_3 --mc evadeV-5-3 --stats-path /workspaces/premise/out/stats/2025-07-17
