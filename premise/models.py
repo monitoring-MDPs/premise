@@ -121,16 +121,6 @@ default_models = {
         initial_amount=15,
         horizon=5,
     ),
-    "SnL-test": ModelDescription(
-        Path(__file__).parent / "examples/test.nm",
-        "n=9, l1s=1, l1d=38, l2s=4, l2d=14, l3s=9, l3d=31, l4s=28, l4d=64, s1s=98, s1d=76",
-        'Pmax=? [F<3 "good" ]',
-        target_label="good",
-        # horizon=12,
-        # initial_amount=10,
-        initial_amount=15,
-        horizon=5,
-    ),
 }
 
 
