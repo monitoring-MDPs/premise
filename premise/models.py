@@ -166,9 +166,9 @@ default_models = {
     "unlikely-15": ModelDescription(
         Path(__file__).parent / "examples/unlikely-trace/simple.nm",
         "N=15",
-        'Pmax=? [F<=1 "crash"]',
+        'Pmax=? [F<=2 "crash"]',
         target_label="crash",
-        horizon=1,
+        horizon=2,
         initial_amount=15,
     ),
 }
