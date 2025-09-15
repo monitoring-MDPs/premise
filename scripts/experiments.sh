@@ -22,11 +22,11 @@ fi
 export OPENBLAS_NUM_THREADS=1
 
 # Generate repeated commands with run_id replaced
-sed "s/date/${now}/g" scripts/commands.sh | sed "s|stats_path|${stats_path}|g" | sed '/^#/d' | \
+sed "s/date/${now}/g" scripts/test-commands.sh | sed "s|stats_path|${stats_path}|g" | sed '/^#/d' | \
 while read -r cmd; do
     for i in $(seq 1 $n); do
         echo "$cmd" | sed "s/run_id/${i}/g"
     done
 done | shuf | parallel --verbose --results out/logs/$now/{#}_{}/ --ungroup --eta --no-run-if-empty --joblog out/logs/$now/joblog.tsv --jobs $jobs
 
-scripts/exp-conformal.sh out/stats/$now out/models/$now out/logs/$now
+# scripts/exp-conformal.sh out/stats/$now out/models/$now out/logs/$now

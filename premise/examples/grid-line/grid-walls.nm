@@ -1,0 +1,33 @@
+pomdp
+
+observables
+x_even
+endobservables
+
+const int N;
+const int xMAX = N-1;
+const int yMAX = N-1;
+const int xMIN = 0;
+const int yMIN = 0;
+const double xMaxSlippery = 0.9;
+const double ySlippery = 0.2;
+
+formula crash = x = xMAX;
+observable "crash" = crash;
+
+module x_axis
+    x : [xMIN..xMAX] init xMIN;
+    x_even : bool init true;
+    [move] !crash & y != yMIN -> (y/yMAX * xMaxSlippery): (x'=min(x+1,xMAX))&(x_even'=!x_even) + (1-(y/yMAX * xMaxSlippery)): (x'=x);
+    [move] crash | y = yMIN -> (x'=x);
+endmodule
+
+module y_axis
+    y : [yMIN..yMAX] init yMIN;
+    y_even : bool init true;
+    [move] !crash & y != yMAX -> ySlippery: (y'=min(y+1,yMAX))&(y_even'=!y_even) + (1-ySlippery): (y'=y);
+    [move] crash | y = yMAX -> (y'=y);
+endmodule
+
+label "crash" = crash;
+label "notbad" = !crash;

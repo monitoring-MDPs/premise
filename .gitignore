@@ -145,3 +145,4 @@ typing/
 out/
 memray*
 *.zip
+*.dot
