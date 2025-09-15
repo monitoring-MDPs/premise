@@ -8,6 +8,7 @@ import os
 import pickle
 from sklearn import metrics
 import matplotlib.ticker as ticker
+from itertools import accumulate
 
 
 from premise.interval.model_free.regression_model import prep_traces_onehot_encoder, create_onehot_encoder
@@ -832,18 +833,18 @@ def plot_roc_curve(
     # Regression
     reg_final_risks = {}
 
-    for x in range(1, 11):
-        for key in regression_risks.keys():
-            #if int(key.split("-")[1]) == max(regression_ys[str(x)]):
-            reg_final_risks[str(x)] = regression_risks[key]
+    #for x in range(1, 11):
+    for key in regression_risks.keys():
+        #if int(key.split("-")[1]) == max(regression_ys[str(x)]):
+        reg_final_risks[key] = regression_risks[key]
 
     # Confromal Prediction
     conformal_final_risks = {}
 
-    for x in range(8, 9):
-        for key in conformal_risks.keys():
-            #if int(key.split("-")[1]) == max(conformal_ys[str(x)]):
-                conformal_final_risks[str(x)] = conformal_risks[key]
+    #for x in range(1, 11):
+    for key in conformal_risks.keys():
+        #if int(key.split("-")[1]) == max(conformal_ys[str(x)]):
+        conformal_final_risks[key] = conformal_risks[key]
 
     plt.figure()
     fig, ax = plt.subplots(figsize=(16, 12))
@@ -1594,18 +1595,13 @@ def plotting(
     plt.show()
 
 
-def fn_fp_comparison(
+def fn_fp_comparison_model_based(
         coarse,
-        imc_stopping_threshold_ref,
-        alarms,
-        imc_risks,
+        alarms,imc_risks,
         imc_risks_ref,
         target_risks,
-        imc_distances,
-        imc_distances_ref,
-        imc_risks_ref_splitting,
-        imc_distances_ref_splitting,
-        args.out,):
+        imc_risks_ref_splitting, 
+        out_path):
 
     
     # iHMM
@@ -1656,7 +1652,7 @@ def fn_fp_comparison(
     imc_ref_fnr = {}
     imc_ref_fpr = {}
 
-    imc_ref_slitting_fnr = {}
+    imc_ref_splitting_fnr = {}
     imc_ref_splitting_fpr = {}
 
 
@@ -1669,7 +1665,7 @@ def fn_fp_comparison(
             imc_ref_fpr[key] = []
 
     for key in imc_ref_splitting_final_risks.keys(): 
-            imc_ref_slitting_fnr[key] = []
+            imc_ref_splitting_fnr[key] = []
             imc_ref_splitting_fpr[key] = []
 
 
@@ -1730,8 +1726,8 @@ def fn_fp_comparison(
                 fnr_imc_ref_splitting = fn_imc_ref_splitting / actual_positives if actual_positives > 0 else 0.0
                 fpr_imc_ref_splitting = fp_imc_ref_splitting / actual_negatives if actual_negatives > 0 else 0.0
 
-                imc_ref_slitting_fnr[key].append(fnr_imc_ref_splitting)
-                imc_ref_slitting_fpr[key].append(fpr_imc_ref_splitting)
+                imc_ref_splitting_fnr[key].append(fnr_imc_ref_splitting)
+                imc_ref_splitting_fpr[key].append(fpr_imc_ref_splitting)
 
 
     fig, ax = plt.subplots(figsize=(8, 5)) 
@@ -1822,13 +1818,13 @@ def fn_fp_comparison(
     imc_ref_fpr_auc = np.mean(imc_ref_fpr_aucs, axis=0)
 
 
-    ax.plot(thresholds, imc_ref_fnr_mean, label=f'Refinement mean FNR: (AUC {imc_ref_fnr_auc:.3f})', color='green', linestyle= ':')
+    ax.plot(thresholds, imc_ref_fnr_mean, label=f'Refinement mean FNR: (AUC {imc_ref_fnr_auc:.3f})', color='blue', linestyle= ':')
 
     plt.fill_between(
     thresholds,
     imc_ref_fnr_mean - imc_ref_fnr_std,   
     imc_ref_fnr_mean + imc_ref_fnr_std,   
-    color="green",
+    color="blue",
     alpha=0.2
     )
 
@@ -1837,38 +1833,67 @@ def fn_fp_comparison(
     imc_ref_fpr_mean = np.mean(imc_ref_FPRs, axis=0)
     imc_ref_fpr_std = np.std(imc_ref_FPRs, axis=0)
 
-    ax.plot(thresholds, imc_ref_fpr_mean, label=f'Refinement mean FPR: (AUC {imc_ref_fpr_auc:.3f})', color='green', linestyle= '--')
+    ax.plot(thresholds, imc_ref_fpr_mean, label=f'Refinement mean FPR: (AUC {imc_ref_fpr_auc:.3f})', color='blue', linestyle= '--')
 
     plt.fill_between(
     thresholds,
     imc_ref_fpr_mean - imc_ref_fpr_std,   
     imc_ref_fpr_mean + imc_ref_fpr_std,   
-    color="green",
+    color="blue",
     alpha=0.2
     )
 
-
     #Refinement with splitting
-    #
 
-    #mc_fnr_mean = np.array(mc_fnr_mean)
-    #target_fnr = np.array(target_fnr)
-    #thresholds = np.array(thresholds)
+    imc_ref_splitting_FNRs = []
+    imc_ref_splitting_FPRs = []
 
-    #mask_2 = target_fnr < mc_fnr_mean
+    imc_ref_splitting_fnr_aucs = []
+    imc_ref_splitting_fpr_aucs = []
 
-    #count = 0 
 
-    #indices_2 = np.where(mask_2)[0]
-    #for k, g in groupby(enumerate(indices_2), lambda i: i[0]-i[1]):
-    #    count +=1 
-    #    group = list(map(itemgetter(1), g))
-    #    start = thresholds[group[0]]
-    #    end = thresholds[group[-1]]
-    #    if count < 1:
-    #        ax.axvspan(start, end, color='peachpuff', alpha=0.5,  label='HMM mean FNR > Target FNR')
-    #    else:
-    #        ax.axvspan(start, end, color='peachpuff', alpha=0.5) 
+    for key in imc_ref_splitting_final_risks.keys():
+        imc_ref_splitting_FNRs.append(imc_ref_splitting_fnr[key]) 
+        imc_ref_splitting_FPRs.append(imc_ref_splitting_fpr[key])
+        imc_ref_splitting_fnr_aucs.append(np.trapz(imc_ref_splitting_fnr[key], thresholds))
+        imc_ref_splitting_fpr_aucs.append(np.trapz(imc_ref_splitting_fpr[key], thresholds))
+
+    imc_ref_splitting_FNRs = np.array(imc_ref_splitting_FNRs)    
+
+    imc_ref_splitting_fnr_mean = np.mean(imc_ref_splitting_FNRs, axis=0)
+    imc_ref_splitting_fnr_std = np.std(imc_ref_splitting_FNRs, axis=0)
+
+    imc_ref_splitting_fnr_aucs = np.array(imc_ref_splitting_fnr_aucs)
+    imc_ref_splitting_fnr_auc = np.mean(imc_ref_splitting_fnr_aucs, axis=0)
+
+    imc_ref_splitting_fpr_aucs = np.array(imc_ref_splitting_fpr_aucs)
+    imc_ref_splitting_fpr_auc = np.mean(imc_ref_splitting_fpr_aucs, axis=0)
+
+
+    ax.plot(thresholds, imc_ref_splitting_fnr_mean, label=f'Refinement with Splitting mean FNR: (AUC {imc_ref_splitting_fnr_auc:.3f})', color='aqua', linestyle= ':')
+
+    plt.fill_between(
+    thresholds,
+    imc_ref_splitting_fnr_mean - imc_ref_splitting_fnr_std,   
+    imc_ref_splitting_fnr_mean + imc_ref_splitting_fnr_std,   
+    color="aqua",
+    alpha=0.2
+    )
+
+    imc_ref_splitting_FPRs = np.array(imc_ref_splitting_FPRs)
+
+    imc_ref_splitting_fpr_mean = np.mean(imc_ref_splitting_FPRs, axis=0)
+    imc_ref_splitting_fpr_std = np.std(imc_ref_splitting_FPRs, axis=0)
+
+    ax.plot(thresholds, imc_ref_splitting_fpr_mean, label=f'Refinement with Splitting mean FPR: (AUC {imc_ref_splitting_fpr_auc:.3f})', color='aqua', linestyle= '--')
+
+    plt.fill_between(
+    thresholds,
+    imc_ref_splitting_fpr_mean - imc_ref_splitting_fpr_std,   
+    imc_ref_splitting_fpr_mean + imc_ref_splitting_fpr_std,   
+    color="aqua",
+    alpha=0.2
+    )
 
 
     ax.set_xlabel('Threshold')
@@ -1881,13 +1906,814 @@ def fn_fp_comparison(
 
     if coarse:
         fig.savefig(
-                f"{out_path}/rq_1_{args.mc}_coarse_FN_FP_multi.pdf",
+                f"{out_path}/rq_2_{args.mc}_coarse_FN_FP_model_based.pdf",
                 dpi=300,
                 bbox_inches="tight",
             )
     else:
         fig.savefig(
-                f"{out_path}/rq_1_{args.mc}_FN_FP_multi.pdf",
+                f"{out_path}/rq_2_{args.mc}_FN_FP_model_based.pdf",
+                dpi=300,
+                bbox_inches="tight",
+            )
+
+    plt.show()
+
+
+
+def fn_fp_AUC_model_based(
+        coarse,
+        alarms,imc_risks,
+        imc_risks_ref,
+        target_risks,
+        imc_risks_ref_splitting, 
+        imc_transition_counts,
+        imc_transition_counts_ref,
+        imc_transition_counts_ref_splitting,
+        out_path):
+
+    
+        
+    thresholds = [t / 1000 for t in range(0, 1001)]
+    target_risks = np.array(target_risks,  dtype=float)
+    alarms = np.array(alarms)
+
+    target_fnr = []
+    target_fpr = []
+
+    imc_fnr = {}
+    imc_fpr = {}
+   
+    imc_ref_fnr = {}
+    imc_ref_fpr = {}
+
+    imc_ref_splitting_fnr = {}
+    imc_ref_splitting_fpr = {}
+
+
+    for key in imc_risks.keys(): 
+            imc_fnr[key] = []
+            imc_fpr[key] = []
+
+    for key in imc_risks_ref.keys(): 
+            imc_ref_fnr[key] = []
+            imc_ref_fpr[key] = []
+
+    for key in imc_risks_ref_splitting.keys(): 
+            imc_ref_splitting_fnr[key] = []
+            imc_ref_splitting_fpr[key] = []
+
+
+    for t in thresholds: 
+
+        actual_positives = np.sum(alarms == 1)
+        actual_negatives = np.sum(alarms == 0)
+        total = len(alarms)
+
+        #Target
+        predictions_target = target_risks >= t
+
+        fp_target = np.sum((predictions_target == 1) & (alarms == 0))
+        fn_target = np.sum((predictions_target == 0) & (alarms == 1))
+    
+        fnr_target = fn_target / actual_positives if actual_positives > 0 else 0.0
+        fpr_target = fp_target / actual_negatives if actual_negatives > 0 else 0.0
+        
+        target_fnr.append(fnr_target)
+        target_fpr.append(fpr_target)
+
+    
+        for key in imc_risks.keys(): 
+
+                predictions_imc = np.array(imc_risks[key], dtype=float) >= t
+
+                fp_imc = np.sum((predictions_imc == True) & (alarms == 0))
+                fn_imc = np.sum((predictions_imc == False) & (alarms == 1))
+                    
+                fnr_imc = fn_imc / actual_positives if actual_positives > 0 else 0.0
+                fpr_imc = fp_imc / actual_negatives if actual_negatives > 0 else 0.0
+
+                imc_fnr[key].append(fnr_imc)
+                imc_fpr[key].append(fpr_imc) 
+
+    
+        for key in imc_risks_ref.keys(): 
+                
+                predictions_imc_ref =  np.array(imc_risks_ref[key], dtype=float) >= t
+
+                fp_imc_ref = np.sum((predictions_imc_ref == 1) & (alarms == 0))
+                fn_imc_ref = np.sum((predictions_imc_ref == 0) & (alarms == 1))
+                    
+                fnr_imc_ref = fn_imc_ref / actual_positives if actual_positives > 0 else 0.0
+                fpr_imc_ref = fp_imc_ref / actual_negatives if actual_negatives > 0 else 0.0
+
+                imc_ref_fnr[key].append(fnr_imc_ref)
+                imc_ref_fpr[key].append(fpr_imc_ref)
+
+
+        for key in imc_risks_ref_splitting.keys(): 
+                
+                predictions_imc_ref_splitting =  np.array(imc_risks_ref_splitting[key], dtype=float) >= t
+
+                fp_imc_ref_splitting = np.sum((predictions_imc_ref_splitting == 1) & (alarms == 0))
+                fn_imc_ref_splitting = np.sum((predictions_imc_ref_splitting == 0) & (alarms == 1))
+                    
+                fnr_imc_ref_splitting = fn_imc_ref_splitting / actual_positives if actual_positives > 0 else 0.0
+                fpr_imc_ref_splitting = fp_imc_ref_splitting / actual_negatives if actual_negatives > 0 else 0.0
+
+                imc_ref_splitting_fnr[key].append(fnr_imc_ref_splitting)
+                imc_ref_splitting_fpr[key].append(fpr_imc_ref_splitting)
+
+
+    fig, ax = plt.subplots(figsize=(8, 5)) 
+
+    auc_fnr_target = np.trapz(target_fnr, thresholds)
+    auc_fpr_target = np.trapz(target_fpr, thresholds)
+
+    imc_transition_counts_accumulated = {}
+    imc_transition_counts_ref_accumulated = {}
+    imc_transition_counts_ref_splitting_accumulated = {}
+
+    for x in imc_transition_counts.keys():
+
+        imc_transition_counts_accumulated[x] = list(accumulate(imc_transition_counts[x]))
+        imc_transition_counts_ref_accumulated[x] = list(accumulate(imc_transition_counts_ref[x]))
+        imc_transition_counts_ref_splitting_accumulated[x] = list(accumulate(imc_transition_counts_ref_splitting[x]))
+
+    y_range = 0 
+
+    for x in imc_transition_counts.keys():
+        if max([max(imc_transition_counts_accumulated[x]),max(imc_transition_counts_ref_accumulated[x]),max(imc_transition_counts_ref_splitting_accumulated[x])]) > y_range: 
+            y_range = max([max(imc_transition_counts_accumulated[x]),max(imc_transition_counts_ref_accumulated[x]),max(imc_transition_counts_ref_splitting_accumulated[x])])
+
+
+    ax.plot( [0, int(y_range)], [auc_fnr_target, auc_fnr_target], label = 'Target FNR AUC', color = 'black', linestyle= '--')
+    ax.plot( [0, int(y_range)], [auc_fpr_target, auc_fpr_target], label = 'Target FPR AUC', color = 'black', linestyle= ':')
+
+    #No Refinement
+    
+    imc_fnr_aucs = {}
+    imc_fpr_aucs = {}
+
+    for key in imc_risks.keys():
+        imc_fnr_aucs[key] = np.trapz(imc_fnr[key], thresholds)
+        imc_fpr_aucs[key] = np.trapz(imc_fpr[key], thresholds)
+
+
+    #fnr
+
+    imc_fnr_aucs_sorted = {}
+
+    for key in imc_fnr_aucs.keys(): 
+        imc_fnr_aucs_sorted[key.split("-")[1]] = []
+
+
+    for x in imc_fnr_aucs.keys():
+        for y in imc_fnr_aucs_sorted.keys(): 
+            if x.split("-")[1] == y: 
+                print(x, imc_fnr_aucs[x])
+                imc_fnr_aucs_sorted[y].append([imc_fnr_aucs[x]])
+
+
+    imc_fnr_aucs_soreted_mean = {}
+    imc_fnr_aucs_soreted_std = {}
+
+    for key in imc_fnr_aucs_sorted.keys(): 
+        imc_fnr_aucs_sorted[key] = np.array(imc_fnr_aucs_sorted[key])
+        imc_fnr_aucs_soreted_mean[key] = np.mean(imc_fnr_aucs_sorted[key], axis=0)
+        imc_fnr_aucs_soreted_std[key] = np.std(imc_fnr_aucs_sorted[key], axis=0)
+
+    imc_fnr_aucs_soreted_mean_list = []
+     
+    for key in imc_fnr_aucs_soreted_mean: 
+        imc_fnr_aucs_soreted_mean_list.append(imc_fnr_aucs_soreted_mean[key])
+
+    imc_fnr_aucs_soreted_std_list = []
+
+    for key in imc_fnr_aucs_soreted_std: 
+        imc_fnr_aucs_soreted_std_list.append(imc_fnr_aucs_soreted_std[key])
+
+    imc_fnr_aucs_soreted_mean_list = np.array(imc_fnr_aucs_soreted_mean_list)
+    imc_fnr_aucs_soreted_std_list = np.array(imc_fnr_aucs_soreted_std_list)
+
+    #fpr
+
+    imc_fpr_aucs_sorted = {}
+
+    for key in imc_fpr_aucs.keys(): 
+        imc_fpr_aucs_sorted[key.split("-")[1]] = []
+
+
+    for x in imc_fpr_aucs.keys():
+        for y in imc_fpr_aucs_sorted.keys(): 
+            if x.split("-")[1] == y: 
+                imc_fpr_aucs_sorted[y].append([imc_fpr_aucs[x]])
+
+
+    imc_fpr_aucs_soreted_mean = {}
+    imc_fpr_aucs_soreted_std = {}
+
+
+    for key in imc_fpr_aucs_sorted.keys(): 
+        imc_fpr_aucs_sorted[key] = np.array(imc_fpr_aucs_sorted[key])
+        imc_fpr_aucs_soreted_mean[key] = np.mean(imc_fpr_aucs_sorted[key], axis=0)
+        imc_fpr_aucs_soreted_std[key] = np.std(imc_fpr_aucs_sorted[key], axis=0)
+
+    imc_fpr_aucs_soreted_mean_list = []
+    imc_fpr_aucs_soreted_std_list = []
+
+     
+    for key in imc_fpr_aucs_soreted_mean: 
+        imc_fpr_aucs_soreted_mean_list.append(imc_fpr_aucs_soreted_mean[key])
+        imc_fpr_aucs_soreted_std_list.append(imc_fpr_aucs_soreted_std[key])
+
+    imc_fpr_aucs_soreted_mean_list = np.array(imc_fpr_aucs_soreted_mean_list) 
+    imc_fpr_aucs_soreted_std_list = np.array(imc_fpr_aucs_soreted_std_list)
+
+    x_axis = []
+
+    for key in imc_transition_counts_accumulated.keys(): 
+       x_axis.append(imc_transition_counts_accumulated[key])
+       
+    max_len = max(len(row) for row in x_axis)
+    x_axis_padded = [row + [np.nan]*(max_len - len(row)) for row in x_axis]
+    x_axis_padded = np.array(x_axis_padded)
+    x_mean = np.nanmean(x_axis_padded, axis=0) 
+
+    ax.plot(x_mean, imc_fnr_aucs_soreted_mean_list, label = 'No refinement FNR AUC', color='red', linestyle= '--')
+    ax.plot(x_mean, imc_fpr_aucs_soreted_mean_list, label = 'No refinement FPR AUC', color='red', linestyle= ':')
+
+
+    #Refinement
+    
+    imc_ref_fnr_aucs = {}
+    imc_ref_fpr_aucs = {}
+
+    for key in imc_risks_ref.keys():
+        imc_ref_fnr_aucs[key] = np.trapz(imc_ref_fnr[key], thresholds)
+        imc_ref_fpr_aucs[key] = np.trapz(imc_ref_fpr[key], thresholds)
+
+
+    #fnr
+    imc_ref_fnr_aucs_sorted = {}
+
+    for key in imc_ref_fnr_aucs.keys(): 
+        imc_ref_fnr_aucs_sorted[key.split("-")[1]] = []
+
+
+    for x in imc_ref_fnr_aucs.keys():
+        for y in imc_ref_fnr_aucs_sorted.keys(): 
+            if x.split("-")[1] == y: 
+                print(x, imc_ref_fnr_aucs[x])
+                imc_ref_fnr_aucs_sorted[y].append([imc_ref_fnr_aucs[x]])
+
+    imc_ref_fnr_aucs_soreted_mean = {}
+
+    for key in imc_ref_fnr_aucs_sorted.keys(): 
+        imc_ref_fnr_aucs_sorted[key] = np.array(imc_ref_fnr_aucs_sorted[key])
+        imc_ref_fnr_aucs_soreted_mean[key] = np.mean(imc_ref_fnr_aucs_sorted[key], axis=0)
+
+
+    imc_ref_fnr_aucs_soreted_mean_list = []
+
+    for key in imc_ref_fnr_aucs_soreted_mean.keys(): 
+        imc_ref_fnr_aucs_soreted_mean_list.append(imc_ref_fnr_aucs_soreted_mean[key])
+
+    #fpr
+
+    imc_ref_fpr_aucs_sorted = {}
+
+    for key in imc_ref_fpr_aucs.keys(): 
+        imc_ref_fpr_aucs_sorted[key.split("-")[1]] = []
+
+
+    for x in imc_ref_fpr_aucs.keys():
+        for y in imc_ref_fpr_aucs_sorted.keys(): 
+            if x.split("-")[1] == y: 
+                print(x, imc_ref_fpr_aucs[x])
+                imc_ref_fpr_aucs_sorted[y].append([imc_ref_fpr_aucs[x]])
+
+    imc_ref_fpr_aucs_soreted_mean = {}
+
+    for key in imc_ref_fpr_aucs_sorted.keys(): 
+        imc_ref_fpr_aucs_sorted[key] = np.array(imc_ref_fpr_aucs_sorted[key])
+        imc_ref_fpr_aucs_soreted_mean[key] = np.mean(imc_ref_fpr_aucs_sorted[key], axis=0)
+
+    imc_ref_fpr_aucs_soreted_mean_list = []
+
+    for key in imc_ref_fpr_aucs_soreted_mean.keys(): 
+        imc_ref_fpr_aucs_soreted_mean_list.append(imc_ref_fpr_aucs_soreted_mean[key])
+
+    x_axis = []
+
+    for key in imc_transition_counts_ref_accumulated.keys(): 
+       x_axis.append(imc_transition_counts_ref_accumulated[key])
+
+    max_len = max(len(row) for row in x_axis)
+    x_axis_padded = [row + [np.nan]*(max_len - len(row)) for row in x_axis]
+    x_axis_padded = np.array(x_axis_padded)
+    x_mean = np.nanmean(x_axis_padded, axis=0)
+    
+    ax.plot(x_mean, imc_ref_fnr_aucs_soreted_mean_list, label = 'Refinement FNR AUC', color='blue', linestyle= '--')
+    ax.plot(x_mean, imc_ref_fpr_aucs_soreted_mean_list, label = 'Refinement FPR AUC', color='blue', linestyle= ':')
+
+    #Refinement with Splitting
+    
+    imc_ref_splitting_fnr_aucs = {}
+    imc_ref_splitting_fpr_aucs = {}
+
+    for key in imc_risks_ref_splitting.keys():
+        imc_ref_splitting_fnr_aucs[key] = np.trapz(imc_ref_splitting_fnr[key], thresholds)
+        imc_ref_splitting_fpr_aucs[key] = np.trapz(imc_ref_splitting_fpr[key], thresholds)
+
+
+    imc_ref_splitting_fnr_aucs_sorted = {}
+
+    for key in imc_ref_splitting_fnr_aucs.keys(): 
+        imc_ref_splitting_fnr_aucs_sorted[key.split("-")[1]] = []
+
+
+    for x in imc_ref_splitting_fnr_aucs.keys():
+        for y in imc_ref_splitting_fnr_aucs_sorted.keys(): 
+            if x.split("-")[1] == y: 
+                print(x, imc_ref_splitting_fnr_aucs[x])
+                imc_ref_splitting_fnr_aucs_sorted[y].append([imc_ref_splitting_fnr_aucs[x]])
+
+
+    imc_ref_splitting_fnr_aucs_soreted_mean = {}
+
+    for key in imc_ref_splitting_fnr_aucs_sorted.keys(): 
+        imc_ref_splitting_fnr_aucs_sorted[key] = np.array(imc_ref_splitting_fnr_aucs_sorted[key])
+        imc_ref_splitting_fnr_aucs_soreted_mean[key] = np.mean(imc_ref_splitting_fnr_aucs_sorted[key], axis=0)
+
+
+    imc_ref_splitting_fnr_aucs_soreted_mean_list = []
+
+    for key in imc_ref_splitting_fnr_aucs_soreted_mean.keys(): 
+        imc_ref_splitting_fnr_aucs_soreted_mean_list.append(imc_ref_splitting_fnr_aucs_soreted_mean[key])
+
+    imc_ref_splitting_fpr_aucs_sorted = {}
+
+    for key in imc_ref_splitting_fpr_aucs.keys(): 
+        imc_ref_splitting_fpr_aucs_sorted[key.split("-")[1]] = []
+
+
+    for x in imc_ref_splitting_fpr_aucs.keys():
+        for y in imc_ref_splitting_fpr_aucs_sorted.keys(): 
+            if x.split("-")[1] == y: 
+                print(x, imc_ref_splitting_fpr_aucs[x])
+                imc_ref_splitting_fpr_aucs_sorted[y].append([imc_ref_splitting_fpr_aucs[x]])
+
+
+    imc_ref_splitting_fpr_aucs_soreted_mean = {}
+
+    for key in imc_ref_splitting_fpr_aucs_sorted.keys(): 
+        imc_ref_splitting_fpr_aucs_sorted[key] = np.array(imc_ref_splitting_fpr_aucs_sorted[key])
+        imc_ref_splitting_fpr_aucs_soreted_mean[key] = np.mean(imc_ref_splitting_fpr_aucs_sorted[key], axis=0)
+
+
+    imc_ref_splitting_fpr_aucs_soreted_mean_list = []
+
+    for key in imc_ref_splitting_fpr_aucs_soreted_mean.keys(): 
+        imc_ref_splitting_fpr_aucs_soreted_mean_list.append(imc_ref_splitting_fpr_aucs_soreted_mean[key])
+
+
+    x_axis = []
+
+    for key in imc_transition_counts_ref_splitting_accumulated.keys(): 
+       x_axis.append(imc_transition_counts_ref_splitting_accumulated[key])
+
+    max_len = max(len(row) for row in x_axis)
+    x_axis_padded = [row + [np.nan]*(max_len - len(row)) for row in x_axis]
+    x_axis_padded = np.array(x_axis_padded)
+    x_mean = np.nanmean(x_axis_padded, axis=0)
+
+    ax.plot(x_mean, imc_ref_splitting_fnr_aucs_soreted_mean_list, label = 'Refinement with Splitting FNR AUC', color='aqua', linestyle= '--')
+    ax.plot(x_mean, imc_ref_splitting_fpr_aucs_soreted_mean_list, label = 'Refinement with Splitting FPR AUC', color='aqua', linestyle= ':')
+
+    ax.set_ylabel('AUC')
+    ax.set_xlabel('Explored States')
+    ax.legend(loc="right", fontsize=5)
+    ax.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
+    if coarse:
+        fig.savefig(
+                f"{out_path}/rq_2_{args.mc}_coarse_FN_FP_AUC_model_based.pdf",
+                dpi=300,
+                bbox_inches="tight",
+            )
+    else:
+        fig.savefig(
+                f"{out_path}/rq_2_{args.mc}_FN_FP_AUC_model_based.pdf",
+                dpi=300,
+                bbox_inches="tight",
+            )
+
+    plt.show()
+
+
+
+def fn_fp_comparison_model_based_vs_model_free(
+        high_st,
+        coarse,
+        alarms,
+        imc_risks_ref,
+        imc_risks_ref_splitting,
+        regression_risks,
+        conformal_risks,
+        target_risks,
+        out_path):
+
+    
+    # iHMM ref
+    imc_ref_final_risks = {}
+
+    imc_ref_ys = []
+    for key in imc_risks_ref.keys():
+        imc_ref_ys.append(int(key.split("-")[1]))
+
+    for key in imc_risks_ref.keys():
+        if key.split("-")[1] == str(max(imc_ref_ys)):
+            imc_ref_final_risks[key.split("-")[0]] = imc_risks_ref[key]
+
+
+    # iHMM ref with splitting
+    imc_ref_splitting_final_risks = {}
+
+    imc_ref_splitting_ys = []
+    for key in imc_risks_ref_splitting.keys():
+        imc_ref_splitting_ys.append(int(key.split("-")[1]))
+
+    for key in imc_risks_ref_splitting.keys():
+        if key.split("-")[1] == str(max(imc_ref_splitting_ys)):
+            imc_ref_splitting_final_risks[key.split("-")[0]] = imc_risks_ref_splitting[key]
+
+    #Regression 
+    reg_final_risks = {}
+    for key in regression_risks.keys():
+        reg_final_risks[key] = regression_risks[key]
+
+    # Confromal Prediction
+    conformal_final_risks = {}
+
+    for key in conformal_risks.keys():
+        conformal_final_risks[key] = conformal_risks[key]
+
+     
+    thresholds = [t / 1000 for t in range(0, 1001)]
+    target_risks = np.array(target_risks,  dtype=float)
+    alarms = np.array(alarms)
+
+    target_fnr = []
+    target_fpr = []
+
+    imc_ref_fnr = {}
+    imc_ref_fpr = {}
+
+    imc_ref_splitting_fnr = {}
+    imc_ref_splitting_fpr = {}
+
+    reg_fnr = {}
+    reg_fpr = {}
+
+    conformal_fnr = {}
+    conformal_fpr = {}
+
+
+    for key in imc_ref_final_risks.keys(): 
+            imc_ref_fnr[key] = []
+            imc_ref_fpr[key] = []
+
+    for key in imc_ref_splitting_final_risks.keys(): 
+            imc_ref_splitting_fnr[key] = []
+            imc_ref_splitting_fpr[key] = []
+
+    for key in reg_final_risks.keys(): 
+            reg_fnr[key] = []
+            reg_fpr[key] = []
+
+    for key in conformal_final_risks.keys(): 
+            conformal_fnr[key] = []
+            conformal_fpr[key] = []
+
+
+
+    for t in thresholds: 
+
+        actual_positives = np.sum(alarms == 1)
+        actual_negatives = np.sum(alarms == 0)
+        total = len(alarms)
+
+        #Target
+        predictions_target = target_risks >= t
+
+        fp_target = np.sum((predictions_target == 1) & (alarms == 0))
+        fn_target = np.sum((predictions_target == 0) & (alarms == 1))
+    
+        fnr_target = fn_target / actual_positives if actual_positives > 0 else 0.0
+        fpr_target = fp_target / actual_negatives if actual_negatives > 0 else 0.0
+        
+        target_fnr.append(fnr_target)
+        target_fpr.append(fpr_target)
+    
+        #Refinement
+
+        for key in imc_ref_final_risks.keys(): 
+                
+                predictions_imc_ref =  np.array(imc_ref_final_risks[key], dtype=float) >= t
+
+                fp_imc_ref = np.sum((predictions_imc_ref == 1) & (alarms == 0))
+                fn_imc_ref = np.sum((predictions_imc_ref == 0) & (alarms == 1))
+                    
+                fnr_imc_ref = fn_imc_ref / actual_positives if actual_positives > 0 else 0.0
+                fpr_imc_ref = fp_imc_ref / actual_negatives if actual_negatives > 0 else 0.0
+
+                imc_ref_fnr[key].append(fnr_imc_ref)
+                imc_ref_fpr[key].append(fpr_imc_ref)
+
+        #Refinement with splitting
+
+        for key in imc_ref_splitting_final_risks.keys(): 
+                
+                predictions_imc_ref_splitting =  np.array(imc_ref_splitting_final_risks[key], dtype=float) >= t
+
+                fp_imc_ref_splitting = np.sum((predictions_imc_ref_splitting == 1) & (alarms == 0))
+                fn_imc_ref_splitting = np.sum((predictions_imc_ref_splitting == 0) & (alarms == 1))
+                    
+                fnr_imc_ref_splitting = fn_imc_ref_splitting / actual_positives if actual_positives > 0 else 0.0
+                fpr_imc_ref_splitting = fp_imc_ref_splitting / actual_negatives if actual_negatives > 0 else 0.0
+
+                imc_ref_splitting_fnr[key].append(fnr_imc_ref_splitting)
+                imc_ref_splitting_fpr[key].append(fpr_imc_ref_splitting)
+
+        #Regression 
+
+        for key in reg_final_risks.keys(): 
+                
+                predictions_reg =  np.array(reg_final_risks[key], dtype=float) >= t
+
+                fp_reg = np.sum((predictions_reg == 1) & (alarms == 0))
+                fn_reg = np.sum((predictions_reg == 0) & (alarms == 1))
+                    
+                fnr_reg = fn_reg/ actual_positives if actual_positives > 0 else 0.0
+                fpr_reg = fp_reg / actual_negatives if actual_negatives > 0 else 0.0
+
+                reg_fnr[key].append(fnr_reg)
+                reg_fpr[key].append(fpr_reg)
+
+        #Conformal Prediction
+
+        for key in conformal_final_risks.keys(): 
+                
+                predictions_conformal =  np.array(conformal_final_risks[key], dtype=float) >= t
+
+                fp_conformal = np.sum((predictions_conformal == 1) & (alarms == 0))
+                fn_conformal = np.sum((predictions_conformal == 0) & (alarms == 1))
+                    
+                fnr_conformal = fn_conformal/ actual_positives if actual_positives > 0 else 0.0
+                fpr_conformal = fp_conformal / actual_negatives if actual_negatives > 0 else 0.0
+
+                conformal_fnr[key].append(fnr_conformal)
+                conformal_fpr[key].append(fpr_conformal)
+
+
+    fig, ax = plt.subplots(figsize=(8, 5)) 
+
+    auc_fnr_target = np.trapz(target_fnr, thresholds)
+    auc_fpr_target = np.trapz(target_fpr, thresholds)
+
+
+    ax.plot(thresholds, target_fnr, label=f'Target FNR: (AUC {auc_fnr_target:.3f})', color='black', linestyle= ':')
+    ax.plot(thresholds, target_fpr, label=f'Target FPR: (AUC {auc_fpr_target:.3f})', color='black', linestyle= '--')
+
+    #Refinement
+
+    imc_ref_FNRs = []
+    imc_ref_FPRs = []
+
+    imc_ref_fnr_aucs = []
+    imc_ref_fpr_aucs = []
+
+
+    for key in imc_ref_final_risks.keys():
+        imc_ref_FNRs.append(imc_ref_fnr[key]) 
+        imc_ref_FPRs.append(imc_ref_fpr[key])
+        imc_ref_fnr_aucs.append(np.trapz(imc_ref_fnr[key], thresholds))
+        imc_ref_fpr_aucs.append(np.trapz(imc_ref_fpr[key], thresholds))
+
+    imc_ref_FNRs = np.array(imc_ref_FNRs)    
+
+    imc_ref_fnr_mean = np.mean(imc_ref_FNRs, axis=0)
+    imc_ref_fnr_std = np.std(imc_ref_FNRs, axis=0)
+
+    imc_ref_fnr_aucs = np.array(imc_ref_fnr_aucs)
+    imc_ref_fnr_auc = np.mean(imc_ref_fnr_aucs, axis=0)
+
+    imc_ref_fpr_aucs = np.array(imc_ref_fpr_aucs)
+    imc_ref_fpr_auc = np.mean(imc_ref_fpr_aucs, axis=0)
+
+
+    ax.plot(thresholds, imc_ref_fnr_mean, label=f'Refinement mean FNR: (AUC {imc_ref_fnr_auc:.3f})', color='blue', linestyle= ':')
+
+    plt.fill_between(
+    thresholds,
+    imc_ref_fnr_mean - imc_ref_fnr_std,   
+    imc_ref_fnr_mean + imc_ref_fnr_std,   
+    color="blue",
+    alpha=0.2
+    )
+
+    imc_ref_FPRs = np.array(imc_ref_FPRs)
+
+    imc_ref_fpr_mean = np.mean(imc_ref_FPRs, axis=0)
+    imc_ref_fpr_std = np.std(imc_ref_FPRs, axis=0)
+
+    ax.plot(thresholds, imc_ref_fpr_mean, label=f'Refinement mean FPR: (AUC {imc_ref_fpr_auc:.3f})', color='blue', linestyle= '--')
+
+    plt.fill_between(
+    thresholds,
+    imc_ref_fpr_mean - imc_ref_fpr_std,   
+    imc_ref_fpr_mean + imc_ref_fpr_std,   
+    color="blue",
+    alpha=0.2
+    )
+
+    #Refinement with splitting
+
+    imc_ref_splitting_FNRs = []
+    imc_ref_splitting_FPRs = []
+
+    imc_ref_splitting_fnr_aucs = []
+    imc_ref_splitting_fpr_aucs = []
+
+
+    for key in imc_ref_splitting_final_risks.keys():
+        imc_ref_splitting_FNRs.append(imc_ref_splitting_fnr[key]) 
+        imc_ref_splitting_FPRs.append(imc_ref_splitting_fpr[key])
+        imc_ref_splitting_fnr_aucs.append(np.trapz(imc_ref_splitting_fnr[key], thresholds))
+        imc_ref_splitting_fpr_aucs.append(np.trapz(imc_ref_splitting_fpr[key], thresholds))
+
+    imc_ref_splitting_FNRs = np.array(imc_ref_splitting_FNRs)    
+
+    imc_ref_splitting_fnr_mean = np.mean(imc_ref_splitting_FNRs, axis=0)
+    imc_ref_splitting_fnr_std = np.std(imc_ref_splitting_FNRs, axis=0)
+
+    imc_ref_splitting_fnr_aucs = np.array(imc_ref_splitting_fnr_aucs)
+    imc_ref_splitting_fnr_auc = np.mean(imc_ref_splitting_fnr_aucs, axis=0)
+
+    imc_ref_splitting_fpr_aucs = np.array(imc_ref_splitting_fpr_aucs)
+    imc_ref_splitting_fpr_auc = np.mean(imc_ref_splitting_fpr_aucs, axis=0)
+
+
+    ax.plot(thresholds, imc_ref_splitting_fnr_mean, label=f'Refinement with Splitting mean FNR: (AUC {imc_ref_splitting_fnr_auc:.3f})', color='aqua', linestyle= ':')
+
+    plt.fill_between(
+    thresholds,
+    imc_ref_splitting_fnr_mean - imc_ref_splitting_fnr_std,   
+    imc_ref_splitting_fnr_mean + imc_ref_splitting_fnr_std,   
+    color="aqua",
+    alpha=0.2
+    )
+
+    imc_ref_splitting_FPRs = np.array(imc_ref_splitting_FPRs)
+
+    imc_ref_splitting_fpr_mean = np.mean(imc_ref_splitting_FPRs, axis=0)
+    imc_ref_splitting_fpr_std = np.std(imc_ref_splitting_FPRs, axis=0)
+
+    ax.plot(thresholds, imc_ref_splitting_fpr_mean, label=f'Refinement with Splitting mean FPR: (AUC {imc_ref_splitting_fpr_auc:.3f})', color='aqua', linestyle= '--')
+
+    plt.fill_between(
+    thresholds,
+    imc_ref_splitting_fpr_mean - imc_ref_splitting_fpr_std,   
+    imc_ref_splitting_fpr_mean + imc_ref_splitting_fpr_std,   
+    color="aqua",
+    alpha=0.2
+    )
+
+    #Regression 
+
+    reg_FNRs = []
+    reg_FPRs = []
+
+    reg_fnr_aucs = []
+    reg_fpr_aucs = []
+
+
+    for key in reg_final_risks.keys():
+        reg_FNRs.append(reg_fnr[key]) 
+        reg_FPRs.append(reg_fpr[key])
+        reg_fnr_aucs.append(np.trapz(reg_fnr[key], thresholds))
+        reg_fpr_aucs.append(np.trapz(reg_fpr[key], thresholds))
+
+    reg_FNRs = np.array(reg_FNRs)    
+
+    reg_fnr_mean = np.mean(reg_FNRs, axis=0)
+    reg_fnr_std = np.std(reg_FNRs, axis=0)
+
+    reg_fnr_aucs = np.array(reg_fnr_aucs)
+    reg_fnr_auc = np.mean(reg_fnr_aucs, axis=0)
+
+    reg_fpr_aucs = np.array(reg_fpr_aucs)
+    reg_fpr_auc = np.mean(reg_fpr_aucs, axis=0)
+
+
+    ax.plot(thresholds, reg_fnr_mean, label=f'Regression mean FNR: (AUC {reg_fnr_auc:.3f})', color='pink', linestyle= ':')
+
+    plt.fill_between(
+    thresholds,
+    reg_fnr_mean - reg_fnr_std,   
+    reg_fnr_mean + reg_fnr_std,   
+    color="pink",
+    alpha=0.2
+    )
+
+    reg_FPRs = np.array(reg_FPRs)
+
+    reg_fpr_mean = np.mean(reg_FPRs, axis=0)
+    reg_fpr_std = np.std(reg_FPRs, axis=0)
+
+    ax.plot(thresholds, reg_fpr_mean, label=f'Regression mean FPR: (AUC {reg_fpr_auc:.3f})', color='pink', linestyle= '--')
+
+    plt.fill_between(
+    thresholds,
+    reg_fpr_mean - reg_fpr_std,   
+    reg_fpr_mean + reg_fpr_std,   
+    color="pink",
+    alpha=0.2
+    )
+
+    #Conformal Prediction
+
+    conformal_FNRs = []
+    conformal_FPRs = []
+
+    conformal_fnr_aucs = []
+    conformal_fpr_aucs = []
+
+
+    for key in conformal_final_risks.keys():
+        conformal_FNRs.append(conformal_fnr[key]) 
+        conformal_FPRs.append(conformal_fpr[key])
+        conformal_fnr_aucs.append(np.trapz(conformal_fnr[key], thresholds))
+        conformal_fpr_aucs.append(np.trapz(conformal_fpr[key], thresholds))
+
+    conformal_FNRs = np.array(conformal_FNRs)    
+
+    conformal_fnr_mean = np.mean(conformal_FNRs, axis=0)
+    conformal_fnr_std = np.std(conformal_FNRs, axis=0)
+
+    conformal_fnr_aucs = np.array(conformal_fnr_aucs)
+    conformal_fnr_auc = np.mean(conformal_fnr_aucs, axis=0)
+
+    conformal_fpr_aucs = np.array(conformal_fpr_aucs)
+    conformal_fpr_auc = np.mean(conformal_fpr_aucs, axis=0)
+
+
+    ax.plot(thresholds, conformal_fnr_mean, label=f'Regression mean FNR: (AUC {conformal_fnr_auc:.3f})', color='orange', linestyle= ':')
+
+    plt.fill_between(
+    thresholds,
+    conformal_fnr_mean - conformal_fnr_std,   
+    conformal_fnr_mean + conformal_fnr_std,   
+    color="orange",
+    alpha=0.2
+    )
+
+    conformal_FPRs = np.array(conformal_FPRs)
+
+    conformal_fpr_mean = np.mean(conformal_FPRs, axis=0)
+    conformal_fpr_std = np.std(conformal_FPRs, axis=0)
+
+    ax.plot(thresholds, conformal_fpr_mean, label=f'Regression mean FPR: (AUC {conformal_fpr_auc:.3f})', color='orange', linestyle= '--')
+
+    plt.fill_between(
+    thresholds,
+    conformal_fpr_mean - conformal_fpr_std,   
+    conformal_fpr_mean + conformal_fpr_std,   
+    color="orange",
+    alpha=0.2
+    )
+
+    ax.set_xlabel('Threshold')
+    ax.set_ylabel('Rate')
+    ax.legend()
+    ax.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
+    if coarse:
+        fig.savefig(
+                f"{out_path}/rq_3_{args.mc}_coarse_FN_FP_model_based_vs_model_free.pdf",
+                dpi=300,
+                bbox_inches="tight",
+            )
+    else:
+        fig.savefig(
+                f"{out_path}/rq_3_{args.mc}_FN_FP_model_based_vs_model_free.pdf",
                 dpi=300,
                 bbox_inches="tight",
             )
@@ -1924,17 +2750,7 @@ def main_imc(args: argparse.Namespace):
     stats_path = args.stats_path
     high_st = args.high_st
 
-    regression_risks = aggregated_stats_regression(
-        args.high_st,
-        coarse,
-        mc,
-        model_path,
-        stats_path,
-        testing_samples,
-        horizon,
-        initial_amount,
-    )
-
+    
 
     (
         imc_risks_ref_splitting,
@@ -1982,6 +2798,37 @@ def main_imc(args: argparse.Namespace):
         testing_samples,
     )
 
+    fn_fp_comparison_model_based( 
+        coarse,
+        alarms,
+        imc_risks,
+        imc_risks_ref,
+        target_risks,
+        imc_risks_ref_splitting, 
+        args.out)
+
+    fn_fp_AUC_model_based(
+        coarse,
+        alarms,
+        imc_risks,
+        imc_risks_ref,
+        target_risks,
+        imc_risks_ref_splitting, 
+        imc_transition_counts,
+        imc_transition_counts_ref,
+        imc_transition_counts_ref_splitting,
+        args.out)
+
+    regression_risks = aggregated_stats_regression(
+        args.high_st,
+        coarse,
+        mc,
+        model_path,
+        stats_path,
+        testing_samples,
+        horizon,
+        initial_amount,
+    )
     
     conformal_risks = aggreagted_stats_conformal(
         args.high_st, noisy_measurements, coarse, mc, model_path, stats_path
@@ -2025,24 +2872,7 @@ def main_imc(args: argparse.Namespace):
     with open(file_name, 'wb') as f:
         pickle.dump(test_data, f)
 
-    roc_curve_model_based(
-        coarse,
-        imc_stopping_threshold_ref,
-        alarms,
-        imc_risks,
-        imc_risks_ref,
-        target_risks,
-        imc_distances,
-        imc_distances_ref,
-        imc_risks_ref_splitting,
-        imc_distances_ref_splitting,
-        args.out,
-    )
-
-
-
-    plot_roc_curve(
-        imc_stopping_threshold_ref,
+    fn_fp_comparison_model_based_vs_model_free(imc_stopping_threshold_ref, #replacement for plot_roc_curve
         args.high_st,
         coarse,
         alarms,
@@ -2051,8 +2881,7 @@ def main_imc(args: argparse.Namespace):
         regression_risks,
         conformal_risks,
         target_risks,
-        args.out,
-    )
+        args.out,) 
 
     if args.high_st == False:
         (
@@ -2168,3 +2997,4 @@ if __name__ == "__main__":
     main_imc(args)
 
 
+# python -m premise.interval.rq_3 --mc evadeV-5-3 --stats-path /workspaces/premise/out/stats/2025-08-01_08-37-30 --model-path /workspaces/premise/out/models/2025-08-01_08-37-30
