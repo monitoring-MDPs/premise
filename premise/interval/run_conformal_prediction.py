@@ -47,8 +47,16 @@ def get_transition_count(stats_path: str, model_def_name: str):
     else:
         paths = [path]
 
+    if model_def_name == 'SnL-10x10': 
+        model_name = 'SnL'
+    else: 
+        model_name = model_def_name
+
+
+
     for stat_path in paths:
-        if model_def_name in str(stat_path):
+        if model_name in str(stat_path):
+
             if "-ref-" in str(stat_path) or "-refsplit-" in str(stat_path):
                 try:
                     data = np.load(stat_path, allow_pickle=True).item()
@@ -115,16 +123,22 @@ if __name__ == "__main__":
     initial_amount = model_def.initial_amount
 
     transition_count, high_st_transition_count = get_transition_count(
-        sys.argv[2], conformal_args.mc
-    )
+    high_st_transition_count = get_transition_count(
+    sys.argv[2], conformal_args.mc))
 
     high_st_args = copy.deepcopy(conformal_args)
 
     conformal_args.amount = transition_count // (horizon + initial_amount)
 
     high_st_args.amount = high_st_transition_count // (horizon + initial_amount)
-    high_st_args.dump_model += "high-st-"
-    high_st_args.dump_stats += "high-st-"
+    
+    high_st_args.high_st = True
+
+    #TEMPORARY high_st_args.dump_model += "high-st-"
+    #high_st_args.mc = "high-st-" + str(high_st_args.mc)
+    #TEMPORARY high_st_args.dump_stats += "high-st-"
+    #high_st_args.mc = "high-st-" + str(high_st_args.mc)
+
 
     try:
         run_with_timeout(conformal_prediction_main, (high_st_args,), timeout)
@@ -142,4 +156,4 @@ if __name__ == "__main__":
         logger.error(f"Error in Conformal Prediction: {e}")
         logger.info("Conformal Prediction failed, exiting.")
 
-# python -m premise.interval.run_conformal_prediction 10m out/stats/2025-07-15_15-11-51 -mc SnL-10x10 --dump-model out/tmp/test17/ --dump-stats out/tmp/test17/ --no-target
+# python -m premise.interval.run_conformal_prediction 20m /workspaces/premise/out/stats/2025-09-16_07-48-07 -mc SnL-10x10 --dump-model /workspaces/premise/out/models/2025-09-16_07-48-07 --dump-stats /workspaces/premise/out/stats/2025-09-16_07-48-07 --no-target
