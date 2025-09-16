@@ -167,6 +167,7 @@ def maximum_likelihood_estimation(
 ):
     # Initialize counts for state visits and transitions
     visit_state_count = {state: 0 for state in all_states}
+    initial_state_count = {state: 0 for state in all_initial_states}
     visit_trans_count = {(src, dest): 0 for src, dest in all_transitions}
 
     # Count state visits and transitions from samples
@@ -175,6 +176,9 @@ def maximum_likelihood_estimation(
             src, dest = trace[i], trace[i + 1]
             visit_state_count[src] += 1
             visit_trans_count[src, dest] += 1
+
+            if i == 0:
+                initial_state_count[src] += 1
 
     # Compute transition probabilities
     transition_probabilities = {}
@@ -185,31 +189,9 @@ def maximum_likelihood_estimation(
         else:
             transition_probabilities[src, dest] = 0.0
 
-    # ANTONINA
     initial_state_probabilities = {}
-    initial_state_count = {}
-    for state in all_initial_states:
-        initial_state_count[state] = 0
-        for trace in samples:
-            if trace[0] == state:
-                initial_state_count[state] += 1
-
-    for key in initial_state_count.keys():
-        initial_state_probabilities[key] = 0
-
     for key in initial_state_count.keys():
         initial_state_probabilities[key] = initial_state_count[key] / len(samples)
-
-    """ 
-        # Compute initial state probabilities
-        initial_state_probabilities = {}
-        for state in all_initial_states:
-            count = visit_state_count.get(state, 0)
-            if count > 0:
-                initial_state_probabilities[state] = count / len(samples)
-            else:
-                initial_state_probabilities[state] = 0.0
-    """
 
     return initial_state_probabilities, transition_probabilities
 

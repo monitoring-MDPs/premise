@@ -69,7 +69,7 @@ def aggregated_stats_imc(
         print(f"Experiment number {x}")
         try:
             if coarse:
-                """ if high_st:
+                """if high_st:
                     if method == "noref":
                         if args.mc == " SnLw-10x10":
                             statistics = np.load(
@@ -118,57 +118,57 @@ def aggregated_stats_imc(
                                 f"{stats_path}/high-st-{args.mc}-coarse_refsplitinement-stats-{x}.npy",
                                 allow_pickle=True,
                             )
-                else: """
+                else:"""
                 if method == "noref":
-                        if args.mc == " SnLw-10x10":
-                            statistics = np.load(
-                                f"{stats_path}/SnL-coarse_norefinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        elif args.mc == "evadeV-6-3-coarse":
-                            statistics = np.load(
-                                f"{stats_path}/evadeV-6-3-coarse_norefinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        else:
-                            statistics = np.load(
-                                f"{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
+                    if args.mc == " SnLw-10x10":
+                        statistics = np.load(
+                            f"{stats_path}/SnL-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif args.mc == "evadeV-6-3-coarse":
+                        statistics = np.load(
+                            f"{stats_path}/evadeV-6-3-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    else:
+                        statistics = np.load(
+                            f"{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
                 if method == "ref":
-                        if args.mc == " SnLw-10x10":
-                            statistics = np.load(
-                                f"{stats_path}/SnL-coarse_refinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        elif args.mc == "evadeV-6-3-coarse":
-                            statistics = np.load(
-                                f"{stats_path}/evadeV-6-3-coarse_refinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        else:
-                            statistics = np.load(
-                                f"{stats_path}/{args.mc}-coarse_refinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
+                    if args.mc == " SnLw-10x10":
+                        statistics = np.load(
+                            f"{stats_path}/SnL-coarse_refinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif args.mc == "evadeV-6-3-coarse":
+                        statistics = np.load(
+                            f"{stats_path}/evadeV-6-3-coarse_refinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    else:
+                        statistics = np.load(
+                            f"{stats_path}/{args.mc}-coarse_refinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
                 if method == "refsplit":
-                        if args.mc == " SnLw-10x10":
-                            statistics = np.load(
-                                f"{stats_path}/SnL-coarse_refsplitinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        elif args.mc == "evadeV-6-3-coarse":
-                            statistics = np.load(
-                                f"{stats_path}/evadeV-6-3-coarse_refsplitinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        else:
-                            statistics = np.load(
-                                f"{stats_path}/{args.mc}-coarse_refsplitinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
+                    if args.mc == " SnLw-10x10":
+                        statistics = np.load(
+                            f"{stats_path}/SnL-coarse_refsplitinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif args.mc == "evadeV-6-3-coarse":
+                        statistics = np.load(
+                            f"{stats_path}/evadeV-6-3-coarse_refsplitinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    else:
+                        statistics = np.load(
+                            f"{stats_path}/{args.mc}-coarse_refsplitinement-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
             else:
-                """ if high_st:
+                """if high_st:
                     if method == "noref":
                         statistics = np.load(
                             f"{stats_path}/high-st-{args.mc}-comp-noref-stats-{x}.npy",
@@ -184,29 +184,29 @@ def aggregated_stats_imc(
                             f"{stats_path}/high-st-{args.mc}-comp-refsplit-stats-{x}.npy",
                             allow_pickle=True,
                         )
-                else: """
+                else:"""
                 if method == "noref":
-                        statistics = np.load(
-                            f"{stats_path}/{args.mc}-comp-noref-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
+                    statistics = np.load(
+                        f"{stats_path}/{args.mc}-comp-noref-stats-{x}.npy",
+                        allow_pickle=True,
+                    )
                 if method == "ref":
-                        statistics = np.load(
-                            f"{stats_path}/{args.mc}-comp-ref-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
+                    statistics = np.load(
+                        f"{stats_path}/{args.mc}-comp-ref-stats-{x}.npy",
+                        allow_pickle=True,
+                    )
                 if method == "refsplit":
-                        statistics = np.load(
-                            f"{stats_path}/{args.mc}-comp-refsplit-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
-        except FileNotFoundError:
-            print(f"Statistics file for {x} not found, skipping.")
+                    statistics = np.load(
+                        f"{stats_path}/{args.mc}-comp-refsplit-stats-{x}.npy",
+                        allow_pickle=True,
+                    )
+        except FileNotFoundError as e:
+            print(f"Statistics file for {x} not found, skipping: {e}")
             continue
 
         obj = statistics.item()
         imc_transition_count_iters = obj["transitions_learned"]
-        #stopping_threshold = obj["args"]["stopping_threshold"]
+        # stopping_threshold = obj["args"]["stopping_threshold"]
 
         imc_transition_counts[str(x)] = np.cumsum(imc_transition_count_iters).tolist()
 
@@ -258,7 +258,7 @@ def aggregated_stats_mc(
         print(f"Experiment number {x}")
         try:
             if coarse:
-                """ if high_st:
+                """if high_st:
                     if args.mc == " SnLw-10x10":
                         statistics = np.load(
                             f"{stats_path}/high-st-SnL-coarse-comp-mle-stats-{x}.npy",
@@ -274,33 +274,33 @@ def aggregated_stats_mc(
                             f"{stats_path}/high-st-{args.mc}-coarse-comp-mle-stats-{x}.npy",
                             allow_pickle=True,
                         )
-                else: """
+                else:"""
                 if args.mc == "SnLw-10x10":
-                        statistics = np.load(
-                            f"{stats_path}/SnL-coarse-comp-mle-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
+                    statistics = np.load(
+                        f"{stats_path}/SnL-coarse-comp-mle-stats-{x}.npy",
+                        allow_pickle=True,
+                    )
                 elif args.mc == "evadeV-6-3-coarse":
-                        statistics = np.load(
-                            f"{stats_path}/evadeV-6-3-coarse-comp-mle-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
+                    statistics = np.load(
+                        f"{stats_path}/evadeV-6-3-coarse-comp-mle-stats-{x}.npy",
+                        allow_pickle=True,
+                    )
                 else:
-                        statistics = np.load(
-                            f"{stats_path}/{args.mc}-coarse-comp-mle-stats-{x}.npy",
-                            allow_pickle=True,
-                        )
+                    statistics = np.load(
+                        f"{stats_path}/{args.mc}-coarse-comp-mle-stats-{x}.npy",
+                        allow_pickle=True,
+                    )
             else:
-                """ if high_st:
+                """if high_st:
                     statistics = np.load(
                         f"{stats_path}/high-st-{args.mc}-comp-mle-stats-{x}.npy",
                         allow_pickle=True,
                     )
-                else: """
+                else:"""
                 statistics = np.load(
-                        f"{stats_path}/{args.mc}-comp-mle-stats-{x}.npy",
-                        allow_pickle=True,
-                    )
+                    f"{stats_path}/{args.mc}-comp-mle-stats-{x}.npy",
+                    allow_pickle=True,
+                )
         except FileNotFoundError:
             print(f"Statistics file for {x} not found, skipping.")
 
@@ -359,14 +359,9 @@ def aggregated_stats_mc(
     out_path,
 ): """
 
-def fn_fp_comparison(coarse,
-        alarms,
-        imc_risks,
-        mc_risks,
-        target_risks,
-        out_path):
 
-    
+def fn_fp_comparison(coarse, alarms, imc_risks, mc_risks, target_risks, out_path):
+
     # iHMM
     imc_final_risks = {}
 
@@ -389,10 +384,8 @@ def fn_fp_comparison(coarse,
         if key.split("-")[1] == str(max(mc_ys)):
             mc_final_risks[key.split("-")[0]] = mc_risks[key]
 
-
-    
     thresholds = [t / 1000 for t in range(0, 1001)]
-    target_risks = np.array(target_risks,  dtype=float)
+    target_risks = np.array(target_risks, dtype=float)
     alarms = np.array(alarms)
 
     target_fnr = []
@@ -400,88 +393,95 @@ def fn_fp_comparison(coarse,
 
     imc_fnr = {}
     imc_fpr = {}
-   
+
     mc_fnr = {}
     mc_fpr = {}
 
+    for key in imc_final_risks.keys():
+        imc_fnr[key] = []
+        imc_fpr[key] = []
 
-    for key in imc_final_risks.keys(): 
-            imc_fnr[key] = []
-            imc_fpr[key] = []
+    for key in mc_final_risks.keys():
+        mc_fnr[key] = []
+        mc_fpr[key] = []
 
-    for key in mc_final_risks.keys(): 
-            mc_fnr[key] = []
-            mc_fpr[key] = []
-    
-
-    for t in thresholds: 
+    for t in thresholds:
 
         actual_positives = np.sum(alarms == 1)
         actual_negatives = np.sum(alarms == 0)
         total = len(alarms)
 
-        #Target
+        # Target
         predictions_target = target_risks >= t
 
         fp_target = np.sum((predictions_target == 1) & (alarms == 0))
         fn_target = np.sum((predictions_target == 0) & (alarms == 1))
-    
+
         fnr_target = fn_target / actual_positives if actual_positives > 0 else 0.0
         fpr_target = fp_target / actual_negatives if actual_negatives > 0 else 0.0
-        
+
         target_fnr.append(fnr_target)
         target_fpr.append(fpr_target)
 
-    
-        for key in imc_final_risks.keys(): 
+        for key in imc_final_risks.keys():
 
-                predictions_imc = np.array(imc_final_risks[key], dtype=float) >= t
+            predictions_imc = np.array(imc_final_risks[key], dtype=float) >= t
 
-                fp_imc = np.sum((predictions_imc == True) & (alarms == 0))
-                fn_imc = np.sum((predictions_imc == False) & (alarms == 1))
-                    
-                fnr_imc = fn_imc / actual_positives if actual_positives > 0 else 0.0
-                fpr_imc = fp_imc / actual_negatives if actual_negatives > 0 else 0.0
+            fp_imc = np.sum((predictions_imc == True) & (alarms == 0))
+            fn_imc = np.sum((predictions_imc == False) & (alarms == 1))
 
-                imc_fnr[key].append(fnr_imc)
-                imc_fpr[key].append(fpr_imc) 
+            fnr_imc = fn_imc / actual_positives if actual_positives > 0 else 0.0
+            fpr_imc = fp_imc / actual_negatives if actual_negatives > 0 else 0.0
 
-        for key in mc_final_risks.keys(): 
-                
-                predictions_mc =  np.array(mc_final_risks[key], dtype=float) >= t
+            imc_fnr[key].append(fnr_imc)
+            imc_fpr[key].append(fpr_imc)
 
-                fp_mc = np.sum((predictions_mc == 1) & (alarms == 0))
-                fn_mc = np.sum((predictions_mc == 0) & (alarms == 1))
-                    
-                fnr_mc = fn_mc / actual_positives if actual_positives > 0 else 0.0
-                fpr_mc = fp_mc / actual_negatives if actual_negatives > 0 else 0.0
+        for key in mc_final_risks.keys():
 
-                mc_fnr[key].append(fnr_mc)
-                mc_fpr[key].append(fpr_mc)
+            predictions_mc = np.array(mc_final_risks[key], dtype=float) >= t
 
-    fig, ax = plt.subplots(figsize=(8, 5)) 
+            fp_mc = np.sum((predictions_mc == 1) & (alarms == 0))
+            fn_mc = np.sum((predictions_mc == 0) & (alarms == 1))
+
+            fnr_mc = fn_mc / actual_positives if actual_positives > 0 else 0.0
+            fpr_mc = fp_mc / actual_negatives if actual_negatives > 0 else 0.0
+
+            mc_fnr[key].append(fnr_mc)
+            mc_fpr[key].append(fpr_mc)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
 
     auc_fnr_target = np.trapz(target_fnr, thresholds)
     auc_fpr_target = np.trapz(target_fpr, thresholds)
 
+    ax.plot(
+        thresholds,
+        target_fnr,
+        label=f"Target FNR: (AUC {auc_fnr_target:.3f})",
+        color="black",
+        linestyle=":",
+    )
+    ax.plot(
+        thresholds,
+        target_fpr,
+        label=f"Target FPR: (AUC {auc_fpr_target:.3f})",
+        color="black",
+        linestyle="--",
+    )
 
-    ax.plot(thresholds, target_fnr, label=f'Target FNR: (AUC {auc_fnr_target:.3f})', color='black', linestyle= ':')
-    ax.plot(thresholds, target_fpr, label=f'Target FPR: (AUC {auc_fpr_target:.3f})', color='black', linestyle= '--')
-    
     imc_FNRs = []
     imc_FPRs = []
 
     imc_fnr_aucs = []
     imc_fpr_aucs = []
 
-
     for key in imc_final_risks.keys():
-        imc_FNRs.append(imc_fnr[key]) 
+        imc_FNRs.append(imc_fnr[key])
         imc_FPRs.append(imc_fpr[key])
         imc_fnr_aucs.append(np.trapz(imc_fnr[key], thresholds))
         imc_fpr_aucs.append(np.trapz(imc_fpr[key], thresholds))
 
-    imc_FNRs = np.array(imc_FNRs)    
+    imc_FNRs = np.array(imc_FNRs)
 
     imc_fnr_mean = np.mean(imc_FNRs, axis=0)
     imc_fnr_std = np.std(imc_FNRs, axis=0)
@@ -492,15 +492,20 @@ def fn_fp_comparison(coarse,
     imc_fpr_aucs = np.array(imc_fpr_aucs)
     imc_fpr_auc = np.mean(imc_fpr_aucs, axis=0)
 
-
-    ax.plot(thresholds, imc_fnr_mean, label=f'iHMM mean FNR: (AUC {imc_fnr_auc:.3f})', color='red', linestyle= ':')
+    ax.plot(
+        thresholds,
+        imc_fnr_mean,
+        label=f"iHMM mean FNR: (AUC {imc_fnr_auc:.3f})",
+        color="red",
+        linestyle=":",
+    )
 
     plt.fill_between(
-    thresholds,
-    imc_fnr_mean - imc_fnr_std,   
-    imc_fnr_mean + imc_fnr_std,   
-    color="red",
-    alpha=0.2
+        thresholds,
+        imc_fnr_mean - imc_fnr_std,
+        imc_fnr_mean + imc_fnr_std,
+        color="red",
+        alpha=0.2,
     )
 
     imc_FPRs = np.array(imc_FPRs)
@@ -508,16 +513,21 @@ def fn_fp_comparison(coarse,
     imc_fpr_mean = np.mean(imc_FPRs, axis=0)
     imc_fpr_std = np.std(imc_FPRs, axis=0)
 
-    ax.plot(thresholds, imc_fpr_mean, label=f'iHMM mean FPR: (AUC {imc_fpr_auc:.3f})', color='red', linestyle= '--')
-
-    plt.fill_between(
-    thresholds,
-    imc_fpr_mean - imc_fpr_std,   
-    imc_fpr_mean + imc_fpr_std,   
-    color="red",
-    alpha=0.2
+    ax.plot(
+        thresholds,
+        imc_fpr_mean,
+        label=f"iHMM mean FPR: (AUC {imc_fpr_auc:.3f})",
+        color="red",
+        linestyle="--",
     )
 
+    plt.fill_between(
+        thresholds,
+        imc_fpr_mean - imc_fpr_std,
+        imc_fpr_mean + imc_fpr_std,
+        color="red",
+        alpha=0.2,
+    )
 
     mc_FNRs = []
     mc_FPRs = []
@@ -525,14 +535,13 @@ def fn_fp_comparison(coarse,
     mc_fnr_aucs = []
     mc_fpr_aucs = []
 
-
     for key in mc_final_risks.keys():
-        mc_FNRs.append(mc_fnr[key]) 
+        mc_FNRs.append(mc_fnr[key])
         mc_FPRs.append(mc_fpr[key])
         mc_fnr_aucs.append(np.trapz(mc_fnr[key], thresholds))
         mc_fpr_aucs.append(np.trapz(mc_fpr[key], thresholds))
 
-    mc_FNRs = np.array(mc_FNRs)    
+    mc_FNRs = np.array(mc_FNRs)
 
     mc_fnr_mean = np.mean(mc_FNRs, axis=0)
     mc_fnr_std = np.std(mc_FNRs, axis=0)
@@ -543,15 +552,20 @@ def fn_fp_comparison(coarse,
     mc_fpr_aucs = np.array(mc_fpr_aucs)
     mc_fpr_auc = np.mean(mc_fpr_aucs, axis=0)
 
-
-    ax.plot(thresholds, mc_fnr_mean, label=f'HMM mean FNR: (AUC {mc_fnr_auc:.3f})', color='green', linestyle= ':')
+    ax.plot(
+        thresholds,
+        mc_fnr_mean,
+        label=f"HMM mean FNR: (AUC {mc_fnr_auc:.3f})",
+        color="green",
+        linestyle=":",
+    )
 
     plt.fill_between(
-    thresholds,
-    mc_fnr_mean - mc_fnr_std,   
-    mc_fnr_mean + mc_fnr_std,   
-    color="green",
-    alpha=0.2
+        thresholds,
+        mc_fnr_mean - mc_fnr_std,
+        mc_fnr_mean + mc_fnr_std,
+        color="green",
+        alpha=0.2,
     )
 
     mc_FPRs = np.array(mc_FPRs)
@@ -559,63 +573,87 @@ def fn_fp_comparison(coarse,
     mc_fpr_mean = np.mean(mc_FPRs, axis=0)
     mc_fpr_std = np.std(mc_FPRs, axis=0)
 
-    ax.plot(thresholds, mc_fpr_mean, label=f'HMM mean FPR: (AUC {mc_fpr_auc:.3f})', color='green', linestyle= '--')
+    ax.plot(
+        thresholds,
+        mc_fpr_mean,
+        label=f"HMM mean FPR: (AUC {mc_fpr_auc:.3f})",
+        color="green",
+        linestyle="--",
+    )
 
     plt.fill_between(
-    thresholds,
-    mc_fpr_mean - mc_fpr_std,   
-    mc_fpr_mean + mc_fpr_std,   
-    color="green",
-    alpha=0.2
+        thresholds,
+        mc_fpr_mean - mc_fpr_std,
+        mc_fpr_mean + mc_fpr_std,
+        color="green",
+        alpha=0.2,
     )
 
     mc_fnr_mean = np.array(mc_fnr_mean)
+    imc_fnr_mean = np.array(imc_fnr_mean)
     target_fnr = np.array(target_fnr)
     thresholds = np.array(thresholds)
 
     mask_2 = target_fnr < mc_fnr_mean
+    mask_3 = target_fnr < imc_fnr_mean
 
-    count = 0 
+    count = 0
 
     indices_2 = np.where(mask_2)[0]
-    for k, g in groupby(enumerate(indices_2), lambda i: i[0]-i[1]):
-        count +=1 
+    for k, g in groupby(enumerate(indices_2), lambda i: i[0] - i[1]):
+        count += 1
         group = list(map(itemgetter(1), g))
         start = thresholds[group[0]]
         end = thresholds[group[-1]]
         if count < 1:
-            ax.axvspan(start, end, color='peachpuff', alpha=0.5,  label='HMM mean FNR > Target FNR')
+            ax.axvspan(
+                start,
+                end,
+                color="peachpuff",
+                alpha=0.5,
+                label="HMM mean FNR > Target FNR",
+            )
         else:
-            ax.axvspan(start, end, color='peachpuff', alpha=0.5) 
+            ax.axvspan(start, end, color="peachpuff", alpha=0.5)
 
-    print()
+    indices_3 = np.where(mask_3)[0]
+    for k, g in groupby(enumerate(indices_3), lambda i: i[0] - i[1]):
+        count += 1
+        group = list(map(itemgetter(1), g))
+        start = thresholds[group[0]]
+        end = thresholds[group[-1]]
+        if count < 1:
+            ax.axvspan(
+                start,
+                end,
+                color="lightsteelblue",
+                alpha=0.5,
+                label="IHMM mean FNR > Target FNR",
+            )
+        else:
+            ax.axvspan(start, end, color="lightsteelblue", alpha=0.5)
 
-
-    ax.set_xlabel('Threshold')
-    ax.set_ylabel('Rate')
+    ax.set_xlabel("Threshold")
+    ax.set_ylabel("Rate")
     ax.legend()
     ax.grid(True)
     plt.tight_layout()
     plt.show()
 
-
     if coarse:
         fig.savefig(
-                f"{out_path}/rq_1_{args.mc}_coarse_FN_FP_multi.pdf",
-                dpi=300,
-                bbox_inches="tight",
-            )
+            f"{out_path}/rq_1_{args.mc}_coarse_FN_FP_multi.pdf",
+            dpi=300,
+            bbox_inches="tight",
+        )
     else:
         fig.savefig(
-                f"{out_path}/rq_1_{args.mc}_FN_FP_multi.pdf",
-                dpi=300,
-                bbox_inches="tight",
-            )
+            f"{out_path}/rq_1_{args.mc}_FN_FP_multi.pdf",
+            dpi=300,
+            bbox_inches="tight",
+        )
 
     plt.show()
-
-
-
 
 
 def distance_graph(
@@ -918,31 +956,31 @@ def distance_graph(
 
     plt.tight_layout()
     if coarse:
-        """ if high_st:
+        """if high_st:
             plt.savefig(
                 f"{out_path}/rq_1_high-st-{args.mc}_coarse_distance_to_RRF.pdf",
                 dpi=300,
                 bbox_inches="tight",
             )
-        else: """
+        else:"""
         plt.savefig(
-                f"{out_path}/rq_1_{args.mc}_coarse_distance_to_RRF.pdf",
-                dpi=300,
-                bbox_inches="tight",
-            )
+            f"{out_path}/rq_1_{args.mc}_coarse_distance_to_RRF.pdf",
+            dpi=300,
+            bbox_inches="tight",
+        )
     else:
-        """  if high_st:
+        """if high_st:
             plt.savefig(
                 f"{out_path}/rq_1_high-st-{args.mc}_distance_to_RRF.pdf",
                 dpi=300,
                 bbox_inches="tight",
             )
-        else: """
+        else:"""
         plt.savefig(
-                f"{out_path}/rq_1_{args.mc}_distance_to_RRF.pdf",
-                dpi=300,
-                bbox_inches="tight",
-            )
+            f"{out_path}/rq_1_{args.mc}_distance_to_RRF.pdf",
+            dpi=300,
+            bbox_inches="tight",
+        )
 
     plt.show()
 
@@ -965,129 +1003,122 @@ def overestimation_graph(
     for key in mc_risks.keys():
         mc_ys.append(int(key.split("-")[1]))
 
-
-    hmm_under = 0 
-    hmm_over = 0 
+    hmm_under = 0
+    hmm_over = 0
 
     for key in mc_risks.keys():
         if key.split("-")[1] == str(max(mc_ys)):
-            for x in range(len(target_risks)): 
+            for x in range(len(target_risks)):
                 if mc_risks[key][x] < target_risks[x]:
                     hmm_under += 1
                 if mc_risks[key][x] >= target_risks[x]:
-                    hmm_over +=1 
-                       
+                    hmm_over += 1
 
-    count_u = 0 
-    count_o = 0 
+    count_u = 0
+    count_o = 0
 
     for key in mc_risks.keys():
         if key.split("-")[1] == str(max(mc_ys)):
-            for x in range(len(target_risks)): 
+            for x in range(len(target_risks)):
                 if mc_risks[key][x] < target_risks[x]:
-                        if count_u < 1:
-                            plt.scatter(
-                                    mc_risks[key][x],
-                                    target_risks[x],
-                                    color="greenyellow",
-                                    marker="s",
-                                    s=3,
-                                    label=f"HMM under ({((hmm_under/(hmm_under + hmm_over))*100):.2f}%)",       
-                            )
-                            count_u += 1 
-                        else: 
-                            plt.scatter(
-                                    mc_risks[key][x],
-                                    target_risks[x],
-                                    color="greenyellow",
-                                    marker="s",
-                                    s=3,
-                            )
+                    if count_u < 1:
+                        plt.scatter(
+                            mc_risks[key][x],
+                            target_risks[x],
+                            color="greenyellow",
+                            marker="s",
+                            s=3,
+                            label=f"HMM under ({((hmm_under/(hmm_under + hmm_over))*100):.2f}%)",
+                        )
+                        count_u += 1
+                    else:
+                        plt.scatter(
+                            mc_risks[key][x],
+                            target_risks[x],
+                            color="greenyellow",
+                            marker="s",
+                            s=3,
+                        )
                 if mc_risks[key][x] >= target_risks[x]:
-                        if count_o < 1:
-                            plt.scatter(
-                                    mc_risks[key][x],
-                                    target_risks[x],
-                                    color="darkgreen",
-                                    marker="s",
-                                    s=3,
-                                    label=f"HMM over ({((hmm_over/(hmm_under + hmm_over))*100):.2f}%)",
-                            )
-                            count_o += 1 
-                        else: 
-                            plt.scatter(
-                                    mc_risks[key][x],
-                                    target_risks[x],
-                                    color="darkgreen",
-                                    marker="s",
-                                    s=3,
-                            )
-
-    
+                    if count_o < 1:
+                        plt.scatter(
+                            mc_risks[key][x],
+                            target_risks[x],
+                            color="darkgreen",
+                            marker="s",
+                            s=3,
+                            label=f"HMM over ({((hmm_over/(hmm_under + hmm_over))*100):.2f}%)",
+                        )
+                        count_o += 1
+                    else:
+                        plt.scatter(
+                            mc_risks[key][x],
+                            target_risks[x],
+                            color="darkgreen",
+                            marker="s",
+                            s=3,
+                        )
 
     imc_ys = []
 
     for key in imc_risks.keys():
         imc_ys.append(int(key.split("-")[1]))
 
-    ihmm_under = 0 
-    ihmm_over = 0 
+    ihmm_under = 0
+    ihmm_over = 0
 
     for key in imc_risks.keys():
         if key.split("-")[1] == str(max(imc_ys)):
-            for x in range(len(target_risks)): 
+            for x in range(len(target_risks)):
                 if imc_risks[key][x] < target_risks[x]:
-                        ihmm_under += 1
+                    ihmm_under += 1
                 if imc_risks[key][x] >= target_risks[x]:
-                        ihmm_over += 1
-    
-    count_u = 0 
-    count_o = 0 
+                    ihmm_over += 1
+
+    count_u = 0
+    count_o = 0
 
     for key in imc_risks.keys():
         if key.split("-")[1] == str(max(imc_ys)):
-            for x in range(len(target_risks)): 
+            for x in range(len(target_risks)):
                 if imc_risks[key][x] < target_risks[x]:
-                        if count_u < 1:
-                            plt.scatter(
-                                    imc_risks[key][x],
-                                    target_risks[x],
-                                    color="orange",
-                                    marker="o",
-                                    s=3,
-                                    label=f"iHMM under ({((ihmm_under/(ihmm_under + ihmm_over))* 100):.2f} %)",
-                            )
-                            count_u += 1 
-                        else: 
-                            plt.scatter(
-                                    imc_risks[key][x],
-                                    target_risks[x],
-                                    color="orange",
-                                    marker="o",
-                                    s=3
-                            )
+                    if count_u < 1:
+                        plt.scatter(
+                            imc_risks[key][x],
+                            target_risks[x],
+                            color="orange",
+                            marker="o",
+                            s=3,
+                            label=f"iHMM under ({((ihmm_under/(ihmm_under + ihmm_over))* 100):.2f} %)",
+                        )
+                        count_u += 1
+                    else:
+                        plt.scatter(
+                            imc_risks[key][x],
+                            target_risks[x],
+                            color="orange",
+                            marker="o",
+                            s=3,
+                        )
                 if imc_risks[key][x] >= target_risks[x]:
-                        if count_o < 1:
-                            plt.scatter(
-                                    imc_risks[key][x],
-                                    target_risks[x],
-                                    color="red",
-                                    marker="o",
-                                    s=3,
-                                    label=f"iHMM over ({((ihmm_over / (ihmm_under + ihmm_over))*100):.2f}%)",
-                            )
-                            count_o += 1 
-                        else: 
-                            plt.scatter(
-                                    imc_risks[key][x],
-                                    target_risks[x],
-                                    color="red",
-                                    marker="o", 
-                                    s=3
-                            )
-
-    
- 
+                    if count_o < 1:
+                        plt.scatter(
+                            imc_risks[key][x],
+                            target_risks[x],
+                            color="red",
+                            marker="o",
+                            s=3,
+                            label=f"iHMM over ({((ihmm_over / (ihmm_under + ihmm_over))*100):.2f}%)",
+                        )
+                        count_o += 1
+                    else:
+                        plt.scatter(
+                            imc_risks[key][x],
+                            target_risks[x],
+                            color="red",
+                            marker="o",
+                            s=3,
+                        )
 
     plt.legend(fontsize=15)
 
@@ -1097,30 +1128,29 @@ def overestimation_graph(
 
     plt.tight_layout()
     if coarse:
-        """ if high_st:
+        """if high_st:
             plt.savefig(
                 f"{out_path}/rq_1_high-st{args.mc}_coarse_overestimation.pdf",
                 dpi=300,
             )
-        else: """
+        else:"""
         plt.savefig(
-                f"{out_path}/rq_1_{args.mc}_coarse_overestimation.pdf",
-                dpi=300,
-            )
+            f"{out_path}/rq_1_{args.mc}_coarse_overestimation.pdf",
+            dpi=300,
+        )
     else:
-        """ if high_st:
+        """if high_st:
             plt.savefig(
                 f"{out_path}/rq_1_high-st{args.mc}_overestimation.pdf",
                 dpi=300,
             )
-        else: """
+        else:"""
         plt.savefig(
-                f"{out_path}/rq_1_{args.mc}_overestimation.pdf",
-                dpi=300,
-            )
+            f"{out_path}/rq_1_{args.mc}_overestimation.pdf",
+            dpi=300,
+        )
 
     plt.show()
-
 
 
 def main_imc(args: argparse.Namespace):
@@ -1178,7 +1208,7 @@ def main_imc(args: argparse.Namespace):
     if len(imc_risks) == 0 or len(mc_risks) == 0:
         print("No data for IMC or MC risks, skipping graph generation.")
         return
-    
+
     overestimation_graph(
         coarse,
         target_risks,
@@ -1188,7 +1218,7 @@ def main_imc(args: argparse.Namespace):
         mc_transition_counts,
         args.out,
     )
-    
+
     fn_fp_comparison(
         coarse,
         alarms,
@@ -1198,32 +1228,26 @@ def main_imc(args: argparse.Namespace):
         args.out,
     )
 
-   
-
-    imc_risks_ref, imc_transition_counts_ref = (
-        aggregated_stats_imc(
-            "ref",
-            coarse,
-            args.stats_path,
-            initial_amount,
-            horizon,
-            args,
-            testing_samples,
-        )
+    imc_risks_ref, imc_transition_counts_ref = aggregated_stats_imc(
+        "ref",
+        coarse,
+        args.stats_path,
+        initial_amount,
+        horizon,
+        args,
+        testing_samples,
     )
 
-    imc_risks_refsplit, imc_transition_counts_refsplit = (
-        aggregated_stats_imc(
-            "refsplit",
-            coarse,
-            args.stats_path,
-            initial_amount,
-            horizon,
-            args,
-            testing_samples,
-        )
+    imc_risks_refsplit, imc_transition_counts_refsplit = aggregated_stats_imc(
+        "refsplit",
+        coarse,
+        args.stats_path,
+        initial_amount,
+        horizon,
+        args,
+        testing_samples,
     )
-    
+
     distance_graph(
         coarse,
         target_risks,
@@ -1236,32 +1260,30 @@ def main_imc(args: argparse.Namespace):
         args.out,
     )
 
-
     test_data = {}
-    test_data['model'] = args.mc
-    test_data['coarse'] = coarse
-    test_data['testing_samples'] = testing_samples
-    test_data['testing_samples_amount'] = args.testing_samples
-    test_data['alarms'] = alarms
-    test_data['target_risks'] = target_risks
-    test_data['mc_risks'] = mc_risks
-    test_data['mc_transition_counts'] = mc_transition_counts
-    test_data['imc_risks'] = imc_risks
-    test_data['imc_transition_counts'] = imc_transition_counts
-    test_data['imc_risks_ref'] = imc_risks_ref
-    test_data['imc_transition_counts_ref'] = imc_transition_counts_ref
-    test_data['imc_risks_refsplit'] = imc_risks_refsplit
-    test_data['imc_transition_counts_refsplit'] = imc_transition_counts_refsplit
+    test_data["model"] = args.mc
+    test_data["coarse"] = coarse
+    test_data["testing_samples"] = testing_samples
+    test_data["testing_samples_amount"] = args.testing_samples
+    test_data["alarms"] = alarms
+    test_data["target_risks"] = target_risks
+    test_data["mc_risks"] = mc_risks
+    test_data["mc_transition_counts"] = mc_transition_counts
+    test_data["imc_risks"] = imc_risks
+    test_data["imc_transition_counts"] = imc_transition_counts
+    test_data["imc_risks_ref"] = imc_risks_ref
+    test_data["imc_transition_counts_ref"] = imc_transition_counts_ref
+    test_data["imc_risks_refsplit"] = imc_risks_refsplit
+    test_data["imc_transition_counts_refsplit"] = imc_transition_counts_refsplit
 
     if coarse == True:
         file_name = os.path.join(args.out, f"testdata_rq_1_{args.mc}_coarse.pkl")
-    else: 
+    else:
         file_name = os.path.join(args.out, f"testdata_rq_1_{args.mc}.pkl")
 
     # Save dictionary
-    with open(file_name, 'wb') as f:
+    with open(file_name, "wb") as f:
         pickle.dump(test_data, f)
-
 
 
 def build_learning_parser(parser: argparse.ArgumentParser):
@@ -1291,7 +1313,6 @@ def testing_argsparser():
 
     parser.add_argument("--stats-path", type=str, help="Path stats")
 
-
     parser.add_argument(
         "-o",
         "--out",
@@ -1311,4 +1332,4 @@ if __name__ == "__main__":
 # See scripts/analysis.sh for the example commands
 
 
-#python -m premise.interval.rq_1 --mc evadeV-5-3 --stats-path /workspaces/premise/out/stats/2025-08-01_08-37-30 --out /workspaces/premise/premise/analysis
+# python -m premise.interval.rq_1 --mc evadeV-5-3 --stats-path /workspaces/premise/out/stats/2025-08-01_08-37-30 --out /workspaces/premise/premise/analysis
