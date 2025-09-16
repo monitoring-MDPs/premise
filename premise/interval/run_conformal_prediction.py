@@ -82,7 +82,7 @@ def get_transition_count(stats_path: str, model_def_name: str):
         sys.exit(1)
 
     return max(transition_stats), max(high_st_transition_stats)
-
+    
 
 if __name__ == "__main__":
     args = split_args(sys.argv[3:], "::")
@@ -123,8 +123,7 @@ if __name__ == "__main__":
     initial_amount = model_def.initial_amount
 
     transition_count, high_st_transition_count = get_transition_count(
-    high_st_transition_count = get_transition_count(
-    sys.argv[2], conformal_args.mc))
+    sys.argv[2], conformal_args.mc)
 
     high_st_args = copy.deepcopy(conformal_args)
 
@@ -133,12 +132,6 @@ if __name__ == "__main__":
     high_st_args.amount = high_st_transition_count // (horizon + initial_amount)
     
     high_st_args.high_st = True
-
-    #TEMPORARY high_st_args.dump_model += "high-st-"
-    #high_st_args.mc = "high-st-" + str(high_st_args.mc)
-    #TEMPORARY high_st_args.dump_stats += "high-st-"
-    #high_st_args.mc = "high-st-" + str(high_st_args.mc)
-
 
     try:
         run_with_timeout(conformal_prediction_main, (high_st_args,), timeout)
@@ -156,4 +149,4 @@ if __name__ == "__main__":
         logger.error(f"Error in Conformal Prediction: {e}")
         logger.info("Conformal Prediction failed, exiting.")
 
-# python -m premise.interval.run_conformal_prediction 20m /workspaces/premise/out/stats/2025-09-16_07-48-07 -mc SnL-10x10 --dump-model /workspaces/premise/out/models/2025-09-16_07-48-07 --dump-stats /workspaces/premise/out/stats/2025-09-16_07-48-07 --no-target
+# python -m premise.interval.run_conformal_prediction 60m /workspaces/premise/out/stats/2025-09-16_07-48-07 -mc SnL-10x10 --dump-model /workspaces/premise/out/models/2025-09-16_07-48-07 --dump-stats /workspaces/premise/out/stats/2025-09-16_07-48-07 --no-target

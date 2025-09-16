@@ -94,7 +94,7 @@ def aggregated_stats_imc(
             if coarse:
                 if high_st:
                     if method == "noref":
-                        if args.mc == " SnLw-10x10":
+                        if args.mc == "SnLw-10x10":
                             statistics = np.load(
                                 f"{stats_path}/high-st-SnL-coarse_norefinement-stats-{x}.npy",
                                 allow_pickle=True,
@@ -104,13 +104,18 @@ def aggregated_stats_imc(
                                 f"{stats_path}/high-st-evadeV-6-3-coarse_norefinement-stats-{x}.npy",
                                 allow_pickle=True,
                             )
+                        elif args.mc == "SnL-10x10":
+                            statistics = np.load(
+                                f"{stats_path}/high-st-SnL-coarse-noref-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
                         else:
                             statistics = np.load(
                                 f"{stats_path}/high-st-{mc}-coarse_norefinement-stats-{x}.npy",
                                 allow_pickle=True,
                             )
                     elif method == "ref":
-                        if args.mc == " SnLw-10x10":
+                        if args.mc == "SnLw-10x10":
                             statistics = np.load(
                                 f"{stats_path}/high-st-SnL-coarse_refinement-stats-{x}.npy",
                                 allow_pickle=True,
@@ -120,13 +125,18 @@ def aggregated_stats_imc(
                                 f"{stats_path}/high-st-evadeV-6-3-coarse_refinement-stats-{x}.npy",
                                 allow_pickle=True,
                             )
+                        elif args.mc == "SnL-10x10":
+                            statistics = np.load(
+                                f"{stats_path}/high-st-SnL-coarse-ref-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
                         else:
                             statistics = np.load(
                                 f"{stats_path}/high-st-{mc}-coarse_refinement-stats-{x}.npy",
                                 allow_pickle=True,
                             )
                     elif method == "refsplit":
-                        if args.mc == " SnLw-10x10":
+                        if args.mc == "SnLw-10x10":
                             statistics = np.load(
                                 f"{stats_path}/high-st-SnL-coarse_refsplitinement-stats-{x}.npy",
                                 allow_pickle=True,
@@ -134,6 +144,11 @@ def aggregated_stats_imc(
                         elif args.mc == "evadeV-6-3-coarse":
                             statistics = np.load(
                                 f"{stats_path}/high-st-evadeV-6-3-coarse_refsplitinement-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
+                        elif args.mc == "SnL-10x10":
+                            statistics = np.load(
+                                f"{stats_path}/high-st-SnL-coarse-refsplit-stats-{x}.npy",
                                 allow_pickle=True,
                             )
                         else:
@@ -1735,9 +1750,8 @@ def fn_fp_comparison_model_based(
     auc_fnr_target = np.trapz(target_fnr, thresholds)
     auc_fpr_target = np.trapz(target_fpr, thresholds)
 
-
     ax.plot(thresholds, target_fnr, label=f'Target FNR: (AUC {auc_fnr_target:.3f})', color='black', linestyle= ':')
-    ax.plot(thresholds, target_fpr, label=f'Target FPR: (AUC {auc_fpr_target:.3f})', color='black', linestyle= '--')
+    ax.plot(thresholds, target_fpr , label=f'Target FPR: (AUC {auc_fpr_target:.3f})', color='black', linestyle= '--')
 
     #No Refinement
     
@@ -2750,7 +2764,6 @@ def main_imc(args: argparse.Namespace):
     stats_path = args.stats_path
     high_st = args.high_st
 
-    
 
     (
         imc_risks_ref_splitting,
