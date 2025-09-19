@@ -309,13 +309,16 @@ def aggregated_stats_regression(
                                 f"{stats_path}/high-st-SnL-coarse-comp-reg-stats-{x}.npy",
                                 allow_pickle=True,
                             )
-
                         elif args.mc == "evadeV-6-3-coarse":
                             statistics = np.load(
                                 f"{stats_path}/high-st-evadeV-6-3-coarse-comp-reg-stats-{x}.npy",
                                 allow_pickle=True,
                             )
-
+                        elif args.mc == "SnL-10x10":
+                            statistics = np.load(
+                                f"{stats_path}/high-st-SnL-coarse-comp-reg-stats-{x}.npy",
+                                allow_pickle=True,
+                            )
                         else:
                             statistics = np.load(
                                 f"{stats_path}/high-st-{mc}-coarse-comp-reg-stats-{x}.npy",
@@ -413,36 +416,39 @@ def aggreagted_stats_conformal(high_st, new_noisy, coarse, mc, model_path, stats
         #    conformal_ys[key].sort()
 
         #for y in conformal_ys[str(x)]:
+
         conformal_risks[f"{x}"] = []
         try:
                 if coarse:
                     if high_st:
-                        state_estimator = torch.load(
-                            f"{model_path}/high-st-{mc}_coarse_comp_conformal_pred_state_estimator_{x}_{y}.pt",
-                            weights_only=False,
-                        )
-                        label_estimator = torch.load(
-                            f"{model_path}/high-st-{mc}_coarse_comp_conformal_pred_label_estimator_{x}_{y}.pt",
-                            weights_only=False,
-                        )
-                        cp_classification = torch.load(
-                            f"{model_path}/high-st-{mc}_coarse_comp_conformal_pred_cp_classification_{x}_{y}.pt",
-                            weights_only=False,
-                        )
+                            print(f"{model_path}/high-st-{mc}_coarse_comp_conformal_pred_state_estimator_{x-1}_*.pt")
+                            print('/workspaces/premise/out/models/2025-09-16_07-48-07/high-st-SnL-10x10_coarse_comp_conformal_pred_state_estimator_0_3775.pt')
+                            state_estimator = torch.load(
+                                glob.glob(f"{model_path}/high-st-{mc}_coarse_comp_conformal_pred_state_estimator_{x-1}_*.pt")[0],
+                                weights_only=False,
+                            )
+                            label_estimator = torch.load(
+                                glob.glob(f"{model_path}/high-st-{mc}_coarse_comp_conformal_pred_label_estimator_{x-1}_*.pt")[0],
+                                weights_only=False,
+                            )
+                            cp_classification = torch.load(
+                                glob.glob(f"{model_path}/high-st-{mc}_coarse_comp_conformal_pred_cp_classification_{x-1}_*.pt")[0],
+                                weights_only=False,
+                            )
 
-                        with open(
-                            f"{stats_path}/high-st-{mc}_coarse_comp_conformal_pred_rejection_classifier_{x}_{y}.pickle",
-                            "rb",
-                        ) as f:
-                            rej_classifier = pickle.load(f)
+                            with open(
+                                glob.glob(f"{stats_path}/high-st-{mc}_coarse_comp_conformal_pred_rejection_classifier_{x-1}_*.pickle")[0],
+                                "rb",
+                            ) as f:
+                                rej_classifier = pickle.load(f)
 
-                        rejection_classifier = rej_classifier["rej_rule"]
+                            rejection_classifier = rej_classifier["rej_rule"]
 
-                        with open(
-                            f"{stats_path}/high-st-{mc}_coarse_comp_conformal_pred_conformal_stats_{x}_{y}.pickle",
-                            "rb",
-                        ) as f:
-                            conformal_stats = pickle.load(f)
+                            with open(
+                                glob.glob(f"{stats_path}/high-st-{mc}_coarse_comp_conformal_pred_conformal_stats_{x-1}_*.pickle")[0],
+                                "rb",
+                            ) as f:
+                                conformal_stats = pickle.load(f)
                     else:
                         state_estimator = torch.load(
                             f"{model_path}/{mc}_coarse_comp_conformal_pred_state_estimator_{x}_{y}.pt",
@@ -558,9 +564,9 @@ def aggreagted_stats_conformal(high_st, new_noisy, coarse, mc, model_path, stats
                     error_prob[u] = 1.0
 
         for u in range(len(error_prob)):
-                conformal_risks[f"{x}-{y}"].append(error_prob[u])
+                conformal_risks[f"{x}"].append(error_prob[u])
 
-    return conformal_risks, 
+    return conformal_risks
 
 
 def roc_curve_model_based(
@@ -1472,128 +1478,7 @@ def plotting(
         color="red",
     )
 
-    # REGRESSION MODEL AVERAGE PERFORMANCE
-
-    # REG_transitions_data = []
-    # REG_auc_data = []
-
-    # for entry in REG_sets:
-    #     transitions = entry[0]
-    #     auc_daum = entry[1]
-
-    #     REG_transitions_data.append(transitions)
-    #     REG_auc_data.append(auc_daum)
-
-    # # Find common x range for interpolation
-    # REG_min_x = max(min(transitions) for transitions in REG_transitions_data)
-    # REG_max_x = min(max(transitions) for transitions in REG_transitions_data)
-    # REG_x_values = np.linspace(REG_min_x, REG_max_x, 500)
-
-    # # Interpolate all runs to common x values
-    # REG_interpolated_auc = []
-    # for auc, transitions in zip(REG_auc_data, REG_transitions_data):
-    #     if log:
-    #         auc = np.log10(auc)
-    #     REG_interpolated = np.interp(REG_x_values, transitions, auc)
-    #     if log:
-    #         REG_interpolated = np.power(10, REG_interpolated)
-    #     REG_interpolated_auc.append(REG_interpolated)
-
-    # # Calculate mean and std for interpolated y values
-    # REG_auc_array = np.array(REG_interpolated_auc)
-    # REG_mean_auc = np.mean(REG_auc_array, axis=0)
-    # REG_std_auc = np.std(REG_auc_array, axis=0)
-    # REG_min_auc = np.min(REG_auc_array, axis=0)
-    # REG_max_auc = np.max(REG_auc_array, axis=0)
-
-    # #Plot mean line
-    # ax.plot(
-    #     REG_x_values,
-    #     REG_mean_auc,
-    #     color='green',
-    #     label = 'Regression',
-    #     linestyle='-.',
-    #     linewidth=5,
-    #     )
-
-    # #Add shaded area for spread
-    # ax.fill_between(
-    #         REG_x_values,
-    #         REG_mean_auc - REG_std_auc,
-    #         REG_mean_auc + REG_std_auc,
-    #         alpha=0.2,
-    #         color='green'
-    #     )
-
-    """ # CONFORMAL PREDICTION MODEL AVERAGE PERFORMANCE
-
-    CONF_transitions_data = []
-    CONF_auc_data = []
-
-    for entry in CONF_sets:
-        transitions = entry[0]
-        auc_daum = entry[1]
-
-        CONF_transitions_data.append(transitions)
-        CONF_auc_data.append(auc_daum)
-
-    # Find common x range for interpolation
-    CONF_min_x = max(min(transitions) for transitions in CONF_transitions_data)
-    CONF_max_x = min(max(transitions) for transitions in CONF_transitions_data)
-    CONF_x_values = np.linspace(CONF_min_x, CONF_max_x, 500)
-
-    # Interpolate all runs to common x values
-    CONF_interpolated_auc = []
-    for auc, transitions in zip(CONF_auc_data, CONF_transitions_data):
-        if log:
-            auc = np.log10(auc)
-        CONF_interpolated = np.interp(CONF_x_values, transitions, auc)
-        if log:
-            CONF_interpolated = np.power(10, CONF_interpolated)
-        CONF_interpolated_auc.append(CONF_interpolated)
-
-    # Calculate mean and std for interpolated y values
-    CONF_auc_array = np.array(CONF_interpolated_auc)
-    CONF_mean_auc = np.mean(CONF_auc_array, axis=0)
-    CONF_std_auc = np.std(CONF_auc_array, axis=0)
-    CONF_min_auc = np.min(CONF_auc_array, axis=0)
-    CONF_max_auc = np.max(CONF_auc_array, axis=0)
-
-    # Plot mean line
-    ax.plot(
-        CONF_x_values,
-        CONF_mean_auc,
-        color="orange",
-        label="Conformal prediction",
-        linewidth=5,
-    )
-
-    # Add shaded area for spread
-    ax.fill_between(
-        CONF_x_values,
-        CONF_mean_auc - CONF_std_auc,
-        CONF_mean_auc + CONF_std_auc,
-        alpha=0.2,
-        color="yellow",
-    ) """
-
-    # formatter = ticker.ScalarFormatter(useMathText=True)
-    # formatter.set_powerlimits((4, 4))  # Force 10^4 scale
-    # ax.xaxis.set_major_formatter(formatter)
-    # ax.tick_params(axis="both", labelsize=30)
-    # ax.xaxis.get_offset_text().set_size(30)
-
-    # ax.set_xlabel("State count", fontsize=35)
-    # ax.set_ylabel("AUC", fontsize=35)
-    # ax.legend(loc="lower right", fontsize=30)
-    # if log:
-    #     plt.yscale("log")
-    # else:
-    #     plt.ylim(bottom=0)
-    # ax.grid(True)
-    # plt.subplots_adjust(bottom=0.25)
-    # plt.tight_layout()
-
+    
     if coarse:
         plt.savefig(
             f"{out_path}/rq_2_{args.mc}_coarse_AUC_ref_no_ref.pdf",
@@ -1912,7 +1797,7 @@ def fn_fp_comparison_model_based(
 
     ax.set_xlabel('Threshold')
     ax.set_ylabel('Rate')
-    ax.legend()
+    ax.legend(loc="right", fontsize=5)
     ax.grid(True)
     plt.tight_layout()
     plt.show()
@@ -1933,8 +1818,6 @@ def fn_fp_comparison_model_based(
 
     plt.show()
 
-
-
 def fn_fp_AUC_model_based(
         coarse,
         alarms,imc_risks,
@@ -1947,7 +1830,6 @@ def fn_fp_AUC_model_based(
         out_path):
 
     
-        
     thresholds = [t / 1000 for t in range(0, 1001)]
     target_risks = np.array(target_risks,  dtype=float)
     alarms = np.array(alarms)
@@ -1963,7 +1845,6 @@ def fn_fp_AUC_model_based(
 
     imc_ref_splitting_fnr = {}
     imc_ref_splitting_fpr = {}
-
 
     for key in imc_risks.keys(): 
             imc_fnr[key] = []
@@ -2049,113 +1930,96 @@ def fn_fp_AUC_model_based(
     imc_transition_counts_ref_splitting_accumulated = {}
 
     for x in imc_transition_counts.keys():
-
         imc_transition_counts_accumulated[x] = list(accumulate(imc_transition_counts[x]))
-        imc_transition_counts_ref_accumulated[x] = list(accumulate(imc_transition_counts_ref[x]))
+
+    for y in imc_transition_counts_ref.keys():
+        imc_transition_counts_ref_accumulated[y] = list(accumulate(imc_transition_counts_ref[y]))
+    
+    for x in imc_transition_counts_ref_splitting.keys():
         imc_transition_counts_ref_splitting_accumulated[x] = list(accumulate(imc_transition_counts_ref_splitting[x]))
 
     y_range = 0 
 
-    for x in imc_transition_counts.keys():
+    for x in imc_transition_counts.keys(): 
         if max([max(imc_transition_counts_accumulated[x]),max(imc_transition_counts_ref_accumulated[x]),max(imc_transition_counts_ref_splitting_accumulated[x])]) > y_range: 
             y_range = max([max(imc_transition_counts_accumulated[x]),max(imc_transition_counts_ref_accumulated[x]),max(imc_transition_counts_ref_splitting_accumulated[x])])
 
-
-    ax.plot( [0, int(y_range)], [auc_fnr_target, auc_fnr_target], label = 'Target FNR AUC', color = 'black', linestyle= '--')
-    ax.plot( [0, int(y_range)], [auc_fpr_target, auc_fpr_target], label = 'Target FPR AUC', color = 'black', linestyle= ':')
+    ax.plot([0, int(y_range)], [auc_fnr_target, auc_fnr_target], label = 'Target FNR AUC', color = 'black', linestyle= '--')
+    ax.plot([0, int(y_range)], [auc_fpr_target, auc_fpr_target], label = 'Target FPR AUC', color = 'black', linestyle= ':') 
 
     #No Refinement
     
     imc_fnr_aucs = {}
     imc_fpr_aucs = {}
+    
 
     for key in imc_risks.keys():
         imc_fnr_aucs[key] = np.trapz(imc_fnr[key], thresholds)
         imc_fpr_aucs[key] = np.trapz(imc_fpr[key], thresholds)
 
-
     #fnr
-
     imc_fnr_aucs_sorted = {}
 
     for key in imc_fnr_aucs.keys(): 
-        imc_fnr_aucs_sorted[key.split("-")[1]] = []
-
+        imc_fnr_aucs_sorted[key.split("-")[0]] = []
 
     for x in imc_fnr_aucs.keys():
         for y in imc_fnr_aucs_sorted.keys(): 
-            if x.split("-")[1] == y: 
-                print(x, imc_fnr_aucs[x])
+            if x.split("-")[0] == y: 
                 imc_fnr_aucs_sorted[y].append([imc_fnr_aucs[x]])
 
-
-    imc_fnr_aucs_soreted_mean = {}
-    imc_fnr_aucs_soreted_std = {}
-
-    for key in imc_fnr_aucs_sorted.keys(): 
-        imc_fnr_aucs_sorted[key] = np.array(imc_fnr_aucs_sorted[key])
-        imc_fnr_aucs_soreted_mean[key] = np.mean(imc_fnr_aucs_sorted[key], axis=0)
-        imc_fnr_aucs_soreted_std[key] = np.std(imc_fnr_aucs_sorted[key], axis=0)
-
-    imc_fnr_aucs_soreted_mean_list = []
-     
-    for key in imc_fnr_aucs_soreted_mean: 
-        imc_fnr_aucs_soreted_mean_list.append(imc_fnr_aucs_soreted_mean[key])
-
-    imc_fnr_aucs_soreted_std_list = []
-
-    for key in imc_fnr_aucs_soreted_std: 
-        imc_fnr_aucs_soreted_std_list.append(imc_fnr_aucs_soreted_std[key])
-
-    imc_fnr_aucs_soreted_mean_list = np.array(imc_fnr_aucs_soreted_mean_list)
-    imc_fnr_aucs_soreted_std_list = np.array(imc_fnr_aucs_soreted_std_list)
-
     #fpr
-
     imc_fpr_aucs_sorted = {}
 
     for key in imc_fpr_aucs.keys(): 
-        imc_fpr_aucs_sorted[key.split("-")[1]] = []
-
+        imc_fpr_aucs_sorted[key.split("-")[0]] = []
 
     for x in imc_fpr_aucs.keys():
         for y in imc_fpr_aucs_sorted.keys(): 
-            if x.split("-")[1] == y: 
+            if x.split("-")[0] == y: 
                 imc_fpr_aucs_sorted[y].append([imc_fpr_aucs[x]])
 
 
-    imc_fpr_aucs_soreted_mean = {}
-    imc_fpr_aucs_soreted_std = {}
+
+    no_ref_x = []
+    fnr_no_rf_y = []
+    fpr_no_rf_y = []
+
+    for x in imc_fnr_aucs_sorted.keys():
+        no_ref_x.append(imc_transition_counts_accumulated[x])
+        fnr_no_rf_y.append(imc_fnr_aucs_sorted[x])
+        fpr_no_rf_y.append(imc_fpr_aucs_sorted[x])
 
 
-    for key in imc_fpr_aucs_sorted.keys(): 
-        imc_fpr_aucs_sorted[key] = np.array(imc_fpr_aucs_sorted[key])
-        imc_fpr_aucs_soreted_mean[key] = np.mean(imc_fpr_aucs_sorted[key], axis=0)
-        imc_fpr_aucs_soreted_std[key] = np.std(imc_fpr_aucs_sorted[key], axis=0)
+    no_ref_x = np.array(no_ref_x)
+    mean_no_ref_x = np.mean(no_ref_x, axis=0)
 
-    imc_fpr_aucs_soreted_mean_list = []
-    imc_fpr_aucs_soreted_std_list = []
+    fnr_no_rf_y = np.array(fnr_no_rf_y)
+    mean_fnr_no_rf_y = np.mean(fnr_no_rf_y, axis=0)
+    std_fnr_no_rf_y = np.std(fnr_no_rf_y, axis=0)
 
-     
-    for key in imc_fpr_aucs_soreted_mean: 
-        imc_fpr_aucs_soreted_mean_list.append(imc_fpr_aucs_soreted_mean[key])
-        imc_fpr_aucs_soreted_std_list.append(imc_fpr_aucs_soreted_std[key])
+    fpr_no_rf_y = np.array(fpr_no_rf_y)
+    mean_fpr_no_rf_y = np.mean(fpr_no_rf_y, axis=0)
+    std_fpr_no_rf_y = np.std(fpr_no_rf_y, axis=0)
 
-    imc_fpr_aucs_soreted_mean_list = np.array(imc_fpr_aucs_soreted_mean_list) 
-    imc_fpr_aucs_soreted_std_list = np.array(imc_fpr_aucs_soreted_std_list)
+    ax.plot(mean_no_ref_x, mean_fnr_no_rf_y, label = 'No refinement FNR AUC', color='red', linestyle= '--')
+    ax.plot(mean_no_ref_x, mean_fpr_no_rf_y, label = 'No refinement FPR AUC', color='red', linestyle= ':')
 
-    x_axis = []
+    plt.fill_between(
+    mean_no_ref_x.flatten(),
+    (mean_fnr_no_rf_y - std_fnr_no_rf_y).flatten(),   
+    (mean_fnr_no_rf_y + std_fnr_no_rf_y).flatten(),   
+    color="red",
+    alpha=0.2
+    )
 
-    for key in imc_transition_counts_accumulated.keys(): 
-       x_axis.append(imc_transition_counts_accumulated[key])
-       
-    max_len = max(len(row) for row in x_axis)
-    x_axis_padded = [row + [np.nan]*(max_len - len(row)) for row in x_axis]
-    x_axis_padded = np.array(x_axis_padded)
-    x_mean = np.nanmean(x_axis_padded, axis=0) 
-
-    ax.plot(x_mean, imc_fnr_aucs_soreted_mean_list, label = 'No refinement FNR AUC', color='red', linestyle= '--')
-    ax.plot(x_mean, imc_fpr_aucs_soreted_mean_list, label = 'No refinement FPR AUC', color='red', linestyle= ':')
+    plt.fill_between(
+    mean_no_ref_x.flatten(),
+    (mean_fpr_no_rf_y - std_fpr_no_rf_y).flatten(),   
+    (mean_fpr_no_rf_y + std_fpr_no_rf_y).flatten(),   
+    color="red",
+    alpha=0.2
+    )
 
 
     #Refinement
@@ -2172,64 +2036,67 @@ def fn_fp_AUC_model_based(
     imc_ref_fnr_aucs_sorted = {}
 
     for key in imc_ref_fnr_aucs.keys(): 
-        imc_ref_fnr_aucs_sorted[key.split("-")[1]] = []
+        imc_ref_fnr_aucs_sorted[key.split("-")[0]] = []
 
 
     for x in imc_ref_fnr_aucs.keys():
         for y in imc_ref_fnr_aucs_sorted.keys(): 
-            if x.split("-")[1] == y: 
-                print(x, imc_ref_fnr_aucs[x])
+            if x.split("-")[0] == y: 
                 imc_ref_fnr_aucs_sorted[y].append([imc_ref_fnr_aucs[x]])
 
-    imc_ref_fnr_aucs_soreted_mean = {}
-
-    for key in imc_ref_fnr_aucs_sorted.keys(): 
-        imc_ref_fnr_aucs_sorted[key] = np.array(imc_ref_fnr_aucs_sorted[key])
-        imc_ref_fnr_aucs_soreted_mean[key] = np.mean(imc_ref_fnr_aucs_sorted[key], axis=0)
-
-
-    imc_ref_fnr_aucs_soreted_mean_list = []
-
-    for key in imc_ref_fnr_aucs_soreted_mean.keys(): 
-        imc_ref_fnr_aucs_soreted_mean_list.append(imc_ref_fnr_aucs_soreted_mean[key])
 
     #fpr
-
     imc_ref_fpr_aucs_sorted = {}
 
     for key in imc_ref_fpr_aucs.keys(): 
-        imc_ref_fpr_aucs_sorted[key.split("-")[1]] = []
+        imc_ref_fpr_aucs_sorted[key.split("-")[0]] = []
 
 
     for x in imc_ref_fpr_aucs.keys():
         for y in imc_ref_fpr_aucs_sorted.keys(): 
-            if x.split("-")[1] == y: 
-                print(x, imc_ref_fpr_aucs[x])
+            if x.split("-")[0] == y: 
                 imc_ref_fpr_aucs_sorted[y].append([imc_ref_fpr_aucs[x]])
 
-    imc_ref_fpr_aucs_soreted_mean = {}
 
-    for key in imc_ref_fpr_aucs_sorted.keys(): 
-        imc_ref_fpr_aucs_sorted[key] = np.array(imc_ref_fpr_aucs_sorted[key])
-        imc_ref_fpr_aucs_soreted_mean[key] = np.mean(imc_ref_fpr_aucs_sorted[key], axis=0)
+    ref_x = []
+    fnr_rf_y = []
+    fpr_rf_y = []
 
-    imc_ref_fpr_aucs_soreted_mean_list = []
 
-    for key in imc_ref_fpr_aucs_soreted_mean.keys(): 
-        imc_ref_fpr_aucs_soreted_mean_list.append(imc_ref_fpr_aucs_soreted_mean[key])
+    for x in imc_ref_fpr_aucs_sorted.keys(): 
+        ref_x.append(imc_transition_counts_ref_accumulated[x])
+        fnr_rf_y.append(imc_ref_fnr_aucs_sorted[x])
+        fpr_rf_y.append(imc_ref_fpr_aucs_sorted[x])
 
-    x_axis = []
+    ref_x = np.array(ref_x)
+    mean_ref_x = np.mean(ref_x, axis=0)
 
-    for key in imc_transition_counts_ref_accumulated.keys(): 
-       x_axis.append(imc_transition_counts_ref_accumulated[key])
+    fnr_rf_y = np.array(fnr_rf_y)
+    mean_fnr_rf_y = np.mean(fnr_rf_y, axis=0)
+    std_fnr_rf_y = np.std(fnr_rf_y, axis=0)
 
-    max_len = max(len(row) for row in x_axis)
-    x_axis_padded = [row + [np.nan]*(max_len - len(row)) for row in x_axis]
-    x_axis_padded = np.array(x_axis_padded)
-    x_mean = np.nanmean(x_axis_padded, axis=0)
-    
-    ax.plot(x_mean, imc_ref_fnr_aucs_soreted_mean_list, label = 'Refinement FNR AUC', color='blue', linestyle= '--')
-    ax.plot(x_mean, imc_ref_fpr_aucs_soreted_mean_list, label = 'Refinement FPR AUC', color='blue', linestyle= ':')
+    fpr_rf_y = np.array(fpr_rf_y)
+    mean_fpr_rf_y = np.mean(fpr_rf_y, axis=0)
+    std_fpr_rf_y = np.std(fpr_rf_y, axis=0)
+
+    ax.plot(mean_ref_x, mean_fnr_rf_y, label = 'Refinement FNR AUC', color='blue', linestyle= '--')
+    ax.plot(mean_ref_x, mean_fpr_rf_y, label = 'Refinement FPR AUC', color='blue', linestyle= ':')
+
+    plt.fill_between(
+    mean_ref_x.flatten(),
+    (mean_fnr_rf_y - std_fnr_rf_y).flatten(),   
+    (mean_fnr_rf_y + std_fnr_rf_y).flatten(),   
+    color="blue",
+    alpha=0.2
+    )
+
+    plt.fill_between(
+    mean_ref_x.flatten(),
+    (mean_fpr_rf_y - std_fpr_rf_y).flatten(),   
+    (mean_fpr_rf_y + std_fpr_rf_y).flatten(),   
+    color="blue",
+    alpha=0.2
+    )
 
     #Refinement with Splitting
     
@@ -2241,73 +2108,75 @@ def fn_fp_AUC_model_based(
         imc_ref_splitting_fpr_aucs[key] = np.trapz(imc_ref_splitting_fpr[key], thresholds)
 
 
+    #fnr
     imc_ref_splitting_fnr_aucs_sorted = {}
 
     for key in imc_ref_splitting_fnr_aucs.keys(): 
-        imc_ref_splitting_fnr_aucs_sorted[key.split("-")[1]] = []
+        imc_ref_splitting_fnr_aucs_sorted[key.split("-")[0]] = []
 
 
     for x in imc_ref_splitting_fnr_aucs.keys():
         for y in imc_ref_splitting_fnr_aucs_sorted.keys(): 
-            if x.split("-")[1] == y: 
-                print(x, imc_ref_splitting_fnr_aucs[x])
+            if x.split("-")[0] == y: 
                 imc_ref_splitting_fnr_aucs_sorted[y].append([imc_ref_splitting_fnr_aucs[x]])
 
 
-    imc_ref_splitting_fnr_aucs_soreted_mean = {}
-
-    for key in imc_ref_splitting_fnr_aucs_sorted.keys(): 
-        imc_ref_splitting_fnr_aucs_sorted[key] = np.array(imc_ref_splitting_fnr_aucs_sorted[key])
-        imc_ref_splitting_fnr_aucs_soreted_mean[key] = np.mean(imc_ref_splitting_fnr_aucs_sorted[key], axis=0)
-
-
-    imc_ref_splitting_fnr_aucs_soreted_mean_list = []
-
-    for key in imc_ref_splitting_fnr_aucs_soreted_mean.keys(): 
-        imc_ref_splitting_fnr_aucs_soreted_mean_list.append(imc_ref_splitting_fnr_aucs_soreted_mean[key])
-
+    #fpr
     imc_ref_splitting_fpr_aucs_sorted = {}
 
     for key in imc_ref_splitting_fpr_aucs.keys(): 
-        imc_ref_splitting_fpr_aucs_sorted[key.split("-")[1]] = []
+        imc_ref_splitting_fpr_aucs_sorted[key.split("-")[0]] = []
 
 
     for x in imc_ref_splitting_fpr_aucs.keys():
         for y in imc_ref_splitting_fpr_aucs_sorted.keys(): 
-            if x.split("-")[1] == y: 
-                print(x, imc_ref_splitting_fpr_aucs[x])
+            if x.split("-")[0] == y: 
                 imc_ref_splitting_fpr_aucs_sorted[y].append([imc_ref_splitting_fpr_aucs[x]])
 
-
-    imc_ref_splitting_fpr_aucs_soreted_mean = {}
-
-    for key in imc_ref_splitting_fpr_aucs_sorted.keys(): 
-        imc_ref_splitting_fpr_aucs_sorted[key] = np.array(imc_ref_splitting_fpr_aucs_sorted[key])
-        imc_ref_splitting_fpr_aucs_soreted_mean[key] = np.mean(imc_ref_splitting_fpr_aucs_sorted[key], axis=0)
+    ref_split_x = []
+    fnr_rf_split_y = []
+    fpr_rf_split_y = []
 
 
-    imc_ref_splitting_fpr_aucs_soreted_mean_list = []
+    for x in imc_ref_splitting_fpr_aucs_sorted.keys(): 
+        ref_split_x.append(imc_transition_counts_ref_splitting_accumulated[x])
+        fnr_rf_split_y.append(imc_ref_splitting_fnr_aucs_sorted[x])
+        fpr_rf_split_y.append(imc_ref_splitting_fpr_aucs_sorted[x])
 
-    for key in imc_ref_splitting_fpr_aucs_soreted_mean.keys(): 
-        imc_ref_splitting_fpr_aucs_soreted_mean_list.append(imc_ref_splitting_fpr_aucs_soreted_mean[key])
+    
+    ref_split_x = np.array(ref_split_x)
+    mean_ref_split_x = np.mean(ref_split_x, axis=0)
 
+    fnr_rf_split_y = np.array(fnr_rf_split_y)
+    mean_fnr_rf_split_y = np.mean(fnr_rf_split_y, axis=0)
+    std_fnr_rf_split_y = np.std(fnr_rf_split_y, axis=0)
 
-    x_axis = []
+    fpr_rf_split_y = np.array(fpr_rf_split_y)
+    mean_fpr_rf_split_y = np.mean(fpr_rf_split_y, axis=0)
+    std_fpr_rf_split_y = np.std(fpr_rf_split_y, axis=0)
 
-    for key in imc_transition_counts_ref_splitting_accumulated.keys(): 
-       x_axis.append(imc_transition_counts_ref_splitting_accumulated[key])
+    ax.plot(mean_ref_split_x, mean_fnr_rf_split_y, label = 'Refinement with Splitting FNR AUC', color='aqua', linestyle= '--')
+    ax.plot(mean_ref_split_x, mean_fpr_rf_split_y, label = 'Refinement with Splitting FPR AUC', color='aqua', linestyle= ':')
 
-    max_len = max(len(row) for row in x_axis)
-    x_axis_padded = [row + [np.nan]*(max_len - len(row)) for row in x_axis]
-    x_axis_padded = np.array(x_axis_padded)
-    x_mean = np.nanmean(x_axis_padded, axis=0)
+    plt.fill_between(
+    mean_ref_split_x.flatten(),
+    (mean_fnr_rf_split_y - std_fnr_rf_split_y).flatten(),   
+    (mean_fnr_rf_split_y + std_fnr_rf_split_y).flatten(),   
+    color="aqua",
+    alpha=0.2
+    )
 
-    ax.plot(x_mean, imc_ref_splitting_fnr_aucs_soreted_mean_list, label = 'Refinement with Splitting FNR AUC', color='aqua', linestyle= '--')
-    ax.plot(x_mean, imc_ref_splitting_fpr_aucs_soreted_mean_list, label = 'Refinement with Splitting FPR AUC', color='aqua', linestyle= ':')
+    plt.fill_between(
+    mean_ref_split_x.flatten(),
+    (mean_fpr_rf_split_y - std_fpr_rf_split_y).flatten(),   
+    (mean_fpr_rf_split_y + std_fpr_rf_split_y).flatten(),   
+    color="aqua",
+    alpha=0.2
+    )
 
     ax.set_ylabel('AUC')
     ax.set_xlabel('Explored States')
-    ax.legend(loc="right", fontsize=5)
+    ax.legend(loc="right", fontsize=6)
     ax.grid(True)
     plt.tight_layout()
     plt.show()
@@ -2686,7 +2555,7 @@ def fn_fp_comparison_model_based_vs_model_free(
     conformal_fpr_auc = np.mean(conformal_fpr_aucs, axis=0)
 
 
-    ax.plot(thresholds, conformal_fnr_mean, label=f'Regression mean FNR: (AUC {conformal_fnr_auc:.3f})', color='orange', linestyle= ':')
+    ax.plot(thresholds, conformal_fnr_mean, label=f'Conformal prediction mean FNR: (AUC {conformal_fnr_auc:.3f})', color='orange', linestyle= ':')
 
     plt.fill_between(
     thresholds,
@@ -2701,7 +2570,7 @@ def fn_fp_comparison_model_based_vs_model_free(
     conformal_fpr_mean = np.mean(conformal_FPRs, axis=0)
     conformal_fpr_std = np.std(conformal_FPRs, axis=0)
 
-    ax.plot(thresholds, conformal_fpr_mean, label=f'Regression mean FPR: (AUC {conformal_fpr_auc:.3f})', color='orange', linestyle= '--')
+    ax.plot(thresholds, conformal_fpr_mean, label=f'Conformal prediction mean FPR: (AUC {conformal_fpr_auc:.3f})', color='orange', linestyle= '--')
 
     plt.fill_between(
     thresholds,
@@ -2764,6 +2633,10 @@ def main_imc(args: argparse.Namespace):
     stats_path = args.stats_path
     high_st = args.high_st
 
+    conformal_risks = aggreagted_stats_conformal(
+        args.high_st, noisy_measurements, coarse, mc, model_path, stats_path
+    )
+
 
     (
         imc_risks_ref_splitting,
@@ -2781,6 +2654,11 @@ def main_imc(args: argparse.Namespace):
         args,
         testing_samples,
     )
+
+    print('imc_transition_counts_ref_splitting')
+    print(imc_transition_counts_ref_splitting)
+
+
     imc_risks, imc_transition_counts, imc_stopping_threshold, imc_distances = (
         aggregated_stats_imc(
             args.high_st,
@@ -2794,6 +2672,10 @@ def main_imc(args: argparse.Namespace):
             testing_samples,
         )
     )
+
+    print('imc_transition_counts')
+    print(imc_transition_counts)
+
     (
         imc_risks_ref,
         imc_transition_counts_ref,
@@ -2810,6 +2692,9 @@ def main_imc(args: argparse.Namespace):
         args,
         testing_samples,
     )
+
+    print('imc_transition_counts_ref')
+    print(imc_transition_counts_ref)
 
     fn_fp_comparison_model_based( 
         coarse,
@@ -2843,9 +2728,7 @@ def main_imc(args: argparse.Namespace):
         initial_amount,
     )
     
-    conformal_risks = aggreagted_stats_conformal(
-        args.high_st, noisy_measurements, coarse, mc, model_path, stats_path
-    )
+    
 
     test_data = {}
     test_data['model'] = args.mc
@@ -2864,9 +2747,10 @@ def main_imc(args: argparse.Namespace):
     test_data['imc_distances_ref'] = imc_distances_ref
     test_data['imc_distances_ref_splitting'] = imc_distances_ref_splitting
     test_data['regression_risks'] = regression_risks
-    #test_data['regression_ys'] = regression_ys
     test_data['conformal_risks'] = conformal_risks
-    #test_data['conformal_ys'] = conformal_ys
+    test_data['imc_transition_counts'] = imc_transition_counts
+    test_data['imc_transition_counts_ref'] = imc_transition_counts_ref
+    test_data['imc_transition_counts_ref_splitting'] = imc_transition_counts_ref_splitting
    
 
     if args.coarse: 
@@ -2885,7 +2769,7 @@ def main_imc(args: argparse.Namespace):
     with open(file_name, 'wb') as f:
         pickle.dump(test_data, f)
 
-    fn_fp_comparison_model_based_vs_model_free(imc_stopping_threshold_ref, #replacement for plot_roc_curve
+    fn_fp_comparison_model_based_vs_model_free(
         args.high_st,
         coarse,
         alarms,
@@ -2894,7 +2778,7 @@ def main_imc(args: argparse.Namespace):
         regression_risks,
         conformal_risks,
         target_risks,
-        args.out,) 
+        args.out) 
 
     if args.high_st == False:
         (
