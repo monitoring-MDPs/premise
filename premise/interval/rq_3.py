@@ -104,11 +104,6 @@ def aggregated_stats_imc(
                                 f"{stats_path}/high-st-evadeV-6-3-coarse_norefinement-stats-{x}.npy",
                                 allow_pickle=True,
                             )
-                        elif args.mc == "SnL-10x10":
-                            statistics = np.load(
-                                f"{stats_path}/high-st-SnL-coarse-noref-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
                         else:
                             statistics = np.load(
                                 f"{stats_path}/high-st-{mc}-coarse_norefinement-stats-{x}.npy",
@@ -125,11 +120,6 @@ def aggregated_stats_imc(
                                 f"{stats_path}/high-st-evadeV-6-3-coarse_refinement-stats-{x}.npy",
                                 allow_pickle=True,
                             )
-                        elif args.mc == "SnL-10x10":
-                            statistics = np.load(
-                                f"{stats_path}/high-st-SnL-coarse-ref-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
                         else:
                             statistics = np.load(
                                 f"{stats_path}/high-st-{mc}-coarse_refinement-stats-{x}.npy",
@@ -144,11 +134,6 @@ def aggregated_stats_imc(
                         elif args.mc == "evadeV-6-3-coarse":
                             statistics = np.load(
                                 f"{stats_path}/high-st-evadeV-6-3-coarse_refsplitinement-stats-{x}.npy",
-                                allow_pickle=True,
-                            )
-                        elif args.mc == "SnL-10x10":
-                            statistics = np.load(
-                                f"{stats_path}/high-st-SnL-coarse-refsplit-stats-{x}.npy",
                                 allow_pickle=True,
                             )
                         else:
