@@ -444,12 +444,12 @@ def aggreagted_stats_conformal(high_st, new_noisy, coarse, mc, model_path, stats
                             weights_only=False,
                         )
                         cp_classification = torch.load(
-                            glob.glob(f"{model_path}/{mc}_coarse_comp_conformal_pred_cp_classification_{x}_*.pt")[0],
+                            glob.glob(f"{model_path}/{mc}_coarse_comp_conformal_pred_cp_classification_{x-1}_*.pt")[0],
                             weights_only=False,
                         )
 
                         with open(
-                            glob.glob(f"{stats_path}/{mc}_coarse_comp_conformal_pred_rejection_classifier_{x}_*.pickle")[0],
+                            glob.glob(f"{stats_path}/{mc}_coarse_comp_conformal_pred_rejection_classifier_{x-1}_*.pickle")[0],
                             "rb",
                         ) as f:
                             rej_classifier = pickle.load(f)
@@ -457,7 +457,7 @@ def aggreagted_stats_conformal(high_st, new_noisy, coarse, mc, model_path, stats
                         rejection_classifier = rej_classifier["rej_rule"]
 
                         with open(
-                            glob.glob(f"{stats_path}/{mc}_coarse_comp_conformal_pred_conformal_stats_{x}_*.pickle")[0],
+                            glob.glob(f"{stats_path}/{mc}_coarse_comp_conformal_pred_conformal_stats_{x-1}_*.pickle")[0],
                             "rb",
                         ) as f:
                             conformal_stats = pickle.load(f)
@@ -465,20 +465,20 @@ def aggreagted_stats_conformal(high_st, new_noisy, coarse, mc, model_path, stats
                 else:
                     if high_st:
                         state_estimator = torch.load(
-                            glob.glob(f"{model_path}/high-st-{mc}_comp_conformal_pred_state_estimator_{x}_*.pt")[0],
+                            glob.glob(f"{model_path}/high-st-{mc}_comp_conformal_pred_state_estimator_{x-1}_*.pt")[0],
                             weights_only=False,
                         )
                         label_estimator = torch.load(
-                            glob.glob(f"{model_path}/high-st-{mc}_comp_conformal_pred_label_estimator_{x}_*.pt")[0],
+                            glob.glob(f"{model_path}/high-st-{mc}_comp_conformal_pred_label_estimator_{x-1}_*.pt")[0],
                             weights_only=False,
                         )
                         cp_classification = torch.load(
-                            glob.glob(f"{model_path}/high-st-{mc}_comp_conformal_pred_cp_classification_{x}_*.pt")[0],
+                            glob.glob(f"{model_path}/high-st-{mc}_comp_conformal_pred_cp_classification_{x-1}_*.pt")[0],
                             weights_only=False,
                         )
 
                         with open(
-                            glob.glob(f"{stats_path}/high-st-{mc}_comp_conformal_pred_rejection_classifier_{x}_*.pickle")[0],
+                            glob.glob(f"{stats_path}/high-st-{mc}_comp_conformal_pred_rejection_classifier_{x-1}_*.pickle")[0],
                             "rb",
                         ) as f:
                             rej_classifier = pickle.load(f)
@@ -486,26 +486,26 @@ def aggreagted_stats_conformal(high_st, new_noisy, coarse, mc, model_path, stats
                         rejection_classifier = rej_classifier["rej_rule"]
 
                         with open(
-                            glob.glob(f"{stats_path}/high-st-{mc}_comp_conformal_pred_conformal_stats_{x}_*.pickle")[0],
+                            glob.glob(f"{stats_path}/high-st-{mc}_comp_conformal_pred_conformal_stats_{x-1}_*.pickle")[0],
                             "rb",
                         ) as f:
                             conformal_stats = pickle.load(f)
                     else:
                         state_estimator = torch.load(
-                            glob.glob(f"{model_path}/{mc}_comp_conformal_pred_state_estimator_{x}_*.pt")[0],
+                            glob.glob(f"{model_path}/{mc}_comp_conformal_pred_state_estimator_{x-1}_*.pt")[0],
                             weights_only=False,
                         )
                         label_estimator = torch.load(
-                            glob.glob(f"{model_path}/{mc}_comp_conformal_pred_label_estimator_{x}_*.pt")[0],
+                            glob.glob(f"{model_path}/{mc}_comp_conformal_pred_label_estimator_{x-1}_*.pt")[0],
                             weights_only=False,
                         )
                         cp_classification = torch.load(
-                            glob.glob(f"{model_path}/{mc}_comp_conformal_pred_cp_classification_{x}_*.pt")[0],
+                            glob.glob(f"{model_path}/{mc}_comp_conformal_pred_cp_classification_{x-1}_*.pt")[0],
                             weights_only=False,
                         )
 
                         with open(
-                            glob.glob(f"{stats_path}/{mc}_comp_conformal_pred_rejection_classifier_{x}_*.pickle")[0],
+                            glob.glob(f"{stats_path}/{mc}_comp_conformal_pred_rejection_classifier_{x-1}_*.pickle")[0],
                             "rb",
                         ) as f:
                             rej_classifier = pickle.load(f)
@@ -513,13 +513,13 @@ def aggreagted_stats_conformal(high_st, new_noisy, coarse, mc, model_path, stats
                         rejection_classifier = rej_classifier["rej_rule"]
 
                         with open(
-                            glob.glob(f"{stats_path}/{mc}_comp_conformal_pred_conformal_stats_{x}_*.pickle")[0],
+                            glob.glob(f"{stats_path}/{mc}_comp_conformal_pred_conformal_stats_{x-1}_*.pickle")[0],
                             "rb",
                         ) as f:
                             conformal_stats = pickle.load(f)
 
         except FileNotFoundError:
-                print(f"Statistics file for {x} not found, skipping.")
+                print(f"Statistics file for {x-1} not found, skipping.")
                 continue
 
         new_noisy_scaled = -1 + 2 * (
