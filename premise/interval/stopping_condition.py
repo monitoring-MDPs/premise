@@ -1,11 +1,9 @@
 from abc import ABC
 from collections import defaultdict
-import logging
 from typing import Any, Optional
 
 import numpy as np
 
-from interval import testing
 from premise.interval.conformence import test_monitor
 from premise.interval.loss import Distance
 from premise.interval.interval import MonitorComponents, Samples, Trace, create_monitor
