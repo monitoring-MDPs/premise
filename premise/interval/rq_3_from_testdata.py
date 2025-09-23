@@ -593,16 +593,30 @@ def fn_fp_AUC_model_based(
         fnr_rf_y.append(imc_ref_fnr_aucs_sorted[x])
         fpr_rf_y.append(imc_ref_fpr_aucs_sorted[x])
 
-    ref_x = np.array(ref_x)
-    mean_ref_x = np.mean(ref_x, axis=0)
+    max_len = 0 
 
-    fnr_rf_y = np.array(fnr_rf_y)
-    mean_fnr_rf_y = np.mean(fnr_rf_y, axis=0)
-    std_fnr_rf_y = np.std(fnr_rf_y, axis=0)
+    for x in ref_x:
+         if len(x) > max_len: 
+              max_len = len(x)
+              
+    ref_x_padded = [r + [np.nan]*(max_len - len(r)) for r in ref_x]
+    arr = np.array(ref_x_padded, dtype=float)
+    mean_ref_x = np.mean(arr, axis=0)
 
-    fpr_rf_y = np.array(fpr_rf_y)
-    mean_fpr_rf_y = np.mean(fpr_rf_y, axis=0)
-    std_fpr_rf_y = np.std(fpr_rf_y, axis=0)
+    fnr_rf_y_flat = [[float(v[0]) for v in row] for row in fnr_rf_y]
+    fnr_rf_y_padded = [r + [np.nan]*(max_len - len(r)) for r in fnr_rf_y_flat]
+    fnr_rf_y_padded =  np.array(fnr_rf_y_padded)
+
+    mean_fnr_rf_y = np.mean(fnr_rf_y_padded, axis=0)
+    std_fnr_rf_y = np.std(fnr_rf_y_padded, axis=0)
+
+    fpr_rf_y_flat = [[float(v[0]) for v in row] for row in fpr_rf_y]
+    fpr_rf_y_padded = [r + [np.nan]*(max_len - len(r)) for r in fpr_rf_y_flat]
+    fpr_rf_y_padded =  np.array(fpr_rf_y_padded)
+
+    mean_fpr_rf_y = np.mean(fpr_rf_y_padded, axis=0)
+    std_fpr_rf_y = np.std(fpr_rf_y_padded, axis=0)
+
 
     ax.plot(mean_ref_x, mean_fnr_rf_y, label = 'Refinement FNR AUC', color='blue', linestyle= '--')
     ax.plot(mean_ref_x, mean_fpr_rf_y, label = 'Refinement FPR AUC', color='blue', linestyle= ':')
@@ -668,17 +682,31 @@ def fn_fp_AUC_model_based(
         fnr_rf_split_y.append(imc_ref_splitting_fnr_aucs_sorted[x])
         fpr_rf_split_y.append(imc_ref_splitting_fpr_aucs_sorted[x])
 
+    max_len = 0 
+
+    for x in ref_split_x:
+         if len(x) > max_len: 
+              max_len = len(x)
     
-    ref_split_x = np.array(ref_split_x)
-    mean_ref_split_x = np.mean(ref_split_x, axis=0)
+    ref_split_x_padded = [r + [np.nan]*(max_len - len(r)) for r in ref_split_x]
 
-    fnr_rf_split_y = np.array(fnr_rf_split_y)
-    mean_fnr_rf_split_y = np.mean(fnr_rf_split_y, axis=0)
-    std_fnr_rf_split_y = np.std(fnr_rf_split_y, axis=0)
+    arr = np.array(ref_split_x_padded, dtype=float)
+    mean_ref_split_x = np.mean(arr, axis=0)
 
-    fpr_rf_split_y = np.array(fpr_rf_split_y)
-    mean_fpr_rf_split_y = np.mean(fpr_rf_split_y, axis=0)
-    std_fpr_rf_split_y = np.std(fpr_rf_split_y, axis=0)
+    fnr_rf_split_y_flat = [[float(v[0]) for v in row] for row in fnr_rf_split_y]
+    fnr_rf_split_y_padded = [r + [np.nan]*(max_len - len(r)) for r in fnr_rf_split_y_flat]
+    fnr_rf_split_y_padded =  np.array(fnr_rf_split_y_padded)
+
+    mean_fnr_rf_split_y = np.mean(fnr_rf_split_y_padded, axis=0)
+    std_fnr_rf_split_y = np.std(fnr_rf_split_y_padded, axis=0)
+
+    fpr_rf_split_y_flat = [[float(v[0]) for v in row] for row in fpr_rf_split_y]
+    fpr_rf_split_y_padded = [r + [np.nan]*(max_len - len(r)) for r in fpr_rf_split_y_flat]
+    fpr_rf_split_y_padded =  np.array(fpr_rf_split_y_padded)
+
+    mean_fpr_rf_split_y = np.mean(fpr_rf_split_y_padded, axis=0)
+    std_fpr_rf_split_y = np.std(fpr_rf_split_y_padded, axis=0)
+
 
     ax.plot(mean_ref_split_x, mean_fnr_rf_split_y, label = 'Refinement with Splitting FNR AUC', color='aqua', linestyle= '--')
     ax.plot(mean_ref_split_x, mean_fpr_rf_split_y, label = 'Refinement with Splitting FPR AUC', color='aqua', linestyle= ':')
@@ -1202,7 +1230,7 @@ def testing_argsparser():
         "-o",
         "--out",
         type=str,
-        default="out/results",
+        default="/workspaces/premise/premise/results",
         help="Output path for the results",
     )
 
