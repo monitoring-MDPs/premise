@@ -42,8 +42,8 @@ class TargetDistanceCalculator(DistanceCalculator):
         self.precision = precision
         self.verbose = verbose
 
-        self.traces = []
-        self.testing_traces = []
+        # self.traces = []
+        # self.testing_traces = []
 
         self.target_monitor = suo.create_target_monitor()
 
@@ -119,8 +119,8 @@ class TargetDistanceCalculator(DistanceCalculator):
             for t, (p, d) in testing_all_dist
         ]
 
-        self.traces.append(target_all_dist_w_risk)
-        self.testing_traces.append(testing_all_dist_w_risk)
+        # self.traces.append(target_all_dist_w_risk)
+        # self.testing_traces.append(testing_all_dist_w_risk)
 
         return target_dist, testing_dist, target_all_dist
 
@@ -142,8 +142,8 @@ class IntervalWidthCalculator(DistanceCalculator):
         self.precision = precision
         self.verbose = verbose
 
-        self.traces = []
-        self.testing_traces = []
+        # self.traces = []
+        # self.testing_traces = []
 
         self.previous_risks = {}
         self.previous_weights = {}
@@ -232,7 +232,7 @@ class IntervalWidthCalculator(DistanceCalculator):
             (t, (p, d, float(min_monitored_risks[t]), float(max_monitored_risks[t])))
             for t, (p, d) in target_all_dist
         ]
-        self.traces.append(target_all_dist_w_risk)
+        # self.traces.append(target_all_dist_w_risk)
 
         # Calculate distance on testing samples
         testing_dist, testing_all_dist = self.distance_func.distance(
@@ -245,7 +245,7 @@ class IntervalWidthCalculator(DistanceCalculator):
             (t, (p, d, float(min_monitored_risks[t]), float(max_monitored_risks[t])))
             for t, (p, d) in testing_all_dist
         ]
-        self.testing_traces.append(testing_all_dist_w_risk)
+        # self.testing_traces.append(testing_all_dist_w_risk)
 
         # Risks are stored as point intervals, thus .upper() gives the risk of the state
         self.trace_state_risk_widths = {
