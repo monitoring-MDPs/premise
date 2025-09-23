@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 import numpy as np
 
+from interval import testing
 from premise.interval.conformence import test_monitor
 from premise.interval.loss import Distance
 from premise.interval.interval import MonitorComponents, Samples, Trace, create_monitor
@@ -17,8 +18,8 @@ class DistanceCalculator(ABC):
     mon_comps: Optional[MonitorComponents] = None
 
     def distance(
-        self, interval, initial_interval, samples_with_prob
-    ) -> tuple[float, list[tuple[Trace, tuple[float, float]]], Samples]:
+        self, interval, initial_interval, testing_samples, persistent_samples
+    ) -> tuple[float, float, list[tuple[Trace, tuple[float, float]]]]:
         raise NotImplementedError(
             "DistanceCalculator is an abstract class, please implement the distance method"
         )
@@ -42,6 +43,7 @@ class TargetDistanceCalculator(DistanceCalculator):
         self.verbose = verbose
 
         self.traces = []
+        self.testing_traces = []
 
         self.target_monitor = suo.create_target_monitor()
 
@@ -50,11 +52,13 @@ class TargetDistanceCalculator(DistanceCalculator):
         self.trace_risk_widths = defaultdict(float)
 
     def distance(
-        self, interval, initial_interval, samples_with_prob
-    ) -> tuple[float, list[tuple[Trace, tuple[float, float]]], Samples]:
+        self, interval, initial_interval, testing_samples, persistent_samples
+    ) -> tuple[float, float, list[tuple[Trace, tuple[float, float]]]]:
+        samples_with_prob = testing_samples + persistent_samples
         total_prob = sum(p for _, p in samples_with_prob)
         weights = {s: float(p / total_prob) for s, p in samples_with_prob}
         samples = [s[0] for s in samples_with_prob]
+        testing_samples = [s[0] for s in testing_samples]
 
         # Build the premise monitor on the learned model
         mon, mon_comps = create_monitor(
@@ -98,13 +102,27 @@ class TargetDistanceCalculator(DistanceCalculator):
             all_distances=True,
         )
 
+        testing_dist, testing_all_dist = self.distance_func.distance(
+            {s: weights[s] for s in testing_samples},
+            {s: float(target_risks[s]) for s in testing_samples},
+            {s: float(monitored_risks[s]) for s in testing_samples},
+            all_distances=True,
+        )
+
         target_all_dist_w_risk = [
             (t, (p, d, float(monitored_risks[t]), float(target_risks[t])))  # type: ignore
             for t, (p, d) in target_all_dist
         ]
-        self.traces.append(target_all_dist_w_risk)
 
-        return target_dist, target_all_dist, samples
+        testing_all_dist_w_risk = [
+            (t, (p, d, float(monitored_risks[t]), float(target_risks[t])))  # type: ignore
+            for t, (p, d) in testing_all_dist
+        ]
+
+        self.traces.append(target_all_dist_w_risk)
+        self.testing_traces.append(testing_all_dist_w_risk)
+
+        return target_dist, testing_dist, target_all_dist
 
 
 class IntervalWidthCalculator(DistanceCalculator):
@@ -125,18 +143,22 @@ class IntervalWidthCalculator(DistanceCalculator):
         self.verbose = verbose
 
         self.traces = []
+        self.testing_traces = []
 
         self.previous_risks = {}
         self.previous_weights = {}
         self.trace_state_risk_widths = {}
 
     def distance(
-        self, interval, initial_interval, samples_with_prob
-    ) -> tuple[float, list[tuple[Trace, tuple[float, float]]], Samples]:
+        self, interval, initial_interval, testing_samples, persistent_samples
+    ) -> tuple[float, float, list[tuple[Trace, tuple[float, float]]]]:
+        samples_with_prob = testing_samples + persistent_samples
+
         # Generate samples with weights
         total_prob = sum(p for _, p in samples_with_prob)
         weights = {s: float(p / total_prob) for s, p in samples_with_prob}
         samples = [s[0] for s in samples_with_prob]
+        testing_samples = [s[0] for s in testing_samples]
 
         logger.info(f"Staring building monitors")
 
@@ -212,6 +234,19 @@ class IntervalWidthCalculator(DistanceCalculator):
         ]
         self.traces.append(target_all_dist_w_risk)
 
+        # Calculate distance on testing samples
+        testing_dist, testing_all_dist = self.distance_func.distance(
+            {s: weights[s] for s in testing_samples},
+            {s: float(max_monitored_risks[s]) for s in testing_samples},
+            {s: float(min_monitored_risks[s]) for s in testing_samples},
+            all_distances=True,
+        )
+        testing_all_dist_w_risk = [
+            (t, (p, d, float(min_monitored_risks[t]), float(max_monitored_risks[t])))
+            for t, (p, d) in testing_all_dist
+        ]
+        self.testing_traces.append(testing_all_dist_w_risk)
+
         # Risks are stored as point intervals, thus .upper() gives the risk of the state
         self.trace_state_risk_widths = {
             t: float(max_mon_comps.risks[max_mon_comps.state_index_map[t[-1]]].upper())
@@ -219,7 +254,7 @@ class IntervalWidthCalculator(DistanceCalculator):
             for t in samples
         }
 
-        return target_dist, target_all_dist, samples
+        return target_dist, testing_dist, target_all_dist
 
 
 class RefinementStoppingCondition(ABC):
@@ -236,6 +271,7 @@ class RefinementStoppingCondition(ABC):
         self.distance_calculator = distance_calculator
         self.prefix_amount = prefix_amount
         self.distances = []
+        self.testing_distances = []
         self.traces = []
         self.verbose = verbose
         self.length = length
@@ -272,6 +308,7 @@ class RefinementStoppingCondition(ABC):
     def stats(self) -> dict[str, Any]:
         return {
             "distances": self.distances,
+            "testing_distances": self.testing_distances,
             "dist_traces": self.traces,
         }
 
@@ -301,11 +338,12 @@ class SampleCountStoppingCondition(RefinementStoppingCondition):
     def check(self, interval, initial_interval) -> None | tuple[Samples, Samples]:
         pre_sampling_transition_count = self.suo.stats()["transition_count"]
         samples_with_prob = self._generate_traces()
-        dist, dist_traces, samples = self.distance_calculator.distance(
-            interval, initial_interval, samples_with_prob
+        dist, testing_dist, dist_traces = self.distance_calculator.distance(
+            interval, initial_interval, samples_with_prob, []
         )
         self.traces.append(dist_traces)
         self.distances.append(dist)
+        self.testing_distances.append(testing_dist)
 
         if pre_sampling_transition_count >= self.transition_count:
             if self.verbose > 0:
@@ -316,7 +354,7 @@ class SampleCountStoppingCondition(RefinementStoppingCondition):
 
         additional_samples = (
             self.transition_count / self.learning_length / self.iterations
-            - len(samples)
+            - len(samples_with_prob)
         )
 
         if (
@@ -327,9 +365,9 @@ class SampleCountStoppingCondition(RefinementStoppingCondition):
                 self.transition_count - self.suo.stats()["transition_count"]
             ) / self.learning_length
 
-        return [tuple()] * int(
-            np.ceil(additional_samples / self.refine_amount)
-        ), samples
+        return [tuple()] * int(np.ceil(additional_samples / self.refine_amount)), [
+            s[0] for s in samples_with_prob
+        ]
 
 
 class ThresholdStoppingCondition(RefinementStoppingCondition):
@@ -363,13 +401,15 @@ class ThresholdStoppingCondition(RefinementStoppingCondition):
 
     def check(self, interval, initial_interval) -> None | tuple[Samples, Samples]:
         samples_with_prob = self._generate_traces()
-        target_dist, target_all_dist, samples = self.distance_calculator.distance(
+        target_dist, testing_dist, target_all_dist = self.distance_calculator.distance(
             interval,
             initial_interval,
-            self.previous_interesting_traces + samples_with_prob,
+            samples_with_prob,
+            self.previous_interesting_traces,
         )
         self.traces.append(target_all_dist)
         self.distances.append(target_dist)
+        self.testing_distances.append(testing_dist)
 
         if self.verbose > 0:
             logger.info(f"Target distance: {target_dist} ? {self.threshold}")
@@ -409,7 +449,7 @@ class ThresholdStoppingCondition(RefinementStoppingCondition):
             self._generate_prefixes(
                 interesting_traces, splits if self.use_splitting else None
             ),
-            samples,
+            [s[0] for s in samples_with_prob + self.previous_interesting_traces],
         )
 
 
@@ -441,13 +481,15 @@ class StabilizationStoppingCondition(RefinementStoppingCondition):
 
     def check(self, interval, initial_interval) -> None | tuple[Samples, Samples]:
         samples_with_prob = self._generate_traces()
-        target_dist, target_all_dist, samples = self.distance_calculator.distance(
+        target_dist, testing_dist, target_all_dist = self.distance_calculator.distance(
             interval,
             initial_interval,
-            self.previous_interesting_traces + samples_with_prob,
+            samples_with_prob,
+            self.previous_interesting_traces,
         )
         self.traces.append(target_all_dist)
         self.distances.append(target_dist)
+        self.testing_distances.append(testing_dist)
 
         mean_distance = np.mean(self.distances[-self.patience :])
 
@@ -480,4 +522,6 @@ class StabilizationStoppingCondition(RefinementStoppingCondition):
         self.previous_interesting_traces = [
             (t, w) for (t, w) in samples_with_prob if t in interesting_traces
         ]
-        return self._generate_prefixes(interesting_traces), samples
+        return self._generate_prefixes(interesting_traces), [
+            s[0] for s in samples_with_prob + self.previous_interesting_traces
+        ]
