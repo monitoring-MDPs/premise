@@ -50,7 +50,7 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
                         statistics = np.load(
                             f"{stats_path}/{args.mc}-coarse_norefinement-stats-{x}.npy",
                             allow_pickle=True,
-                        )
+                        ).item()
             else:
                 if high_st:
                     statistics = np.load(
@@ -66,7 +66,7 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
             print(f"Statistics file for {x} not found, skipping.")
             continue
 
-        distances = statistics["distances"]
+        distances = statistics["testing_distances"]
         imc_final_distances.append(distances[-1])
         states_vistited = statistics["transitions_learned"]
         total = 0
@@ -115,7 +115,7 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
                         statistics = np.load(
                             f"{stats_path}/{args.mc}-coarse_refinement-stats-{x}.npy",
                             allow_pickle=True,
-                        )
+                        ).item()
             else:
                 if high_st:
                     statistics = np.load(
@@ -131,7 +131,7 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
             print(f"Statistics file for {x} not found, skipping.")
             continue
 
-        distances = statistics["distances"]
+        distances = statistics["testing_distances"]
         ref_final_distances.append(distances[-1])
         states_vistited = statistics["transitions_learned"]
         total = 0
@@ -180,7 +180,7 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
                         statistics = np.load(
                             f"{stats_path}/{args.mc}-coarse_refsplitinement-stats-{x}.npy",
                             allow_pickle=True,
-                        )
+                        ).item()
             else:
                 if high_st:
                     statistics = np.load(
@@ -196,7 +196,7 @@ def probelm_statement(high_st, coarse, stats_path, out_path):
             print(f"Statistics file for {x} not found, skipping.")
             continue
 
-        distances = statistics["distances"]
+        distances = statistics["testing_distances"]
         split_ref_final_distances.append(distances[-1])
         states_vistited = statistics["transitions_learned"]
         total = 0

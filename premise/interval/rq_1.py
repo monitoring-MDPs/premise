@@ -2,7 +2,6 @@ import argparse
 import os
 from matplotlib import pyplot as plt
 import numpy as np
-from sklearn import metrics
 from tqdm import tqdm, trange
 import matplotlib.ticker as ticker
 import pickle
@@ -1005,19 +1004,25 @@ def overestimation_graph(
 
     hmm_under = 0
     hmm_over = 0
+    hmm_all = 0
 
     for key in mc_risks.keys():
         if key.split("-")[1] == str(max(mc_ys)):
             for x in range(len(target_risks)):
+                if abs(mc_risks[key][x] - target_risks[x]) > 0.5:
+                    input(
+                        f"Found really bad trace: {mc_risks[key][x]} vs {target_risks[x]}"
+                    )
+                hmm_all += 1
                 if mc_risks[key][x] < target_risks[x]:
                     hmm_under += 1
-                if mc_risks[key][x] >= target_risks[x]:
+                if mc_risks[key][x] > target_risks[x]:
                     hmm_over += 1
 
     count_u = 0
     count_o = 0
 
-    for key in mc_risks.keys():
+    for key in tqdm(mc_risks.keys()):
         if key.split("-")[1] == str(max(mc_ys)):
             for x in range(len(target_risks)):
                 if mc_risks[key][x] < target_risks[x]:
@@ -1028,7 +1033,7 @@ def overestimation_graph(
                             color="greenyellow",
                             marker="s",
                             s=3,
-                            label=f"HMM under ({((hmm_under/(hmm_under + hmm_over))*100):.2f}%)",
+                            label=f"HMM under ({((hmm_under/(hmm_all))*100):.2f}%)",
                         )
                         count_u += 1
                     else:
@@ -1047,7 +1052,7 @@ def overestimation_graph(
                             color="darkgreen",
                             marker="s",
                             s=3,
-                            label=f"HMM over ({((hmm_over/(hmm_under + hmm_over))*100):.2f}%)",
+                            label=f"HMM over ({((hmm_over/(hmm_all))*100):.2f}%)",
                         )
                         count_o += 1
                     else:
@@ -1066,19 +1071,21 @@ def overestimation_graph(
 
     ihmm_under = 0
     ihmm_over = 0
+    ihmm_all = 0
 
     for key in imc_risks.keys():
         if key.split("-")[1] == str(max(imc_ys)):
             for x in range(len(target_risks)):
+                ihmm_all += 1
                 if imc_risks[key][x] < target_risks[x]:
                     ihmm_under += 1
-                if imc_risks[key][x] >= target_risks[x]:
+                if imc_risks[key][x] > target_risks[x]:
                     ihmm_over += 1
 
     count_u = 0
     count_o = 0
 
-    for key in imc_risks.keys():
+    for key in tqdm(imc_risks.keys()):
         if key.split("-")[1] == str(max(imc_ys)):
             for x in range(len(target_risks)):
                 if imc_risks[key][x] < target_risks[x]:
@@ -1089,7 +1096,7 @@ def overestimation_graph(
                             color="orange",
                             marker="o",
                             s=3,
-                            label=f"iHMM under ({((ihmm_under/(ihmm_under + ihmm_over))* 100):.2f} %)",
+                            label=f"iHMM under ({((ihmm_under/(ihmm_all))* 100):.2f} %)",
                         )
                         count_u += 1
                     else:
@@ -1108,7 +1115,7 @@ def overestimation_graph(
                             color="red",
                             marker="o",
                             s=3,
-                            label=f"iHMM over ({((ihmm_over / (ihmm_under + ihmm_over))*100):.2f}%)",
+                            label=f"iHMM over ({((ihmm_over / (ihmm_all))*100):.2f}%)",
                         )
                         count_o += 1
                     else:
@@ -1165,8 +1172,20 @@ def main_imc(args: argparse.Namespace):
 
     for x in range(args.testing_samples):
         path = suo.generate_random_traces_with_prob([], length)
-        testing_samples.append(tuple(path[0][0]))
-        testing_samples_weights.append(float(path[0][1]))
+        if float(path[0][1]) < 1 / 1000:
+            testing_samples.append(tuple(path[0][0]))
+            testing_samples_weights.append(float(path[0][1]))
+            print(f"Sample {x}: weight {path[0][1]} on path {path[0][0]}")
+
+    # if args.mc == "unlikely-15":
+    #     testing_samples += [
+    #         ((0, 36, False), (1, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False)),
+    #         ((0, 36, False), (1, 14, False), (5, 11, False), (10, 11, False), (9, 11, False), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True)),
+    #         ((0, 36, False), (1, 14, False), (3, 21, False), (8, 1, False), (15, 1, False), (14, 1, False), (23, 18, True), (23, 18, True), (23, 18, True), (23, 18, True), (23, 18, True), (23, 18, True), (23, 18, True), (23, 18, True), (23, 18, True), (23, 18, True), (23, 18, True)),
+    #         ((0, 36, False), (1, 14, False), (5, 11, False), (9, 11, False), (10, 11, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False)), #99/1000000
+    #         ((0, 36, False), (1, 14, False), (5, 11, False), (9, 11, False), (10, 11, False), (9, 11, False), (10, 11, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False)), #99/6250000>
+    #         ((0, 36, False), (1, 14, False), (5, 11, False), (10, 11, False), (9, 11, False), (10, 11, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False)), # 99/1250000
+    #     ]
 
     if args.sys_vars != None:
         coarse = True

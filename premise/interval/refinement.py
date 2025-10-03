@@ -131,7 +131,7 @@ def refinement_learning(
                     if (
                         imc_ctr is None
                         or refinement_stopping_condition.distance_calculator.mon_comps
-                        is None
+                        is None  # Used to supress type checker warning
                         or len(prefix) == 0
                     ):
                         start_state = prefix[-1] if len(prefix) > 0 else None
@@ -241,7 +241,7 @@ def save_imc(
     interval,
     model_path: str,
 ):
-    print(f'Saving at: {model_path}')
+    print(f"Saving at: {model_path}")
     np.save(f"{model_path}-initial_interval.npy", initial_interval)  # type: ignore
     np.save(f"{model_path}-interval.npy", interval)  # type: ignore
 
