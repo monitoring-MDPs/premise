@@ -12,6 +12,7 @@ from itertools import accumulate
 import numpy as np
 import argparse
 from matplotlib import pyplot as plt
+import math
 
 from premise.interval.loading import (
     build_suo_args_parser
@@ -20,11 +21,13 @@ from premise.interval.loading import (
 
 def fn_fp_comparison_model_based(
         coarse,
-        alarms,imc_risks,
+        alarms,
+        imc_risks,
         imc_risks_ref,
         target_risks,
         imc_risks_ref_splitting, 
-        out_path):
+        out_path,
+        high_st):
 
     
     # iHMM
@@ -32,6 +35,7 @@ def fn_fp_comparison_model_based(
 
     ys = []
     for key in imc_risks.keys():
+        print(key)
         ys.append(int(key.split("-")[1]))
 
     for key in imc_risks.keys():
@@ -187,7 +191,16 @@ def fn_fp_comparison_model_based(
     imc_fpr_aucs = np.array(imc_fpr_aucs)
     imc_fpr_auc = np.mean(imc_fpr_aucs, axis=0)
 
-    ax.plot(thresholds, imc_fnr_mean, label=f'No refinement mean FNR: (AUC {imc_fnr_auc:.3f})', color='red', linestyle= ':')
+
+
+    for x in range(len(target_fnr)):
+        print(f'FOR : {x}')
+        print(target_fnr[x])
+        print(imc_fnr_mean[x])
+
+
+
+    ax.plot(thresholds, imc_fnr_mean, label=f'No refinement mean FNR: (AUC {imc_fnr_auc:.3f})', color='red', linestyle= ':', marker ='P', markersize=4, markevery=32)
 
     plt.fill_between(
     thresholds,
@@ -202,7 +215,7 @@ def fn_fp_comparison_model_based(
     imc_fpr_mean = np.mean(imc_FPRs, axis=0)
     imc_fpr_std = np.std(imc_FPRs, axis=0)
 
-    ax.plot(thresholds, imc_fpr_mean, label=f'No refinement mean FPR: (AUC {imc_fpr_auc:.3f})', color='red', linestyle= '--')
+    ax.plot(thresholds, imc_fpr_mean, label=f'No refinement mean FPR: (AUC {imc_fpr_auc:.3f})', color='red', linestyle= '--', marker ='P', markersize=4, markevery=32)
 
     plt.fill_between(
     thresholds,
@@ -240,7 +253,7 @@ def fn_fp_comparison_model_based(
     imc_ref_fpr_auc = np.mean(imc_ref_fpr_aucs, axis=0)
 
 
-    ax.plot(thresholds, imc_ref_fnr_mean, label=f'Refinement mean FNR: (AUC {imc_ref_fnr_auc:.3f})', color='blue', linestyle= ':')
+    ax.plot(thresholds, imc_ref_fnr_mean, label=f'Refinement mean FNR: (AUC {imc_ref_fnr_auc:.3f})', color='blue', linestyle= ':', marker ='o', markersize=4, markevery=32)
 
     plt.fill_between(
     thresholds,
@@ -255,7 +268,7 @@ def fn_fp_comparison_model_based(
     imc_ref_fpr_mean = np.mean(imc_ref_FPRs, axis=0)
     imc_ref_fpr_std = np.std(imc_ref_FPRs, axis=0)
 
-    ax.plot(thresholds, imc_ref_fpr_mean, label=f'Refinement mean FPR: (AUC {imc_ref_fpr_auc:.3f})', color='blue', linestyle= '--')
+    ax.plot(thresholds, imc_ref_fpr_mean, label=f'Refinement mean FPR: (AUC {imc_ref_fpr_auc:.3f})', color='blue', linestyle= '--', marker ='o', markersize=4, markevery=32)
 
     plt.fill_between(
     thresholds,
@@ -292,7 +305,7 @@ def fn_fp_comparison_model_based(
     imc_ref_splitting_fpr_auc = np.mean(imc_ref_splitting_fpr_aucs, axis=0)
 
 
-    ax.plot(thresholds, imc_ref_splitting_fnr_mean, label=f'Refinement with Splitting mean FNR: (AUC {imc_ref_splitting_fnr_auc:.3f})', color='aqua', linestyle= ':')
+    ax.plot(thresholds, imc_ref_splitting_fnr_mean, label=f'Refinement with Splitting mean FNR: (AUC {imc_ref_splitting_fnr_auc:.3f})', color='aqua', linestyle= ':', marker ='s', markersize=4, markevery=32)
 
     plt.fill_between(
     thresholds,
@@ -307,7 +320,7 @@ def fn_fp_comparison_model_based(
     imc_ref_splitting_fpr_mean = np.mean(imc_ref_splitting_FPRs, axis=0)
     imc_ref_splitting_fpr_std = np.std(imc_ref_splitting_FPRs, axis=0)
 
-    ax.plot(thresholds, imc_ref_splitting_fpr_mean, label=f'Refinement with Splitting mean FPR: (AUC {imc_ref_splitting_fpr_auc:.3f})', color='aqua', linestyle= '--')
+    ax.plot(thresholds, imc_ref_splitting_fpr_mean, label=f'Refinement with Splitting mean FPR: (AUC {imc_ref_splitting_fpr_auc:.3f})', color='aqua', linestyle= '--', marker ='s', markersize=4, markevery=32)
 
     plt.fill_between(
     thresholds,
@@ -320,24 +333,39 @@ def fn_fp_comparison_model_based(
 
     ax.set_xlabel('Threshold')
     ax.set_ylabel('Rate')
-    ax.legend(loc="right", fontsize=5)
+    ax.legend(loc="right", fontsize=10)
     ax.grid(True)
     plt.tight_layout()
     plt.show()
 
 
     if coarse:
-        fig.savefig(
-                f"{out_path}/rq_2_{args.mc}_coarse_FN_FP_model_based.pdf",
-                dpi=300,
-                bbox_inches="tight",
+        if high_st:
+            fig.savefig(
+                    f"{out_path}/rq_2_{args.mc}_high-st_coarse_FN_FP_model_based.pdf",
+                    dpi=300,
+                    bbox_inches="tight",
             )
+        else:
+            fig.savefig(
+                    f"{out_path}/rq_2_{args.mc}_coarse_FN_FP_model_based.pdf",
+                    dpi=300,
+                    bbox_inches="tight",
+                )
     else:
-        fig.savefig(
-                f"{out_path}/rq_2_{args.mc}_FN_FP_model_based.pdf",
-                dpi=300,
-                bbox_inches="tight",
-            )
+        if high_st:
+            fig.savefig(
+                    f"{out_path}/rq_2_{args.mc}_high-st_FN_FP_model_based.pdf",
+                    dpi=300,
+                    bbox_inches="tight",
+                )
+              
+        else: 
+            fig.savefig(
+                    f"{out_path}/rq_2_{args.mc}_FN_FP_model_based.pdf",
+                    dpi=300,
+                    bbox_inches="tight",
+                )
 
     plt.show()
 
@@ -352,7 +380,8 @@ def fn_fp_AUC_model_based(
         imc_transition_counts,
         imc_transition_counts_ref,
         imc_transition_counts_ref_splitting,
-        out_path):
+        out_path, 
+        high_st):
 
     
     thresholds = [t / 1000 for t in range(0, 1001)]
@@ -469,8 +498,8 @@ def fn_fp_AUC_model_based(
         if max([max(imc_transition_counts_accumulated[x]),max(imc_transition_counts_ref_accumulated[x]),max(imc_transition_counts_ref_splitting_accumulated[x])]) > y_range: 
             y_range = max([max(imc_transition_counts_accumulated[x]),max(imc_transition_counts_ref_accumulated[x]),max(imc_transition_counts_ref_splitting_accumulated[x])])
 
-    ax.plot([0, int(y_range)], [auc_fnr_target, auc_fnr_target], label = 'Target FNR AUC', color = 'black', linestyle= '--')
-    ax.plot([0, int(y_range)], [auc_fpr_target, auc_fpr_target], label = 'Target FPR AUC', color = 'black', linestyle= ':') 
+    ax.plot([0, int(y_range)], [auc_fnr_target, auc_fnr_target], label = f'Target FNR AUC (Final AUC: {float(auc_fnr_target):.3f})', color = 'black', linestyle= '--')
+    ax.plot([0, int(y_range)], [auc_fpr_target, auc_fpr_target], label = f'Target FPR AUC (Final AUC: {float(auc_fpr_target):.3f})', color = 'black', linestyle= ':') 
 
     #No Refinement
     
@@ -517,18 +546,24 @@ def fn_fp_AUC_model_based(
 
 
     no_ref_x = np.array(no_ref_x)
-    mean_no_ref_x = np.mean(no_ref_x, axis=0)
+    mean_no_ref_x = np.nanmean(no_ref_x, axis=0)
 
     fnr_no_rf_y = np.array(fnr_no_rf_y)
-    mean_fnr_no_rf_y = np.mean(fnr_no_rf_y, axis=0)
-    std_fnr_no_rf_y = np.std(fnr_no_rf_y, axis=0)
+    mean_fnr_no_rf_y = np.nanmean(fnr_no_rf_y, axis=0)
+    std_fnr_no_rf_y = np.nanstd(fnr_no_rf_y, axis=0)
 
     fpr_no_rf_y = np.array(fpr_no_rf_y)
-    mean_fpr_no_rf_y = np.mean(fpr_no_rf_y, axis=0)
-    std_fpr_no_rf_y = np.std(fpr_no_rf_y, axis=0)
+    mean_fpr_no_rf_y = np.nanmean(fpr_no_rf_y, axis=0)
+    std_fpr_no_rf_y = np.nanstd(fpr_no_rf_y, axis=0)
 
-    ax.plot(mean_no_ref_x, mean_fnr_no_rf_y, label = 'No refinement FNR AUC', color='red', linestyle= '--')
-    ax.plot(mean_no_ref_x, mean_fpr_no_rf_y, label = 'No refinement FPR AUC', color='red', linestyle= ':')
+    print('NO REF MEAN X AXIS')
+    for x in no_ref_x: 
+        if not math.isnan(x[-1]):
+            print(x[-1])
+    print(mean_no_ref_x[-1])
+
+    ax.plot(mean_no_ref_x, mean_fnr_no_rf_y, label = f'No refinement FNR AUC (Final AUC: {float(mean_fnr_no_rf_y[-1]):.3f})', color='red', linestyle= '--' , marker ='P', markersize=4, markevery=1)
+    ax.plot(mean_no_ref_x, mean_fpr_no_rf_y, label = f'No refinement FPR AUC (Final AUC: {float(mean_fpr_no_rf_y[-1]):.3f})', color='red', linestyle= ':' , marker ='P', markersize=4, markevery=1)
 
     plt.fill_between(
     mean_no_ref_x.flatten(),
@@ -601,25 +636,31 @@ def fn_fp_AUC_model_based(
               
     ref_x_padded = [r + [np.nan]*(max_len - len(r)) for r in ref_x]
     arr = np.array(ref_x_padded, dtype=float)
-    mean_ref_x = np.mean(arr, axis=0)
+    mean_ref_x = np.nanmean(arr, axis=0)
 
     fnr_rf_y_flat = [[float(v[0]) for v in row] for row in fnr_rf_y]
     fnr_rf_y_padded = [r + [np.nan]*(max_len - len(r)) for r in fnr_rf_y_flat]
     fnr_rf_y_padded =  np.array(fnr_rf_y_padded)
 
-    mean_fnr_rf_y = np.mean(fnr_rf_y_padded, axis=0)
-    std_fnr_rf_y = np.std(fnr_rf_y_padded, axis=0)
+    mean_fnr_rf_y = np.nanmean(fnr_rf_y_padded, axis=0)
+    std_fnr_rf_y = np.nanstd(fnr_rf_y_padded, axis=0)
 
     fpr_rf_y_flat = [[float(v[0]) for v in row] for row in fpr_rf_y]
     fpr_rf_y_padded = [r + [np.nan]*(max_len - len(r)) for r in fpr_rf_y_flat]
     fpr_rf_y_padded =  np.array(fpr_rf_y_padded)
 
-    mean_fpr_rf_y = np.mean(fpr_rf_y_padded, axis=0)
-    std_fpr_rf_y = np.std(fpr_rf_y_padded, axis=0)
+    mean_fpr_rf_y = np.nanmean(fpr_rf_y_padded, axis=0)
+    std_fpr_rf_y = np.nanstd(fpr_rf_y_padded, axis=0)
 
 
-    ax.plot(mean_ref_x, mean_fnr_rf_y, label = 'Refinement FNR AUC', color='blue', linestyle= '--')
-    ax.plot(mean_ref_x, mean_fpr_rf_y, label = 'Refinement FPR AUC', color='blue', linestyle= ':')
+    print('REF MEAN X AXIS')
+    for x in ref_x_padded: 
+        if not math.isnan(x[-1]):
+            print(x[-1])
+    print(mean_ref_x[-1])
+
+    ax.plot(mean_ref_x, mean_fnr_rf_y, label = f'Refinement FNR AUC  (Final AUC: {float(mean_fnr_rf_y[-1]):.3f})', color='blue', linestyle= '--' , marker ='o', markersize=4, markevery=1)
+    ax.plot(mean_ref_x, mean_fpr_rf_y, label = f'Refinement FPR AUC  (Final AUC: {float(mean_fpr_rf_y[-1]):.3f})', color='blue', linestyle= ':', marker ='o', markersize=4, markevery=1)
 
     plt.fill_between(
     mean_ref_x.flatten(),
@@ -691,25 +732,30 @@ def fn_fp_AUC_model_based(
     ref_split_x_padded = [r + [np.nan]*(max_len - len(r)) for r in ref_split_x]
 
     arr = np.array(ref_split_x_padded, dtype=float)
-    mean_ref_split_x = np.mean(arr, axis=0)
+    mean_ref_split_x = np.nanmean(arr, axis=0)
 
     fnr_rf_split_y_flat = [[float(v[0]) for v in row] for row in fnr_rf_split_y]
     fnr_rf_split_y_padded = [r + [np.nan]*(max_len - len(r)) for r in fnr_rf_split_y_flat]
     fnr_rf_split_y_padded =  np.array(fnr_rf_split_y_padded)
 
-    mean_fnr_rf_split_y = np.mean(fnr_rf_split_y_padded, axis=0)
-    std_fnr_rf_split_y = np.std(fnr_rf_split_y_padded, axis=0)
+    mean_fnr_rf_split_y = np.nanmean(fnr_rf_split_y_padded, axis=0)
+    std_fnr_rf_split_y = np.nanstd(fnr_rf_split_y_padded, axis=0)
 
     fpr_rf_split_y_flat = [[float(v[0]) for v in row] for row in fpr_rf_split_y]
     fpr_rf_split_y_padded = [r + [np.nan]*(max_len - len(r)) for r in fpr_rf_split_y_flat]
     fpr_rf_split_y_padded =  np.array(fpr_rf_split_y_padded)
 
-    mean_fpr_rf_split_y = np.mean(fpr_rf_split_y_padded, axis=0)
-    std_fpr_rf_split_y = np.std(fpr_rf_split_y_padded, axis=0)
+    mean_fpr_rf_split_y = np.nanmean(fpr_rf_split_y_padded, axis=0)
+    std_fpr_rf_split_y = np.nanstd(fpr_rf_split_y_padded, axis=0)
 
+    print('REF SPLIT X AXIS')
+    for x in ref_split_x_padded: 
+        if not math.isnan(x[-1]):
+            print(x[-1])
+    print(mean_ref_split_x[-1])
 
-    ax.plot(mean_ref_split_x, mean_fnr_rf_split_y, label = 'Refinement with Splitting FNR AUC', color='aqua', linestyle= '--')
-    ax.plot(mean_ref_split_x, mean_fpr_rf_split_y, label = 'Refinement with Splitting FPR AUC', color='aqua', linestyle= ':')
+    ax.plot(mean_ref_split_x, mean_fnr_rf_split_y, label = f'Refinement with Splitting FNR AUC  (Final AUC: {float(mean_fnr_rf_split_y[-1]):.3f})', color='aqua', linestyle= '--', marker ='s', markersize=4, markevery=1)
+    ax.plot(mean_ref_split_x, mean_fpr_rf_split_y, label = f'Refinement with Splitting FPR AUC   (Final AUC: {float(mean_fpr_rf_split_y[-1]):.3f})', color='aqua', linestyle= ':', marker ='s', markersize=4, markevery=1)
 
     plt.fill_between(
     mean_ref_split_x.flatten(),
@@ -727,26 +773,43 @@ def fn_fp_AUC_model_based(
     alpha=0.2
     )
 
-    ax.set_ylabel('AUC')
-    ax.set_xlabel('Explored States')
-    ax.legend(loc="right", fontsize=6)
+    ax.set_ylabel('AUC' , fontsize=13)
+    ax.set_xlabel('Explored States' , fontsize=13)
+    ax.legend(loc="right", fontsize=8)
     ax.grid(True)
     plt.tight_layout()
     plt.show()
 
 
     if coarse:
-        fig.savefig(
-                f"{out_path}/rq_2_{args.mc}_coarse_FN_FP_AUC_model_based.pdf",
-                dpi=300,
-                bbox_inches="tight",
+        if high_st: 
+            fig.savefig(
+                    f"{out_path}/rq_2_{args.mc}_high-st_coarse_FN_FP_AUC_model_based.pdf",
+                    dpi=300,
+                    bbox_inches="tight",
             )
+             
+        else: 
+            fig.savefig(
+                    f"{out_path}/rq_2_{args.mc}_coarse_FN_FP_AUC_model_based.pdf",
+                    dpi=300,
+                    bbox_inches="tight",
+                )
     else:
-        fig.savefig(
-                f"{out_path}/rq_2_{args.mc}_FN_FP_AUC_model_based.pdf",
-                dpi=300,
-                bbox_inches="tight",
-            )
+        if high_st:
+            fig.savefig(
+                    f"{out_path}/rq_2_{args.mc}_high-st_FN_FP_AUC_model_based.pdf",
+                    dpi=300,
+                    bbox_inches="tight",
+                ) 
+             
+             
+        else:
+            fig.savefig(
+                    f"{out_path}/rq_2_{args.mc}_FN_FP_AUC_model_based.pdf",
+                    dpi=300,
+                    bbox_inches="tight",
+                )
 
     plt.show()
 
@@ -919,8 +982,8 @@ def fn_fp_comparison_model_based_vs_model_free(
     auc_fpr_target = np.trapz(target_fpr, thresholds)
 
 
-    ax.plot(thresholds, target_fnr, label=f'Target FNR: (AUC {auc_fnr_target:.3f})', color='black', linestyle= ':')
-    ax.plot(thresholds, target_fpr, label=f'Target FPR: (AUC {auc_fpr_target:.3f})', color='black', linestyle= '--')
+    ax.plot(thresholds, target_fnr, label=f'Target FNR: (AUC {float(auc_fnr_target):.3f})', color='black', linestyle= ':')
+    ax.plot(thresholds, target_fpr, label=f'Target FPR: (AUC {float(auc_fpr_target):.3f})', color='black', linestyle= '--')
 
     #Refinement
 
@@ -949,7 +1012,7 @@ def fn_fp_comparison_model_based_vs_model_free(
     imc_ref_fpr_auc = np.mean(imc_ref_fpr_aucs, axis=0)
 
 
-    ax.plot(thresholds, imc_ref_fnr_mean, label=f'Refinement mean FNR: (AUC {imc_ref_fnr_auc:.3f})', color='blue', linestyle= ':')
+    ax.plot(thresholds, imc_ref_fnr_mean, label=f'Refinement mean FNR: (AUC {imc_ref_fnr_auc:.3f})', color='blue', linestyle= ':', marker ='o', markersize=4, markevery=25)
 
     plt.fill_between(
     thresholds,
@@ -964,7 +1027,7 @@ def fn_fp_comparison_model_based_vs_model_free(
     imc_ref_fpr_mean = np.mean(imc_ref_FPRs, axis=0)
     imc_ref_fpr_std = np.std(imc_ref_FPRs, axis=0)
 
-    ax.plot(thresholds, imc_ref_fpr_mean, label=f'Refinement mean FPR: (AUC {imc_ref_fpr_auc:.3f})', color='blue', linestyle= '--')
+    ax.plot(thresholds, imc_ref_fpr_mean, label=f'Refinement mean FPR: (AUC {imc_ref_fpr_auc:.3f})', color='blue', linestyle= '--', marker ='o', markersize=4, markevery=25)
 
     plt.fill_between(
     thresholds,
@@ -1001,7 +1064,7 @@ def fn_fp_comparison_model_based_vs_model_free(
     imc_ref_splitting_fpr_auc = np.mean(imc_ref_splitting_fpr_aucs, axis=0)
 
 
-    ax.plot(thresholds, imc_ref_splitting_fnr_mean, label=f'Refinement with Splitting mean FNR: (AUC {imc_ref_splitting_fnr_auc:.3f})', color='aqua', linestyle= ':')
+    ax.plot(thresholds, imc_ref_splitting_fnr_mean, label=f'Refinement with Splitting mean FNR: (AUC {imc_ref_splitting_fnr_auc:.3f})', color='aqua', linestyle= ':', marker ='s', markersize=4, markevery=25)
 
     plt.fill_between(
     thresholds,
@@ -1016,7 +1079,7 @@ def fn_fp_comparison_model_based_vs_model_free(
     imc_ref_splitting_fpr_mean = np.mean(imc_ref_splitting_FPRs, axis=0)
     imc_ref_splitting_fpr_std = np.std(imc_ref_splitting_FPRs, axis=0)
 
-    ax.plot(thresholds, imc_ref_splitting_fpr_mean, label=f'Refinement with Splitting mean FPR: (AUC {imc_ref_splitting_fpr_auc:.3f})', color='aqua', linestyle= '--')
+    ax.plot(thresholds, imc_ref_splitting_fpr_mean, label=f'Refinement with Splitting mean FPR: (AUC {imc_ref_splitting_fpr_auc:.3f})', color='aqua', linestyle= '--', marker ='s', markersize=4, markevery=25)
 
     plt.fill_between(
     thresholds,
@@ -1053,7 +1116,7 @@ def fn_fp_comparison_model_based_vs_model_free(
     reg_fpr_auc = np.mean(reg_fpr_aucs, axis=0)
 
 
-    ax.plot(thresholds, reg_fnr_mean, label=f'Regression mean FNR: (AUC {reg_fnr_auc:.3f})', color='pink', linestyle= ':')
+    ax.plot(thresholds, reg_fnr_mean, label=f'Regression mean FNR: (AUC {reg_fnr_auc:.3f})', color='pink', linestyle= ':',  marker ='D', markersize=4, markevery=25)
 
     plt.fill_between(
     thresholds,
@@ -1068,7 +1131,7 @@ def fn_fp_comparison_model_based_vs_model_free(
     reg_fpr_mean = np.mean(reg_FPRs, axis=0)
     reg_fpr_std = np.std(reg_FPRs, axis=0)
 
-    ax.plot(thresholds, reg_fpr_mean, label=f'Regression mean FPR: (AUC {reg_fpr_auc:.3f})', color='pink', linestyle= '--')
+    ax.plot(thresholds, reg_fpr_mean, label=f'Regression mean FPR: (AUC {reg_fpr_auc:.3f})', color='pink', linestyle= '--',  marker ='D', markersize=4, markevery=25)
 
     plt.fill_between(
     thresholds,
@@ -1105,7 +1168,7 @@ def fn_fp_comparison_model_based_vs_model_free(
     conformal_fpr_auc = np.mean(conformal_fpr_aucs, axis=0)
 
 
-    ax.plot(thresholds, conformal_fnr_mean, label=f'Conformal prediction mean FNR: (AUC {conformal_fnr_auc:.3f})', color='orange', linestyle= ':')
+    ax.plot(thresholds, conformal_fnr_mean, label=f'Conformal prediction mean FNR: (AUC {conformal_fnr_auc:.3f})', color='orange', linestyle= ':',  marker ='x', markersize=4, markevery=25)
 
     plt.fill_between(
     thresholds,
@@ -1120,7 +1183,7 @@ def fn_fp_comparison_model_based_vs_model_free(
     conformal_fpr_mean = np.mean(conformal_FPRs, axis=0)
     conformal_fpr_std = np.std(conformal_FPRs, axis=0)
 
-    ax.plot(thresholds, conformal_fpr_mean, label=f'Conformal prediction mean FPR: (AUC {conformal_fpr_auc:.3f})', color='orange', linestyle= '--')
+    ax.plot(thresholds, conformal_fpr_mean, label=f'Conformal prediction mean FPR: (AUC {conformal_fpr_auc:.3f})', color='orange', linestyle= '--',  marker ='x', markersize=4, markevery=25)
 
     plt.fill_between(
     thresholds,
@@ -1130,26 +1193,40 @@ def fn_fp_comparison_model_based_vs_model_free(
     alpha=0.2
     )
 
-    ax.set_xlabel('Threshold')
-    ax.set_ylabel('Rate')
-    ax.legend()
+    ax.set_xlabel('Threshold', fontsize=14)
+    ax.set_ylabel('Rate', fontsize=14)
+    ax.legend(loc="right", fontsize=9)
     ax.grid(True)
     plt.tight_layout()
     plt.show()
 
 
     if coarse:
-        fig.savefig(
-                f"{out_path}/rq_3_{args.mc}_coarse_FN_FP_model_based_vs_model_free.pdf",
-                dpi=300,
-                bbox_inches="tight",
-            )
+        if high_st:
+             fig.savefig(
+                    f"{out_path}/rq_3_{args.mc}_high-st_coarse_FN_FP_model_based_vs_model_free.pdf",
+                    dpi=300,
+                    bbox_inches="tight",
+                )
+        else:
+            fig.savefig(
+                    f"{out_path}/rq_3_{args.mc}_coarse_FN_FP_model_based_vs_model_free.pdf",
+                    dpi=300,
+                    bbox_inches="tight",
+                )
     else:
-        fig.savefig(
-                f"{out_path}/rq_3_{args.mc}_FN_FP_model_based_vs_model_free.pdf",
-                dpi=300,
-                bbox_inches="tight",
-            )
+        if high_st:
+             fig.savefig(
+                    f"{out_path}/rq_3_{args.mc}_high-st_FN_FP_model_based_vs_model_free.pdf",
+                    dpi=300,
+                    bbox_inches="tight",
+                )
+        else:
+            fig.savefig(
+                    f"{out_path}/rq_3_{args.mc}_FN_FP_model_based_vs_model_free.pdf",
+                    dpi=300,
+                    bbox_inches="tight",
+                )
 
     plt.show()
 
@@ -1184,7 +1261,8 @@ def main_imc(args: argparse.Namespace):
         imc_risks_ref,
         target_risks,
         imc_risks_ref_splitting, 
-        args.out)
+        args.out, 
+        high_st)
     
     fn_fp_AUC_model_based(
         coarse,
@@ -1196,9 +1274,9 @@ def main_imc(args: argparse.Namespace):
         imc_transition_counts,
         imc_transition_counts_ref,
         imc_transition_counts_ref_splitting,
-        args.out) 
+        args.out, 
+        high_st) 
     
-
     fn_fp_comparison_model_based_vs_model_free(
         high_st,
         coarse,
@@ -1224,13 +1302,14 @@ def testing_argsparser():
         help="Increase verbosity level (can be used multiple times)",
     )
 
-    parser.add_argument("--testdata_rq_3", type=str, help="Path to test data")
+    parser.add_argument(
+        "--testdata_rq_3", type=str, help="Path to test data")
 
     parser.add_argument(
         "-o",
         "--out",
         type=str,
-        default="/workspaces/premise/premise/results",
+        default="/workspaces/premise/premise/results", 
         help="Output path for the results",
     )
 
@@ -1241,3 +1320,10 @@ if __name__ == "__main__":
     parser = testing_argsparser()
     args = parser.parse_args()
     main_imc(args)
+
+#python -m premise.interval.rq_3_from_testdata --testdata_rq_3 /workspaces/premise/premise/results/testdata_rq_3_airportA-7-10-10.pkl --mc airportA-7-10-10
+#python -m premise.interval.rq_3_from_testdata --testdata_rq_3 /workspaces/premise/premise/results/testdata_rq_3_airportA-7-10-10_high_st.pkl --mc airportA-7-10-10
+
+#python -m premise.interval.rq_3_from_testdata  --testdata_rq_3  /workspaces/premise/premise/results/testdata_rq_3_evadeV-6-3_high_st.pkl --mc evadeV-6-3
+#python -m premise.interval.rq_3_from_testdata  --testdata_rq_3  /workspaces/premise/premise/results/testdata_rq_3_evadeV-6-3.pkl --mc evadeV-6-3
+
