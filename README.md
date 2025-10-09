@@ -10,7 +10,7 @@ This project is hosted on [GitHub](https://github.com/monitoring-MDPs/premise).
 ## Installation from source 
 
 (Users of an artifact can skip these steps). 
-- Install Storm with Python APIs in [the usual way](https://moves-rwth.github.io/stormpy/installation.html).
+- Install Storm with Python APIs in [the usual way](https://moves-rwth.github.io/stormpy/installation.html), but with the following forks and branches: lukovdm/storm#imcobservationtraceunfolder and lukovdm/stormpy#IMcunfolder.
 - Run `pip install -e .`
 
 ## Developing in a Visual Studio code development container
