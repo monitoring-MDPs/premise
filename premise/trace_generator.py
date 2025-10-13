@@ -6,9 +6,10 @@ from logging import getLogger
 
 logger = logging.getLogger(__name__)
 
-def make_simulation_wrapper(model, length=None):
+
+def make_simulation_wrapper(model, length=None, seed=None):
     logger.info("Initialize simulator...")
-    simulator = sp.simulator.create_simulator(model)
+    simulator = sp.simulator.create_simulator(model, seed)
     if length is None:
         return SimulationTraceGenerator(simulator)
     else:
@@ -27,14 +28,15 @@ class SimulationTraceGenerator:
         observation, _, _ = self._simulator.random_step()
         return observation
 
-    def set_seed(self, new_seed : int) -> None:
+    def set_seed(self, new_seed: int) -> None:
         self._simulator.set_seed(new_seed)
 
-    def generate_random_trace(self, length : int) -> list[int]:
+    def generate_random_trace(self, length: int) -> list[int]:
         trace = [self.initialize()]
         for i in range(length):
             trace.append(self.step())
         return trace
+
 
 class FixedLengthSimulationTraceGenerator(SimulationTraceGenerator):
     def __init__(self, simulator, length):
@@ -56,6 +58,3 @@ class FixedLengthSimulationTraceGenerator(SimulationTraceGenerator):
     @property
     def max_length(self):
         return self._length
-
-
-

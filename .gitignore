@@ -137,3 +137,6 @@ dmypy.json
 .idea
 
 .DS_Store
+
+.vscode
+*.txt
