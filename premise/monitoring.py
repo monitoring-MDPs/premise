@@ -227,9 +227,10 @@ def unfolding(
 
 
 class StormConfigOptions:
-    def __init__(self, env, verbose=False):
+    def __init__(self, env, verbose=False, threshold=None):
         self.stormpy_environment = env
         self.verbose = verbose
+        self.threshold = threshold
 
 
 class ForwardFilteringOptions(StormConfigOptions):
@@ -238,9 +239,13 @@ class ForwardFilteringOptions(StormConfigOptions):
     """
 
     def __init__(
-        self, env=sp.Environment(), convex_hull_reduction=True, exact_arithmetic=True
+        self,
+        env=sp.Environment(),
+        convex_hull_reduction=True,
+        exact_arithmetic=True,
+        threshold=None,
     ):
-        super().__init__(env)
+        super().__init__(env, threshold=threshold)
         self.convex_hull_reduction = convex_hull_reduction
         self.exact_arithmetic = exact_arithmetic
 
@@ -268,8 +273,9 @@ class UnfoldingOptions(StormConfigOptions):
         model_checking_method=sp.MinMaxMethod.value_iteration,
         custom_str=None,
         export_models_path=None,
+        threshold=None,
     ):
-        super().__init__(env)
+        super().__init__(env, threshold=threshold)
         self.exact_arithmetic = exact_arithmetic
         self._numstr = custom_str
         self.export_models_path = export_models_path
@@ -396,12 +402,17 @@ def run_monitor(
         expr_manager = stormpy.ExpressionManager()
         unfolding_options = stormpy.pomdp.ObservationTraceUnfolderOptions()
         unfolding_options.rejection_sampling = options.use_rejection_sampling
-        stormpy_environment.model_checker_environment.conditional_algorithm = (
-            options.conditional_method
-        )
-        stormpy_environment.solver_environment.minmax_solver_environment.method = (
-            options.model_checking_method
-        )
+
+        if options.conditional_method is not None:
+            stormpy_environment.model_checker_environment.conditional_algorithm = (
+                options.conditional_method
+            )
+
+        if options.model_checking_method is not None:
+            stormpy_environment.solver_environment.minmax_solver_environment.method = (
+                options.model_checking_method
+            )
+
         unfolder = stormpy.pomdp.create_observation_trace_unfolder(
             model, risk_assessment, expr_manager, unfolding_options
         )
@@ -409,7 +420,8 @@ def run_monitor(
         ura = monitor.UnfoldingRiskAssessment(
             stormpy_environment,
             unfolder,
-            None if options.use_rejection_sampling else options.conditional_method,
+            not options.use_rejection_sampling,
+            options.threshold,
         )
 
         mon = monitor.Monitor(ura, promptness_deadline)
@@ -430,20 +442,15 @@ def run_monitor(
         simulator_seed_range = range(simulator_seed, simulator_seed + 1)
 
     times_taken = {}
+    i = 0
     for seed in tqdm(simulator_seed_range):
-        if seed in [
-            4458661313036743149,
-            17148839251503414911,
-            3471586787901513327,
-            2396310440082695277,
-            17752478338837792148,
-            8786698114815218908,
-            15799920621583114172,
-            8327441564423680047,
-            1699671342762650436,
-        ]:
-            logger.info(f"Skipping seed {seed} due to known issues.")
-            continue
+        # i += 1
+        # if i == 11:
+        #     sp.set_loglevel_trace()
+        #     logger.info(f"Setting stormpy loglevel to TRACE for bad trace {i}.")
+        # else:
+        #     sp.set_loglevel_error()
+
         stg = trace_generator.make_simulation_wrapper(model, trace_length, seed)
         logger.info("Restart simulator...")
 
@@ -484,6 +491,13 @@ def run_monitor(
         file.write(f"transitions={model.nr_transitions}\n")
         file.write(f"init_time={initialize_time}\n")
         file.write(f"promptness_deadline={promptness_deadline}\n")
+        file.write(f"options={options}\n")
         file.write(f"max_time={max(times_taken.values())}\n")
         file.write(f"min_time={min(times_taken.values())}\n")
         file.write(f"avg_time={sum(times_taken.values())/len(times_taken)}\n")
+        file.write(
+            f"worst_5_seeds={sorted(times_taken.items(), key=lambda item: item[1], reverse=True)[:5]}\n"
+        )
+        file.write(
+            f"best_5_seeds={sorted(times_taken.items(), key=lambda item: item[1])[:5]}\n"
+        )

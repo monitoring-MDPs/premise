@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import numpy as np
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 
 def check_step_state_equal(states: tuple[dict]) -> bool:
@@ -27,9 +28,17 @@ def diff_traces_rational(
 
         risks = [s["risk"] for s in step]
         risk_counts = {r: risks.count(r) for r in set(risks)}
+        correct_threshold = risks.count(True) >= risks.count(False)
         best_risk = max(risk_counts.items(), key=lambda x: x[1])[0]
         best_risks.append(best_risk)
-        step_diffs = [abs(r - best_risk) for r in risks]
+        step_diffs = [
+            (
+                abs(r - best_risk)
+                if isinstance(r, Fraction)
+                else (r == correct_threshold) * 1000
+            )
+            for r in risks
+        ]
         diffs.append(step_diffs)
     return diffs, best_risks
 
@@ -64,7 +73,10 @@ def compare_trace_files(paths: dict[str, Path]) -> dict[str, list[float | Fracti
                 double_traces.append(trace)
             else:
                 for step in trace:
-                    step["risk"] = Fraction(step["risk"])
+                    if step["risk"] in ("True", "False"):
+                        step["risk"] = step["risk"] == "True"
+                    else:
+                        step["risk"] = Fraction(step["risk"])
 
                 real_indexes[name] = len(real_traces)
                 real_traces.append(trace)
@@ -160,6 +172,45 @@ def compare_trace_folders(folders: list[Path]):
         print(f"  Standard Deviation of Differences: {std_diff:.8f}")
         print(f"  Median Percentage Wrong: {median_percent_wrong:.2f}%")
         print(f"  Missing Traces: {stats['missing']}")
+
+    # point with std line plot of timing of all methods
+    labels = folder_names
+    avg_times = [
+        folder_speed_stats[folder]["avg_time"] if folder in folder_speed_stats else 0
+        for folder in folder_names
+    ]
+    std_times = [
+        (
+            np.std(
+                [
+                    folder_speed_stats[folder]["min_time"],
+                    folder_speed_stats[folder]["max_time"],
+                ],
+                ddof=1,
+            )
+            if folder in folder_speed_stats
+            else 0.0
+        )
+        for folder in folder_names
+    ]
+    x = np.arange(len(labels))
+    plt.figure(figsize=(10, 6))
+    plt.errorbar(
+        x,
+        avg_times,
+        yerr=std_times,
+        fmt="o",
+        ecolor="r",
+        capsize=5,
+        label="Average Time with Std Dev",
+    )
+    plt.xticks(x, labels, rotation=45)
+    plt.ylabel("Time (s)")
+    plt.title("Method Comparison: Average Time with Standard Deviation")
+    plt.legend()
+    plt.tight_layout()
+
+    plt.savefig("method_comparison.png")
 
 
 if __name__ == "__main__":

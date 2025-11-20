@@ -66,6 +66,12 @@ def main():
             "optimistic_value_iteration",
         ],
     )
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=None,
+        help="Risk threshold for conditional methods",
+    )
     args = parser.parse_args()
 
     trace_length = args.trace_length
@@ -78,7 +84,9 @@ def main():
 
     if args.filtering:
         options = monitoring.ForwardFilteringOptions(
-            exact_arithmetic=args.exact, convex_hull_reduction=args.convexhull
+            exact_arithmetic=args.exact,
+            convex_hull_reduction=args.convexhull,
+            threshold=args.threshold,
         )
     elif args.unfolding:
         options = monitoring.UnfoldingOptions(
@@ -87,6 +95,7 @@ def main():
             use_rejection_sampling=args.unfolding_mode == "rejection_sampling",
             conditional_method=args.conditional_method,
             model_checking_method=args.mc_method,
+            threshold=args.threshold,
         )
     else:
         raise RuntimeError("Unknown method!")
@@ -96,6 +105,8 @@ def main():
 
         input(os.getpid())
         stormpy.set_loglevel_trace()
+
+    stormpy.install_signal_handlers(1)
 
     monitoring.run_monitor(
         args.model,

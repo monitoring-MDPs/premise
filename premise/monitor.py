@@ -23,15 +23,30 @@ class MonitorTimeOutException(Exception):
 
 
 class UnfoldingRiskAssessment:
-    def __init__(self, stormpy_environment, unfolder, use_conditional_method=False):
+    def __init__(
+        self,
+        stormpy_environment,
+        unfolder,
+        use_conditional_method=False,
+        threshold=None,
+    ):
         self._stormpy_env = stormpy_environment
         self._unfolder = unfolder
         self._mdp = None
         self._current_step = 0
-        if use_conditional_method:
-            self._prop = sp.parse_properties('Pmax=? [F "_goal" || F "_end"]')[0]
+
+        self._threshold = threshold
+        if threshold is not None:
+            threshold_prop = f"<={threshold}"
         else:
-            self._prop = sp.parse_properties('Pmax=? [F "_goal"]')[0]
+            threshold_prop = "max=?"
+
+        if use_conditional_method:
+            self._prop = sp.parse_properties(
+                f'P{threshold_prop} [F "_goal" || F "_end"]'
+            )[0]
+        else:
+            self._prop = sp.parse_properties(f'P{threshold_prop} [F "_goal"]')[0]
 
     def initialize(self, observation):
         self._mdp = self._unfolder.reset(observation)
