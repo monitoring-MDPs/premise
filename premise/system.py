@@ -7,7 +7,8 @@ from typing import Any, NoReturn, Optional
 
 import stormpy
 import stormpy.pomdp
-from stormvogel import stormvogel_to_stormpy, Model, Path as SVPath, extensions
+
+# from stormvogel import stormvogel_to_stormpy, Model, Path as SVPath, extensions
 
 from premise.interval.interval import Samples, State, Trace
 from premise.monitor import PremiseOptions, UnfoldingRiskAssessment, Monitor
@@ -20,7 +21,6 @@ from premise.models import (
     _analyse_model,
 )
 from premise.carla.model_info import get_states_and_transitions
-from premise.sv_benchmarks import acas
 
 
 class SystemUnderObservation(ABC):
@@ -163,121 +163,121 @@ class MCSystemUnderObservation(SystemUnderObservation):
         }
 
 
-class ACASSystemUnderObservation(MCSystemUnderObservation):
-    def __init__(
-        self, coarseness_factor: float, horizon: int, sim_coarse_factor: float = 10.0
-    ):
-        self._sv_model: Model = acas.build_acas_model(
-            radius_coarse=ceil(acas.RADIUS_COARSE * coarseness_factor),
-            radius_obs=ceil(acas.RADIUS_OBS * coarseness_factor),
-            bearing_coarse=ceil(acas.BEARING_COARSE * coarseness_factor),
-            bearing_obs=ceil(acas.BEARING_OBS * coarseness_factor),
-            rel_heading_coarse=ceil(acas.REL_HEADING_COARSE * coarseness_factor),
-            rel_heading_obs=ceil(acas.REL_HEADING_OBS * coarseness_factor),
-            ego_speed_coarse=ceil(acas.EGO_SPEED_COARSE * coarseness_factor),
-            ego_speed_obs=ceil(acas.EGO_SPEED_OBS * coarseness_factor),
-            int_speed_coarse=ceil(acas.INT_SPEED_COARSE * coarseness_factor),
-            int_speed_obs=ceil(acas.INT_SPEED_OBS * coarseness_factor),
-        )
-        self._model = stormvogel_to_stormpy(self._sv_model, exact=True)
-        self._stormpy_to_storvogel_id = {
-            v: k for k, v in self._sv_model.stormpy_id.items()
-        }
-        self._model_def = ModelDescription(Path(), "", "", "nmac")
-        prop = stormpy.parse_properties(f'Pmax=? [F<={horizon} "nmac"]')
-        self.risk = _analyse_model(self._model, prop[0]).get_values()
-        self.model_name = f"ACAS_{coarseness_factor}"
+# class ACASSystemUnderObservation(MCSystemUnderObservation):
+#     def __init__(
+#         self, coarseness_factor: float, horizon: int, sim_coarse_factor: float = 10.0
+#     ):
+#         self._sv_model: Model = acas.build_acas_model(
+#             radius_coarse=ceil(acas.RADIUS_COARSE * coarseness_factor),
+#             radius_obs=ceil(acas.RADIUS_OBS * coarseness_factor),
+#             bearing_coarse=ceil(acas.BEARING_COARSE * coarseness_factor),
+#             bearing_obs=ceil(acas.BEARING_OBS * coarseness_factor),
+#             rel_heading_coarse=ceil(acas.REL_HEADING_COARSE * coarseness_factor),
+#             rel_heading_obs=ceil(acas.REL_HEADING_OBS * coarseness_factor),
+#             ego_speed_coarse=ceil(acas.EGO_SPEED_COARSE * coarseness_factor),
+#             ego_speed_obs=ceil(acas.EGO_SPEED_OBS * coarseness_factor),
+#             int_speed_coarse=ceil(acas.INT_SPEED_COARSE * coarseness_factor),
+#             int_speed_obs=ceil(acas.INT_SPEED_OBS * coarseness_factor),
+#         )
+#         self._model = stormvogel_to_stormpy(self._sv_model, exact=True)
+#         self._stormpy_to_storvogel_id = {
+#             v: k for k, v in self._sv_model.stormpy_id.items()
+#         }
+#         self._model_def = ModelDescription(Path(), "", "", "nmac")
+#         prop = stormpy.parse_properties(f'Pmax=? [F<={horizon} "nmac"]')
+#         self.risk = _analyse_model(self._model, prop[0]).get_values()
+#         self.model_name = f"ACAS_{coarseness_factor}"
 
-        self._ctr = ConditionalTraceGenerator(self._model, target_label="nmac")
+#         self._ctr = ConditionalTraceGenerator(self._model, target_label="nmac")
 
-        self._sample_count = 0
-        self._transition_count = 0
+#         self._sample_count = 0
+#         self._transition_count = 0
 
-    def generate_random_traces(
-        self,
-        observation_prefix: Samples,
-        length: int,
-        amount=1,
-        initial_state: State | None = None,
-    ) -> Samples:
-        samples = []
-        initial_acas_state: Optional[acas.ACAState] = None
-        if initial_state is not None:
-            for sv_id, s_id in self._sv_model.stormpy_id.items():
-                if s_id == initial_state[0]:
-                    initial_acas_state = (
-                        self._sv_model.states[sv_id].valuations["ACAState"].copy()
-                    )
-                    break
-            else:
-                raise ValueError(
-                    f"Initial state {initial_state} not found in ACAS model states."
-                )
+#     def generate_random_traces(
+#         self,
+#         observation_prefix: Samples,
+#         length: int,
+#         amount=1,
+#         initial_state: State | None = None,
+#     ) -> Samples:
+#         samples = []
+#         initial_acas_state: Optional[acas.ACAState] = None
+#         if initial_state is not None:
+#             for sv_id, s_id in self._sv_model.stormpy_id.items():
+#                 if s_id == initial_state[0]:
+#                     initial_acas_state = (
+#                         self._sv_model.states[sv_id].valuations["ACAState"].copy()
+#                     )
+#                     break
+#             else:
+#                 raise ValueError(
+#                     f"Initial state {initial_state} not found in ACAS model states."
+#                 )
 
-        for _ in range(amount):
-            acas_state = initial_acas_state or acas.ACAState(coarse=False)
-            s = [self._ACAState_to_State(acas_state)]
-            for _ in range(length):
-                acas_state.step()
-                s.append(self._ACAState_to_State(acas_state))
+#         for _ in range(amount):
+#             acas_state = initial_acas_state or acas.ACAState(coarse=False)
+#             s = [self._ACAState_to_State(acas_state)]
+#             for _ in range(length):
+#                 acas_state.step()
+#                 s.append(self._ACAState_to_State(acas_state))
 
-            samples.append(s)
+#             samples.append(s)
 
-        self._sample_count += amount
-        self._transition_count += length * amount
+#         self._sample_count += amount
+#         self._transition_count += length * amount
 
-        return samples
+#         return samples
 
-    def generate_random_traces_with_prob(
-        self,
-        observation_prefix: Samples,
-        length: int,
-        amount=1,
-        initial_state: State | None = None,
-    ) -> NoReturn:
-        raise NotImplementedError(
-            "ACASSystemUnderObservation does not support generating traces with probabilities."
-        )
+#     def generate_random_traces_with_prob(
+#         self,
+#         observation_prefix: Samples,
+#         length: int,
+#         amount=1,
+#         initial_state: State | None = None,
+#     ) -> NoReturn:
+#         raise NotImplementedError(
+#             "ACASSystemUnderObservation does not support generating traces with probabilities."
+#         )
 
-    def _ACAState_to_State(self, acas_state: acas.ACAState) -> State:
-        sv_state = None
-        for s in self._sv_model.states.value():
-            if s.valuations["ACAState"] == acas_state:
-                sv_state = s
-                break
-        else:
-            raise ValueError(
-                f"ACAState {acas_state} not found in stormvogel model states."
-            )
+#     def _ACAState_to_State(self, acas_state: acas.ACAState) -> State:
+#         sv_state = None
+#         for s in self._sv_model.states.value():
+#             if s.valuations["ACAState"] == acas_state:
+#                 sv_state = s
+#                 break
+#         else:
+#             raise ValueError(
+#                 f"ACAState {acas_state} not found in stormvogel model states."
+#             )
 
-        s_id = self._sv_model.stormpy_id[sv_state.id]
+#         s_id = self._sv_model.stormpy_id[sv_state.id]
 
-        return (s_id, self._model.get_observation(s_id), "nmac" in acas_state.labels())
+#         return (s_id, self._model.get_observation(s_id), "nmac" in acas_state.labels())
 
-    def trace_to_str(self, trace: Trace, gif_path=None) -> str:
-        if gif_path is not None:
-            path = SVPath(
-                {
-                    i: self._sv_model.states[self._stormpy_to_storvogel_id[s]]
-                    for i, (s, _, _) in enumerate(trace)
-                },
-                self._sv_model,
-            )
-            filename = extensions.render_model_gif(
-                self._sv_model,
-                lambda s: s.valuations["ACAState"].draw(),
-                filename=gif_path,
-                path=path,
-                fps=0.5,
-            )
-        return "\n-> ".join(
-            [
-                f"{i}: {self._sv_model.states[self._stormpy_to_storvogel_id[s]].valuations} "
-                f"{{{self._sv_model.states[self._stormpy_to_storvogel_id[s]].observation}}} "
-                f"({b}) [{(s,o,b)}]"
-                for i, (s, o, b) in enumerate(trace)
-            ]
-        )
+#     def trace_to_str(self, trace: Trace, gif_path=None) -> str:
+#         if gif_path is not None:
+#             path = SVPath(
+#                 {
+#                     i: self._sv_model.states[self._stormpy_to_storvogel_id[s]]
+#                     for i, (s, _, _) in enumerate(trace)
+#                 },
+#                 self._sv_model,
+#             )
+#             filename = extensions.render_model_gif(
+#                 self._sv_model,
+#                 lambda s: s.valuations["ACAState"].draw(),
+#                 filename=gif_path,
+#                 path=path,
+#                 fps=0.5,
+#             )
+#         return "\n-> ".join(
+#             [
+#                 f"{i}: {self._sv_model.states[self._stormpy_to_storvogel_id[s]].valuations} "
+#                 f"{{{self._sv_model.states[self._stormpy_to_storvogel_id[s]].observation}}} "
+#                 f"({b}) [{(s,o,b)}]"
+#                 for i, (s, o, b) in enumerate(trace)
+#             ]
+#         )
 
 
 class CoarseMCSystemUnderObservation(MCSystemUnderObservation):

@@ -8,7 +8,7 @@ from premise.system import (
     MCSystemUnderObservation,
     SystemUnderObservation,
     CarlaPreSampledSystemUnderObservation,
-    ACASSystemUnderObservation,
+    # ACASSystemUnderObservation,
 )
 from premise.models import default_models
 from premise.interval.utils import logger
@@ -113,10 +113,10 @@ def build_suo(
         suo: SystemUnderObservation = CarlaPreSampledSystemUnderObservation(args.sam)
     elif args.sim:
         suo: SystemUnderObservation = CarlaSimSystemUnderObservation(args.sim)
-    elif args.acas:
-        suo: SystemUnderObservation = ACASSystemUnderObservation(
-            args.acas, vars(args).get("horizon", 1)
-        )
+    # elif args.acas:
+    #     suo: SystemUnderObservation = ACASSystemUnderObservation(
+    #         args.acas, vars(args).get("horizon", 1)
+    #     )
     else:
         raise ValueError("No model specified")
 

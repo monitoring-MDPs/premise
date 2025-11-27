@@ -1,0 +1,41 @@
+pomdp
+
+const int N;
+const double epsilon = 0.01;
+const double gameFail = 0.8;
+const double gameSafe = 0.2;
+
+formula crash = s = 5 & type = 2;
+// observable "crash" = crash;
+label "crash" = crash;
+
+formula game_started = type >= 1 & s >= 2;
+observable "game_started" = game_started;
+label "game_started" = game_started;
+
+formula game_ended = s = 5 | s = 6;
+observable "game_ended" = game_ended;
+label "game_ended" = game_ended;
+
+module main
+    depth : [0..N] init 0;
+    type : [0..2] init 0; // 0 = descending, 1 = safe, 2 = start game
+    s : [1..6] init 1;
+
+    // Only start the game after one epsilon step
+    [descend] type = 0 & depth = 0 -> epsilon:(depth'=depth+1) + 
+                                      (1-epsilon):(depth'=depth)&(type'=1);
+    [descend] type = 0 & depth > 0 & depth != N -> epsilon:(depth'=depth+1) + 
+                                                   ((1-epsilon)/2):(depth'=depth)&(type'=1) + 
+                                                   ((1-epsilon)/2):(depth'=depth)&(type'=2);
+    [descend] type = 0 & depth = N -> 0.5:(type'=1) + 0.5:(type'=2);
+    
+    [step] type = 1 & s = 1 -> 0.5:(s'=1) + 0.5:(s'=2);
+    [step] type = 2 & s = 1 -> (s'=2);
+
+    [step] type >= 1 & s = 2 -> 0.5:(s'=3) + 0.5:(s'=4);
+    [step] type >= 1 & s = 3 -> gameFail:(s'=5) + (1-gameFail):(s'=4);
+    [step] type >= 1 & s = 4 -> gameSafe:(s'=6) + (1-gameSafe):(s'=3);
+    [step] type >= 1 & s = 5 -> (s'=5);
+    [step] type >= 1 & s = 6 -> (s'=6);
+endmodule
