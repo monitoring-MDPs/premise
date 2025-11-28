@@ -353,6 +353,28 @@ def distance_graph(
     high_st
 ):
 
+    avg = 0 
+    for x in imc_transition_counts.keys(): 
+        print(x, imc_transition_counts[x][-1])
+        avg += imc_transition_counts[x][-1]
+
+    print(np.mean(avg))
+
+
+    avg = 0 
+    for x in imc_transition_counts_ref.keys(): 
+        print(x, imc_transition_counts_ref[x][-1])
+        avg += imc_transition_counts_ref[x][-1]
+
+    print(np.mean(avg))
+
+    avg = 0 
+    for x in imc_transition_counts_refsplit.keys(): 
+        print(x, imc_transition_counts_refsplit[x][-1])
+        avg += imc_transition_counts_refsplit[x][-1]
+    
+    print(np.mean(avg))
+
     # Extract unique experiment numbers from NO REF data
     imc_experiment_numbers = set()
     for key in imc_risks.keys():
@@ -623,7 +645,7 @@ def distance_graph(
         refsplit_x_values,
         refsplit_mean_distance,
         color="aqua",
-        label=f"Refinement with splitting, (Average final distance: {np.mean(final_distances):.3f})",
+        label=f"Refinement with splitting, (Average final distance: {np.mean(refsplit_final_distances):.3f})",
         linewidth=3,
         linestyle="--",
         marker ='s', markersize=10, markevery=18

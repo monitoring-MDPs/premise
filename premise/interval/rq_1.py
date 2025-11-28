@@ -923,7 +923,7 @@ def distance_graph(
         refsplit_x_values,
         refsplit_mean_distance,
         color="aqua",
-        label=f"Refinement with splitting, (Average final distance: {np.mean(final_distances):.3f})",
+        label=f"Refinement with splitting, (Average final distance: {np.mean(refsplit_final_distances):.3f})",
         linewidth=7,
         linestyle="-.",
     )
@@ -1352,3 +1352,4 @@ if __name__ == "__main__":
 
 
 # python -m premise.interval.rq_1 --mc evadeV-5-3 --stats-path /workspaces/premise/out/stats/2025-08-01_08-37-30 --out /workspaces/premise/premise/analysis
+# python -m premise.interval.rq_1 --mc all-rare-3 --stats-path /workspaces/premise/out/stats/2025-11-28_12-26-02

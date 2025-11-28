@@ -1,0 +1,58 @@
+pomdp
+
+observables
+    x, y
+endobservables
+
+const int DEPTH;       
+const int WIDTH = 3;
+
+const double gameFail_normal   = 0.08;  
+const double gameFail_critical = 0.999;  
+const double gameSafe = 0.2;
+const double safeProb = 0.7;    
+
+formula crash = s = 5;
+observable "crash" = crash;
+label "crash" = crash;
+
+formula game_ended = s = 5 | s = 6;
+observable "game_ended" = game_ended;
+label "game_ended" = game_ended;
+
+
+module main
+    x : [0..WIDTH-1] init 0;
+    y : [0..DEPTH] init 0;
+    safe : bool init false;
+
+    allzeros : bool init true;
+
+    [go_down] y < DEPTH & !safe ->
+        (1-safeProb)/WIDTH : (y'=y+1) & (x'=0) & (allzeros' = allzeros) +
+        (1-safeProb)/WIDTH : (y'=y+1) & (x'=1) & (allzeros' = false) +
+        (1-safeProb)/WIDTH : (y'=y+1) & (x'=2) & (allzeros' = false) +
+        (1-safeProb)/WIDTH : (y'=y+1) & (x'=3) & (allzeros' = false) +
+        (1-safeProb)/WIDTH : (y'=y+1) & (x'=4) & (allzeros' = false) +
+        (1-safeProb)/WIDTH : (y'=y+1) & (x'=5) & (allzeros' = false) +
+        (1-safeProb)/WIDTH : (y'=y+1) & (x'=6) & (allzeros' = false) +
+        (1-safeProb)/WIDTH : (y'=y+1) & (x'=7) & (allzeros' = false) +
+        (1-safeProb)/WIDTH : (y'=y+1) & (x'=8) & (allzeros' = false) +
+        (1-safeProb)/WIDTH : (y'=y+1) & (x'=9) & (allzeros' = false) +
+        safeProb : (safe' = true) & (y' = 0) & (x' = 0) & (allzeros' = true);
+
+    [safe] safe -> (y' = 0) & (x' = 0) & (safe' = false) & (allzeros' = true);
+    [step] y = DEPTH -> true;
+endmodule
+
+
+module game
+    s : [2..6] init 2;
+
+    [step] s = 2 -> 0.5 : (s' = 3) + 0.5 : (s' = 4);
+    [step] s = 3 & (allzeros = true)  -> gameFail_critical : (s' = 5) + (1 - gameFail_critical) : (s' = 4);
+    [step] s = 3 & (allzeros = false) -> gameFail_normal   : (s' = 5) + (1 - gameFail_normal)   : (s' = 4);
+    [step] s = 4 -> gameSafe : (s' = 6) + (1 - gameSafe) : (s' = 3);
+    [step] s = 5 -> 1 : (s' = 5);
+    [step] s = 6 -> 1 : (s' = 6);
+endmodule

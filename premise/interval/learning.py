@@ -377,6 +377,9 @@ if __name__ == "__main__":
         all_transitions=not args.existing_transitions
     )
 
+    print('all states')
+    print(len(all_states))
+
     save_path = os.path.join(
         "/workspaces/premise/premise/", "SnL-10x10_l15_ho5_reg.npy"
     )

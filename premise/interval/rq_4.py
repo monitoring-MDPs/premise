@@ -266,6 +266,122 @@ def aggregated_stats_imc(
     return times_stats
 
 
+
+def aggregated_stats_mc(
+    coarse, stats_path, initial_amount, horizon, args, testing_samples
+):
+    mc_risks = {}
+
+    mc_transition_counts = {}
+
+    times_stats = {}
+
+    for x in range(1, 11):
+        print(f"Experiment number {x}")
+        try:
+            if coarse:
+                """if high_st:
+                    if args.mc == " SnLw-10x10":
+                        statistics = np.load(
+                            f"{stats_path}/high-st-SnL-coarse-comp-mle-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    elif args.mc == "evadeV-6-3-coarse":
+                        statistics = np.load(
+                            f"{stats_path}/high-st-evadeV-6-3-coarse-comp-mle-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                    else:
+                        statistics = np.load(
+                            f"{stats_path}/high-st-{args.mc}-coarse-comp-mle-stats-{x}.npy",
+                            allow_pickle=True,
+                        )
+                else:"""
+                if args.mc == "SnLw-10x10":
+                    statistics = np.load(
+                        f"{stats_path}/SnL-coarse-comp-mle-stats-{x}.npy",
+                        allow_pickle=True,
+                    )
+                elif args.mc == "evadeV-6-3-coarse":
+                    statistics = np.load(
+                        f"{stats_path}/evadeV-6-3-coarse-comp-mle-stats-{x}.npy",
+                        allow_pickle=True,
+                    )
+                else:
+                    statistics = np.load(
+                        f"{stats_path}/{args.mc}-coarse-comp-mle-stats-{x}.npy",
+                        allow_pickle=True,
+                    )
+            else:
+                """if high_st:
+                    statistics = np.load(
+                        f"{stats_path}/high-st-{args.mc}-comp-mle-stats-{x}.npy",
+                        allow_pickle=True,
+                    )
+                else:"""
+                statistics = np.load(
+                    f"{stats_path}/{args.mc}-comp-mle-stats-{x}.npy",
+                    allow_pickle=True,
+                )
+        except FileNotFoundError:
+            print(f"Statistics file for {x} not found, skipping.")
+
+            continue
+
+        mc_sample_count = statistics["sample_counts"]
+
+        mc_transition_count = []
+
+        for a in mc_sample_count:
+            mc_transition_count.append(a * (horizon + initial_amount))
+
+        mc_transition_counts[str(x)] = mc_transition_count
+
+        model_path = statistics["args"]["dump_model"]
+
+        for y in trange(0, len(mc_transition_count)):
+            model = f"{model_path}-{y}.pickl"
+
+            with open(model, "rb") as file:
+                data = pickle.load(file)
+
+            model, observation_map, state_index_map = dict_to_pomdp(
+                data[1], data[0], target_label=True, use_exact=True
+            )
+
+            t = time.monotonic()
+
+            monitor = create_mle_monitor(horizon, model)
+
+            monitor_created_time = time.monotonic() - t
+
+            mc_risks[f"{x}-{y}"] = []
+
+            sample_times = []
+            for sample in testing_samples:
+                subtrace = sample[:initial_amount]
+                start_time = time.monotonic()
+                risk = test_monitor(
+                    monitor,
+                    [subtrace],
+                    lambda x: observation_map[x],
+                    skip_initial=True,
+                    with_tqdm=False,
+                )[subtrace]
+                sample_times.append(time.monotonic() - start_time)
+
+                mc_risks[f"{x}-{y}"].append(float(risk))
+
+    times_stats[x] = {
+            "monitor_creation_time": monitor_created_time,
+            "sample_times": sample_times,
+        }
+    
+    return times_stats
+
+
+
+
 def aggregated_stats_regression(
     high_st,
     coarse,

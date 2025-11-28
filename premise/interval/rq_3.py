@@ -2848,14 +2848,14 @@ def main_imc(args: argparse.Namespace):
     ) """
 
     (
-        imc_risks_ref_splitting,
-        imc_transition_counts_ref_splitting,
-        imc_stopping_threshold_ref_splitting,
-        imc_distances_ref_splitting,
+        imc_risks_ref,
+        imc_transition_counts_ref,
+        imc_stopping_threshold_ref,
+        imc_distances_ref,
     ) = aggregated_stats_imc(
         args.high_st,
         coarse,
-        "refsplit",
+        "ref",
         mc,
         stats_path,
         initial_amount,
@@ -2879,14 +2879,14 @@ def main_imc(args: argparse.Namespace):
     )
 
     (
-        imc_risks_ref,
-        imc_transition_counts_ref,
-        imc_stopping_threshold_ref,
-        imc_distances_ref,
+        imc_risks_ref_splitting,
+        imc_transition_counts_ref_splitting,
+        imc_stopping_threshold_ref_splitting,
+        imc_distances_ref_splitting,
     ) = aggregated_stats_imc(
         args.high_st,
         coarse,
-        "ref",
+        "refsplit",
         mc,
         stats_path,
         initial_amount,
@@ -2894,6 +2894,10 @@ def main_imc(args: argparse.Namespace):
         args,
         testing_samples,
     )
+
+    
+
+    
 
     test_data = {}
     test_data["model"] = args.mc
@@ -3097,3 +3101,4 @@ if __name__ == "__main__":
 
 
 # python -m premise.interval.rq_3 --mc evadeV-5-3 --stats-path /workspaces/premise/out/stats/2025-08-01_08-37-30 --model-path /workspaces/premise/out/models/2025-08-01_08-37-30
+# python -m premise.interval.rq_3 --mc unlikely-15 --model-path /workspaces/premise/out/models/2025-09-29_16-58-12 --stats-path /workspaces/premise/out/stats/2025-09-29_16-58-12

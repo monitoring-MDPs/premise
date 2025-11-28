@@ -179,6 +179,22 @@ default_models = {
         horizon=3,
         initial_amount=4,
     ),
+    "all-rare-3": ModelDescription(
+        Path(__file__).parent / "examples/unlikely-trace/all-rare-3.nm",
+        "DEPTH=2",
+        'Pmax=? [F "crash"]',
+        target_label="crash",
+        horizon=6,
+        initial_amount=3,
+    ),
+    "antonina": ModelDescription(
+        Path(__file__).parent / "examples/unlikely-trace/antonina.nm",
+        "DEPTH=4",
+        'Pmax=? [F "crash"]',
+        target_label="crash",
+        horizon=4,
+        initial_amount=3,
+    ),
 }
 
 

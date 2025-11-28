@@ -1,0 +1,53 @@
+pomdp
+observables
+    x, y
+endobservables
+
+const int DEPTH;
+const int WIDTH=10;
+
+const double gameFail = 0.8;
+const double gameSafe = 0.2;
+
+const double safeProb = 0.7;
+
+formula crash = s = 5;
+observable "crash" = crash;
+label "crash" = crash;
+
+formula game_ended = s = 5 | s = 6;
+observable "game_ended" = game_ended;
+label "game_ended" = game_ended;
+
+
+module main
+    x : [0..WIDTH^DEPTH] init 0;
+    y : [0..DEPTH] init 0;
+    safe : bool init false;
+
+    [go_down] y < DEPTH & !safe -> 
+        (1-safeProb)/WIDTH:(y'=y+1)&(x'=x*WIDTH+0) +
+        (1-safeProb)/WIDTH:(y'=y+1)&(x'=x*WIDTH+1) +
+        (1-safeProb)/WIDTH:(y'=y+1)&(x'=x*WIDTH+2) +
+        (1-safeProb)/WIDTH:(y'=y+1)&(x'=x*WIDTH+3) +
+        (1-safeProb)/WIDTH:(y'=y+1)&(x'=x*WIDTH+4) +
+        (1-safeProb)/WIDTH:(y'=y+1)&(x'=x*WIDTH+5) +
+        (1-safeProb)/WIDTH:(y'=y+1)&(x'=x*WIDTH+6) +
+        (1-safeProb)/WIDTH:(y'=y+1)&(x'=x*WIDTH+7) +
+        (1-safeProb)/WIDTH:(y'=y+1)&(x'=x*WIDTH+8) +
+        (1-safeProb)/WIDTH:(y'=y+1)&(x'=x*WIDTH+9) +
+        safeProb:(safe'=true)&(y'=0)&(x'=0);
+
+    [safe] safe -> (y'=0)&(x'=0)&(safe'=false);
+
+    [step] y = DEPTH -> true;
+endmodule
+
+module game
+    s : [2..6] init 2;
+    [step] s = 2 -> 0.5:(s'=3) + 0.5:(s'=4);
+    [step] s = 3 -> gameFail:(s'=5) + (1-gameFail):(s'=4);
+    [step] s = 4 -> gameSafe:(s'=6) + (1-gameSafe):(s'=3);
+    [step] s = 5 -> 1:(s'=5);
+    [step] s = 6 -> 1:(s'=6);
+endmodule
