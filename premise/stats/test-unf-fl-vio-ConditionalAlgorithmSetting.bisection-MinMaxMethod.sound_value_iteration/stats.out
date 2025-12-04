@@ -1,7 +1,0 @@
-states=136
-transitions=473
-init_time=0.03490163781680167
-promptness_deadline=1000
-max_time=2.155354323098436
-min_time=0.7393021630123258
-avg_time=1.056924495054409

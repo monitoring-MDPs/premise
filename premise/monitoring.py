@@ -3,13 +3,11 @@ import csv
 import logging
 import os
 import os.path
-import re
-import stat
+from pathlib import Path
 import time
 
 import stormpy as sp
 import stormpy.pomdp
-import stormpy.simulator
 from tqdm import tqdm
 
 import models
@@ -266,11 +264,11 @@ class UnfoldingOptions(StormConfigOptions):
 
     def __init__(
         self,
-        env=sp.Environment(),
+        env: sp.Environment | None = sp.Environment(),
         exact_arithmetic=True,
         use_rejection_sampling=True,
         conditional_method=sp.ConditionalAlgorithmSetting.default,
-        model_checking_method=sp.MinMaxMethod.value_iteration,
+        model_checking_method=None,
         custom_str=None,
         export_models_path=None,
         threshold=None,
@@ -285,15 +283,18 @@ class UnfoldingOptions(StormConfigOptions):
             if type(conditional_method) == str
             else conditional_method
         )
-        self.model_checking_method = (
-            self._map_mc_method(model_checking_method)
-            if type(model_checking_method) == str
-            else model_checking_method
-        )
+        if model_checking_method is None:
+            self.model_checking_method = None
+        else:
+            self.model_checking_method = (
+                self._map_mc_method(model_checking_method)
+                if type(model_checking_method) == str
+                else model_checking_method
+            )
 
     @staticmethod
     def _map_conditional_method(method: str) -> sp.ConditionalAlgorithmSetting:
-        if method == "default":
+        if method in ["default", "rejection"]:
             return sp.ConditionalAlgorithmSetting.default
         elif method == "restart":
             return sp.ConditionalAlgorithmSetting.restart
@@ -316,6 +317,8 @@ class UnfoldingOptions(StormConfigOptions):
             return sp.MinMaxMethod.sound_value_iteration
         elif method == "optimistic_value_iteration":
             return sp.MinMaxMethod.optimistic_value_iteration
+        elif method == "":
+            return None
         else:
             raise ValueError(f"Unknown MC method: {method}")
 
@@ -329,14 +332,20 @@ class UnfoldingOptions(StormConfigOptions):
         else:
             numstr = "ea" if self.exact_arithmetic else "fl"
 
-        rej = "rej" if self.use_rejection_sampling else f"vio-{self.conditional_method}"
-        if self.conditional_method in [
-            sp.ConditionalAlgorithmSetting.bisection_advanced,
-            sp.ConditionalAlgorithmSetting.bisection,
-        ]:
-            rej += f"-{self.model_checking_method}"
+            rej = (
+                "rej"
+                if self.use_rejection_sampling
+                else f"vio-{self.conditional_method}"
+            )
+            if self.conditional_method in [
+                sp.ConditionalAlgorithmSetting.bisection_advanced,
+                sp.ConditionalAlgorithmSetting.bisection,
+            ]:
+                rej += f"-{self.model_checking_method}"
 
-        return f"unf-{numstr}-{rej}"
+            numstr = f"{numstr}-{rej}"
+
+        return f"unf-{numstr}"
 
 
 def unrolled_model_path(options, model_id, seed):
@@ -362,6 +371,7 @@ def run_monitor(
     simulator_seed: list[int] | int = 0,
     promptness_deadline=10000,
     model_id="no_id_given",
+    stats_path=Path("./stats"),
 ):
     """
 
@@ -376,6 +386,7 @@ def run_monitor(
     :param model_id: A name for creating good stats files.
     :return:
     """
+    logger.info(f"Starting monitor with arguments: {locals()}")
     start_time = time.monotonic()
     use_forward_filtering = isinstance(options, ForwardFilteringOptions)
     use_unfolding = isinstance(options, UnfoldingOptions)
@@ -394,6 +405,7 @@ def run_monitor(
             model, promptness_deadline, promptness_deadline
         )
         tracker.set_risk(risk_assessment)
+        mon = None
     else:
         assert use_unfolding
         assert isinstance(options, UnfoldingOptions)
@@ -427,7 +439,7 @@ def run_monitor(
         mon = monitor.Monitor(ura, promptness_deadline)
 
     initialize_time = time.monotonic() - start_time
-    stats_folder = f"stats/{model_id}-{options.method_id}/"
+    stats_folder = stats_path / f"{model_id}-{options.method_id}/"
     if not os.path.isdir(stats_folder):
         os.makedirs(stats_folder)
     else:
@@ -442,16 +454,19 @@ def run_monitor(
         simulator_seed_range = range(simulator_seed, simulator_seed + 1)
 
     times_taken = {}
-    i = 0
-    for seed in tqdm(simulator_seed_range):
-        # i += 1
-        # if i == 11:
-        #     sp.set_loglevel_trace()
-        #     logger.info(f"Setting stormpy loglevel to TRACE for bad trace {i}.")
-        # else:
-        #     sp.set_loglevel_error()
+
+    for seed in simulator_seed_range:
+        logger.info(
+            f"Running monitor for seed ({len(times_taken)}/{len(simulator_seed_range)}) {seed}..."
+        )
 
         stg = trace_generator.make_simulation_wrapper(model, trace_length, seed)
+        cache_path = Path(f"{stats_folder}").parent / f"simulator-caches-{model_id}"
+        cache_path.mkdir(parents=True, exist_ok=True)
+        stg = trace_generator.FileCachedSimulationTraceGenerator(
+            stg,  # type: ignore
+            f"{cache_path}/simulator-cache-{seed}",
+        )
         logger.info("Restart simulator...")
 
         stats_file = f"{stats_folder}/stats-{model_id}-{options.method_id}-{seed}.csv"
@@ -469,11 +484,11 @@ def run_monitor(
                 observation_valuations=model.observation_valuations,
             )
         else:
-            assert use_unfolding
+            assert use_unfolding and mon is not None
             # unrolled_model_path(options, model_id, seed)
-            t = time.monotonic()
-            annotated_trace = monitor.execute_monitor(stg, mon)
-            times_taken[seed] = time.monotonic() - t
+            annotated_trace = monitor.execute_monitor(stg, mon, tqdm_bar=False)
+            times_taken[seed] = sum(mon.risk_times)
+            mon.risk_times.clear()
             trace_mapper = traces.TraceMapper(model)
             trace_file = (
                 f"{stats_folder}/trace-{model_id}-{options.method_id}-{seed}.csv"
@@ -501,3 +516,4 @@ def run_monitor(
         file.write(
             f"best_5_seeds={sorted(times_taken.items(), key=lambda item: item[1])[:5]}\n"
         )
+        file.write(f"all_times=\n{times_taken}\n")

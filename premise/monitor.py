@@ -109,6 +109,7 @@ class Monitor:
     ):
         self._risk_assessor = riskassessor
         self._deadline = deadline
+        self.risk_times = []
 
     def initialize(self, observation, compute_risk=True):
         self._risk_assessor.initialize(observation)
@@ -117,7 +118,10 @@ class Monitor:
         start_time = time.monotonic()
         self._risk_assessor.step(observation)
         if compute_risk:
+            start_risk_time = time.monotonic()
             status, risk = self._risk_assessor.get_risk(self._deadline)
+            end_risk_time = time.monotonic()
+            self.risk_times.append(end_risk_time - start_risk_time)
             if not status:
                 raise MonitorTimeOutException
         else:

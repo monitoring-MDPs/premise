@@ -1,6 +1,17 @@
+from datetime import datetime
+import logging
+from multiprocessing import set_start_method
+import os
+from pathlib import Path
+import random
+from numpy import argsort
 import stormpy as sp
 import argparse
+
+from tqdm import tqdm
 import monitoring
+from trace_generator import pre_generate_traces
+
 
 class Benchmark:
     """
@@ -13,60 +24,227 @@ class Benchmark:
         self.constants = constants
         self.risk_def = risk_def
 
+
 # Benchmarks
 benchmarks = [
-#    Benchmark("airportA-3-50-30", "examples/airportA-3.nm", "DMAX=50,PMAX=30", "Pmax=? [F \"crash\"]"),
-    Benchmark("airportA-7-50-30", "examples/airportA-7.nm", "DMAX=50,PMAX=30", "Pmax=? [F \"crash\"]"),
-    Benchmark("airportB-3-50-30", "examples/airportB-3.nm", "DMAX=50,PMAX=30", "Pmax=? [F \"crash\"]"),
-    Benchmark("airportB-7-50-30", "examples/airportB-7.nm", "DMAX=50,PMAX=30", "Pmax=? [F \"crash\"]"),
-#    Benchmark("evadeI-10", "examples/hidden-incentive.nm", "N=10", "Pmax=? [F<=12 \"crash\"]"),
-    Benchmark("evadeI-15", "examples/hidden-incentive.nm", "N=15", "Pmax=? [F<=12 \"crash\"]"),
-    Benchmark("evadeV-5-3", "examples/evade-monitoring.nm", "N=5,RADIUS=3", "Pmax=? [F<=12 \"crash\"]"),
-    Benchmark("evadeV-6-3", "examples/evade-monitoring.nm", "N=6,RADIUS=3", "Pmax=? [F<=12 \"crash\"]"),
-    Benchmark("refuelA-12-50", "examples/refuel.nm", "N=12,ENERGY=50", "Pmax=? [F<=12 \"empty\"]"),
-    Benchmark("refuelB-12-50","examples/refuelB.nm", "N=12,ENERGY=50", "Pmax=? [F<=12 \"empty\"]")
+    Benchmark(
+        "airportA-7-400-40",
+        "premise/examples/airportA-7.nm",
+        "DMAX=400,PMAX=40",
+        'Pmax=? [F "crash"]',
+    ),
+    Benchmark(
+        "airportB-3-200-30",
+        "premise/examples/airportB-3.nm",
+        "DMAX=200,PMAX=30",
+        'Pmax=? [F "crash"]',
+    ),
+    Benchmark(
+        "airportB-7-200-30",
+        "premise/examples/airportB-7.nm",
+        "DMAX=200,PMAX=30",
+        'Pmax=? [F "crash"]',
+    ),
+    Benchmark(
+        "evadeI-10",
+        "premise/examples/hidden-incentive.nm",
+        "N=10",
+        'Pmax=? [F<=12 "crash"]',
+    ),
+    Benchmark(
+        "evadeI-19",
+        "premise/examples/hidden-incentive.nm",
+        "N=19",
+        'Pmax=? [F<=20 "crash"]',
+    ),
+    Benchmark(
+        "evadeV-5-3",
+        "premise/examples/evade-monitoring.nm",
+        "N=5,RADIUS=3",
+        'Pmax=? [F<=12 "crash"]',
+    ),
+    Benchmark(
+        "evadeV-9-3",
+        "premise/examples/evade-monitoring.nm",
+        "N=9,RADIUS=3",
+        'Pmax=? [F<=12 "crash"]',
+    ),
+    Benchmark(
+        "evadeV-14-4",
+        "premise/examples/evade-monitoring.nm",
+        "N=14,RADIUS=4",
+        'Pmax=? [F<=12 "crash"]',
+    ),
+    Benchmark(
+        "refuelA-35-80",
+        "premise/examples/refuel.nm",
+        "N=35,ENERGY=80",
+        'Pmax=? [F<=20 "empty"]',
+    ),
+    Benchmark(
+        "refuelB-14-200",
+        "premise/examples/refuelB.nm",
+        "N=18,ENERGY=200",
+        'Pmax=? [F<=8 "empty"]',
+    ),
 ]
 
-challenges = [
-   # Benchmark("airportA-7-400-40", "examples/airportA-7.nm", "DMAX=400,PMAX=40", "Pmax=? [F \"crash\"]"),
-   # Benchmark("airportB-3-200-30", "examples/airportB-3.nm", "DMAX=200,PMAX=30", "Pmax=? [F \"crash\"]"),
-   # Benchmark("airportB-7-200-30", "examples/airportB-7.nm", "DMAX=200,PMAX=30", "Pmax=? [F \"crash\"]"),
-#    Benchmark("evadeI-10", "examples/hidden-incentive.nm", "N=10", "Pmax=? [F<=12 \"crash\"]"),
-   #  Benchmark("evadeI-19", "examples/hidden-incentive.nm", "N=19", "Pmax=? [F<=20 \"crash\"]"),
-#     Benchmark("evadeV-5-3", "examples/evade-monitoring.nm", "N=5,RADIUS=3", "Pmax=? [F<=12 \"crash\"]"),
- #    Benchmark("evadeV-9-3", "examples/evade-monitoring.nm", "N=9,RADIUS=3", "Pmax=? [F<=12 \"crash\"]"),
-    #Benchmark("evadeV-14-4", "examples/evade-monitoring.nm", "N=14,RADIUS=4", "Pmax=? [F<=12 \"crash\"]"),
-    Benchmark("refuelA-35-80", "examples/refuel.nm", "N=35,ENERGY=80", "Pmax=? [F<=20 \"empty\"]"),
-  #   Benchmark("refuelB-14-200","examples/refuelB.nm", "N=18,ENERGY=200", "Pmax=? [F<=8 \"empty\"]")
+
+def create_custom_str(exact, conditional_mode, threshold):
+    parts = []
+    parts.append("exact" if exact else "float")
+    parts.append(conditional_mode)
+    if threshold is not None:
+        parts.append(f"thresh={threshold}")
+    return "-".join(parts)
+
+
+configurations = [
+    monitoring.UnfoldingOptions(
+        env=None,
+        exact_arithmetic=exact,
+        use_rejection_sampling=(conditional_mode == "rejection"),
+        conditional_method=conditional_mode,
+        model_checking_method=(
+            "value_iteration" if conditional_mode == "bisection" else None
+        ),
+        threshold=threshold,
+        custom_str=create_custom_str(exact, conditional_mode, threshold),
+    )
+    for exact in [False, True]
+    for conditional_mode in ["bisection", "rejection", "restart"]
+    for threshold in [0.2, None]
 ]
 
-environment = sp.Environment()
-#environment.solver_environment.minmax_solver_environment.method = sp.MinMaxMethod.linear_programming
-environment.solver_environment.minmax_solver_environment.precision = sp.Rational("0.01")
 
-configurations = [#monitoring.UnfoldingOptions(environment, exact_arithmetic=True),
-                  monitoring.UnfoldingOptions(environment, exact_arithmetic=True, custom_str="unfrefactored")]
-                  #monitoring.ForwardFilteringOptions(exact_arithmetic=True, convex_hull_reduction=False),
-                  #monitoring.ForwardFilteringOptions(exact_arithmetic=True, convex_hull_reduction=True)]
+def run_benchmark_with_config(args):
+    benchmark, config, seed, trace_length, promptness_deadline, stats_path = args
+
+    # Set logger to output to file in stats_path
+    log_file = stats_path / f"{benchmark.name}-{str(config._numstr)}.log"
+    logging.basicConfig(
+        filename=log_file,
+        level=logging.DEBUG,
+        format="%(asctime)s %(levelname)s %(filename)s:%(lineno)d %(message)s",
+    )
+
+    environment = sp.Environment()
+    environment.solver_environment.minmax_solver_environment.precision = sp.Rational(
+        "0.01"
+    )
+
+    config.stormpy_environment = environment
+
+    monitoring.run_monitor(
+        benchmark.modelpath,
+        benchmark.risk_def,
+        benchmark.constants,
+        trace_length,
+        config,
+        verbose=False,
+        promptness_deadline=promptness_deadline,
+        simulator_seed=seed,
+        model_id=benchmark.name,
+        stats_path=stats_path,
+    )
+
 
 if __name__ == "__main__":
     # Wait for termination, never crash.
     sp.set_settings(["--signal-timeout", "100000"])
     parser = argparse.ArgumentParser(description="Run experiments with premise.")
-    parser.add_argument("--number-traces", default=10, type=int, help="How many traces to run")
-    parser.add_argument("--trace-length", default=100, type=int, help="How long should the traces be?")
-    parser.add_argument("--promptness-deadline", default=1000, type=int, help="How long may one iteration take at most?")
-    parser.add_argument("--verbose", action='store_true', help="Enable extra output")
+    parser.add_argument(
+        "--number-traces", default=10, type=int, help="How many traces to run"
+    )
+    parser.add_argument(
+        "--trace-length", default=200, type=int, help="How long should the traces be?"
+    )
+    parser.add_argument(
+        "--promptness-deadline",
+        default=1000,
+        type=int,
+        help="How long may one iteration take at most?",
+    )
+    parser.add_argument("--verbose", action="store_true", help="Enable extra output")
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=0,
+        help="Set a random seed for reproducible experiments",
+    )
+    parser.add_argument(
+        "--sequential",
+        action="store_true",
+        help="Run experiments sequentially (default is parallel)",
+    )
+    parser.add_argument(
+        "--cores",
+        type=int,
+        default=os.cpu_count() - 1,  # type: ignore
+        help="Number of CPU cores to use for parallel execution",
+    )
     args = parser.parse_args()
 
     nr_traces = args.number_traces
     trace_length = args.trace_length
-    promtness_deadline = args.promptness_deadline # in ms
-    for benchmark in benchmarks:
-        for config in configurations:
-            print(f"Running {benchmark.name} with {str(config)}")
-            try:
-                monitoring.run_monitor(benchmark.modelpath, benchmark.risk_def, benchmark.constants, trace_length, config, verbose=args.verbose, promptness_deadline=promtness_deadline, simulator_seed=range(nr_traces), model_id=benchmark.name)
-            except RuntimeWarning:
-                print("Skipped (likely, the folder exists)")
+    promptness_deadline = args.promptness_deadline  # in ms
+
+    random.seed(args.seed)
+    seeds = [random.getrandbits(64) for _ in range(args.number_traces)]
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    stats_path = Path(f"./out/exp-{timestamp}")
+    stats_path.mkdir(parents=True, exist_ok=True)
+
+    if args.sequential:
+        for benchmark in benchmarks:
+            for config in configurations:
+                print(f"Running {benchmark.name} with {str(config)}")
+                monitoring.run_monitor(
+                    benchmark.modelpath,
+                    benchmark.risk_def,
+                    benchmark.constants,
+                    trace_length,
+                    config,
+                    verbose=args.verbose,
+                    promptness_deadline=promptness_deadline,
+                    simulator_seed=seeds,
+                    model_id=benchmark.name,
+                    stats_path=stats_path,
+                )
+    else:
+        from multiprocessing import Pool
+
+        task_args = []
+        for benchmark in tqdm(benchmarks):
+            pre_generate_traces(
+                benchmark.name,
+                benchmark.modelpath,
+                benchmark.constants,
+                benchmark.risk_def,
+                monitoring.UnfoldingOptions(sp.Environment()),
+                trace_length,
+                stats_path,
+                seeds,
+            )
+
+            for config in configurations:
+                task_args.append(
+                    (
+                        benchmark,
+                        config,
+                        seeds,
+                        trace_length,
+                        promptness_deadline,
+                        stats_path,
+                    )
+                )
+
+        set_start_method("spawn", True)
+
+        with Pool(args.cores) as pool:
+            for _ in tqdm(
+                pool.imap_unordered(run_benchmark_with_config, task_args),
+                total=len(task_args),
+            ):
                 pass
