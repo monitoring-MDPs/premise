@@ -272,6 +272,7 @@ class UnfoldingOptions(StormConfigOptions):
         custom_str=None,
         export_models_path=None,
         threshold=None,
+        force_exact=False,
     ):
         super().__init__(env, threshold=threshold)
         self.exact_arithmetic = exact_arithmetic
@@ -283,6 +284,7 @@ class UnfoldingOptions(StormConfigOptions):
             if type(conditional_method) == str
             else conditional_method
         )
+        self.force_exact = force_exact
         if model_checking_method is None:
             self.model_checking_method = None
         else:
@@ -388,6 +390,13 @@ def run_monitor(
     """
     logger.info(f"Starting monitor with arguments: {locals()}")
     start_time = time.monotonic()
+
+    stats_folder = stats_path / f"{model_id}-{options.method_id}/"
+    if not os.path.isdir(stats_folder):
+        os.makedirs(stats_folder)
+    else:
+        raise RuntimeWarning(f"We are writing to an existing folder '{stats_folder}'.")
+
     use_forward_filtering = isinstance(options, ForwardFilteringOptions)
     use_unfolding = isinstance(options, UnfoldingOptions)
     if not use_forward_filtering and not use_unfolding:
@@ -425,6 +434,13 @@ def run_monitor(
                 options.model_checking_method
             )
 
+        if options.force_exact:
+            stormpy_environment.solver_environment.set_force_exact()
+
+        stormpy_environment.solver_environment.minmax_solver_environment.precision = (
+            sp.Rational(1e-6)
+        )
+
         unfolder = stormpy.pomdp.create_observation_trace_unfolder(
             model, risk_assessment, expr_manager, unfolding_options
         )
@@ -439,11 +455,6 @@ def run_monitor(
         mon = monitor.Monitor(ura, promptness_deadline)
 
     initialize_time = time.monotonic() - start_time
-    stats_folder = stats_path / f"{model_id}-{options.method_id}/"
-    if not os.path.isdir(stats_folder):
-        os.makedirs(stats_folder)
-    else:
-        raise RuntimeWarning(f"We are writing to an existing folder '{stats_folder}'.")
 
     logger.info("Initialize simulator...")
     simulator = sp.simulator.create_simulator(model)
@@ -454,6 +465,7 @@ def run_monitor(
         simulator_seed_range = range(simulator_seed, simulator_seed + 1)
 
     times_taken = {}
+    time_per_step = {}
 
     for seed in simulator_seed_range:
         logger.info(
@@ -487,6 +499,7 @@ def run_monitor(
             assert use_unfolding and mon is not None
             # unrolled_model_path(options, model_id, seed)
             annotated_trace = monitor.execute_monitor(stg, mon, tqdm_bar=False)
+            time_per_step[seed] = mon.risk_times.copy()
             times_taken[seed] = sum(mon.risk_times)
             mon.risk_times.clear()
             trace_mapper = traces.TraceMapper(model)
@@ -516,4 +529,5 @@ def run_monitor(
         file.write(
             f"best_5_seeds={sorted(times_taken.items(), key=lambda item: item[1])[:5]}\n"
         )
-        file.write(f"all_times=\n{times_taken}\n")
+        file.write(f"all_times={times_taken}\n")
+        file.write(f"time_per_step={time_per_step}\n")

@@ -4,7 +4,8 @@ from multiprocessing import set_start_method
 import os
 from pathlib import Path
 import random
-from numpy import argsort
+import time
+import traceback
 import stormpy as sp
 import argparse
 
@@ -28,21 +29,21 @@ class Benchmark:
 # Benchmarks
 benchmarks = [
     Benchmark(
-        "airportA-7-400-40",
+        "airportA-7-400-60",
         "premise/examples/airportA-7.nm",
-        "DMAX=400,PMAX=40",
+        "DMAX=400,PMAX=60",
         'Pmax=? [F "crash"]',
     ),
     Benchmark(
-        "airportB-3-200-30",
+        "airportB-3-300-30",
         "premise/examples/airportB-3.nm",
-        "DMAX=200,PMAX=30",
+        "DMAX=300,PMAX=30",
         'Pmax=? [F "crash"]',
     ),
     Benchmark(
-        "airportB-7-200-30",
+        "airportB-7-300-30",
         "premise/examples/airportB-7.nm",
-        "DMAX=200,PMAX=30",
+        "DMAX=300,PMAX=30",
         'Pmax=? [F "crash"]',
     ),
     Benchmark(
@@ -52,16 +53,10 @@ benchmarks = [
         'Pmax=? [F<=12 "crash"]',
     ),
     Benchmark(
-        "evadeI-19",
+        "evadeI-20",
         "premise/examples/hidden-incentive.nm",
-        "N=19",
-        'Pmax=? [F<=20 "crash"]',
-    ),
-    Benchmark(
-        "evadeV-5-3",
-        "premise/examples/evade-monitoring.nm",
-        "N=5,RADIUS=3",
-        'Pmax=? [F<=12 "crash"]',
+        "N=20",
+        'Pmax=? [F<=21 "crash"]',
     ),
     Benchmark(
         "evadeV-9-3",
@@ -76,15 +71,15 @@ benchmarks = [
         'Pmax=? [F<=12 "crash"]',
     ),
     Benchmark(
-        "refuelA-35-80",
+        "refuelA-50-80",
         "premise/examples/refuel.nm",
-        "N=35,ENERGY=80",
+        "N=50,ENERGY=80",
         'Pmax=? [F<=20 "empty"]',
     ),
     Benchmark(
-        "refuelB-14-200",
+        "refuelB-30-200",
         "premise/examples/refuelB.nm",
-        "N=18,ENERGY=200",
+        "N=30,ENERGY=200",
         'Pmax=? [F<=8 "empty"]',
     ),
 ]
@@ -112,20 +107,26 @@ configurations = [
         custom_str=create_custom_str(exact, conditional_mode, threshold),
     )
     for exact in [False, True]
+    for force_exact in [False, True]
     for conditional_mode in ["bisection", "rejection", "restart"]
     for threshold in [0.2, None]
+    if not (not exact and force_exact)
 ]
 
 
 def run_benchmark_with_config(args):
     benchmark, config, seed, trace_length, promptness_deadline, stats_path = args
 
+    print(f"Running {benchmark.name} with {str(config)}")
+
     # Set logger to output to file in stats_path
-    log_file = stats_path / f"{benchmark.name}-{str(config._numstr)}.log"
+    log_file = stats_path / "logs" / f"{benchmark.name}-{str(config._numstr)}.log"
+    log_file.parent.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(
         filename=log_file,
         level=logging.DEBUG,
         format="%(asctime)s %(levelname)s %(filename)s:%(lineno)d %(message)s",
+        force=True,
     )
 
     environment = sp.Environment()
@@ -157,7 +158,7 @@ if __name__ == "__main__":
         "--number-traces", default=10, type=int, help="How many traces to run"
     )
     parser.add_argument(
-        "--trace-length", default=200, type=int, help="How long should the traces be?"
+        "--trace-length", default=250, type=int, help="How long should the traces be?"
     )
     parser.add_argument(
         "--promptness-deadline",
@@ -242,9 +243,26 @@ if __name__ == "__main__":
 
         set_start_method("spawn", True)
 
-        with Pool(args.cores) as pool:
-            for _ in tqdm(
-                pool.imap_unordered(run_benchmark_with_config, task_args),
-                total=len(task_args),
-            ):
-                pass
+        with Pool(args.cores, maxtasksperchild=1) as pool:
+            async_results = []
+            for arg in task_args:
+                async_result = pool.apply_async(run_benchmark_with_config, (arg,))
+                async_results.append(async_result)
+
+            bar = tqdm(total=len(async_results), smoothing=0)
+            while async_results:
+                for async_result in async_results:
+                    if async_result.ready():
+                        async_results.remove(async_result)
+                        bar.update(1)
+                        try:
+                            async_result.get()
+                        except Exception as e:
+                            print("Exception in worker process:")
+                            traceback.print_exc()
+                time.sleep(10)
+            # for _ in tqdm(
+            #     pool.imap_unordered(run_benchmark_with_config, task_args),
+            #     total=len(task_args),
+            # ):
+            #     pass

@@ -1,0 +1,643 @@
+{
+	"jani-version": 1,
+	"name": "cancer.jani",
+	"type": "dtmc",
+	"features": [ "derived-operators" ],
+"variables": [
+	{
+	"name": "Pollution",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "Pollution0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "Pollution1",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+	"name": "Smoker",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "Smoker0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "Smoker1",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+	"name": "Cancer",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "Cancer0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "Cancer1",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+	"name": "Xray",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "Xray0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "Xray1",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+	"name": "Dyspnoea",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "Dyspnoea0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "Dyspnoea1",
+		"transient": true,
+		"type": "bool"
+	}
+],
+"properties": [
+],
+"automata": [
+{
+	"name": "cancer",
+	"locations": [
+		{
+		"name": "loc0"
+		},
+		{
+		"name": "loc1",
+		"transient-values": [
+		{
+			"ref": "Pollution0",
+			"value": {
+				"op": "=",
+				"left": "Pollution",
+				"right": 0
+			}
+		},
+		{
+			"ref": "Pollution1",
+			"value": {
+				"op": "=",
+				"left": "Pollution",
+				"right": 1
+			}
+		}
+		]
+		},
+		{
+		"name": "loc2",
+		"transient-values": [
+		{
+			"ref": "Smoker0",
+			"value": {
+				"op": "=",
+				"left": "Smoker",
+				"right": 0
+			}
+		},
+		{
+			"ref": "Smoker1",
+			"value": {
+				"op": "=",
+				"left": "Smoker",
+				"right": 1
+			}
+		}
+		]
+		},
+		{
+		"name": "loc3",
+		"transient-values": [
+		{
+			"ref": "Cancer0",
+			"value": {
+				"op": "=",
+				"left": "Cancer",
+				"right": 0
+			}
+		},
+		{
+			"ref": "Cancer1",
+			"value": {
+				"op": "=",
+				"left": "Cancer",
+				"right": 1
+			}
+		}
+		]
+		},
+		{
+		"name": "loc4",
+		"transient-values": [
+		{
+			"ref": "Xray0",
+			"value": {
+				"op": "=",
+				"left": "Xray",
+				"right": 0
+			}
+		},
+		{
+			"ref": "Xray1",
+			"value": {
+				"op": "=",
+				"left": "Xray",
+				"right": 1
+			}
+		}
+		]
+		},
+		{
+		"name": "loc5",
+		"transient-values": [
+		{
+			"ref": "Dyspnoea0",
+			"value": {
+				"op": "=",
+				"left": "Dyspnoea",
+				"right": 0
+			}
+		},
+		{
+			"ref": "Dyspnoea1",
+			"value": {
+				"op": "=",
+				"left": "Dyspnoea",
+				"right": 1
+			}
+		}
+		]
+		}
+],
+	"initial-locations": ["loc0"],
+	"edges": [
+	{
+		"location": "loc0",
+		"destinations": [
+		{
+			"location": "loc1",
+			"probability": {"exp": 0.9},
+			"assignments": [
+			{
+				"ref": "Pollution",
+				"value": 0
+			}
+			]
+		},
+		{
+			"location": "loc1",
+			"probability": {"exp": 0.1},
+			"assignments": [
+			{
+				"ref": "Pollution",
+				"value": 1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc1",
+		"destinations": [
+		{
+			"location": "loc2",
+			"probability": {"exp": 0.3},
+			"assignments": [
+			{
+				"ref": "Smoker",
+				"value": 0
+			}
+			]
+		},
+		{
+			"location": "loc2",
+			"probability": {"exp": 0.7},
+			"assignments": [
+			{
+				"ref": "Smoker",
+				"value": 1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc2",
+		"guard": {
+		"exp": {
+				"op": "∧",
+				"left": {
+				"op": "=",
+				"left": "Smoker",
+				"right": 0
+				},
+				"right": {
+				"op": "=",
+				"left": "Pollution",
+				"right": 0
+				}
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.03},
+			"assignments": [
+			{
+				"ref": "Cancer",
+				"value": 0
+			},
+			{
+				"ref": "Pollution",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.97},
+			"assignments": [
+			{
+				"ref": "Cancer",
+				"value": 1
+			},
+			{
+				"ref": "Pollution",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc2",
+		"guard": {
+		"exp": {
+				"op": "∧",
+				"left": {
+				"op": "=",
+				"left": "Smoker",
+				"right": 0
+				},
+				"right": {
+				"op": "=",
+				"left": "Pollution",
+				"right": 1
+				}
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.05},
+			"assignments": [
+			{
+				"ref": "Cancer",
+				"value": 0
+			},
+			{
+				"ref": "Pollution",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.95},
+			"assignments": [
+			{
+				"ref": "Cancer",
+				"value": 1
+			},
+			{
+				"ref": "Pollution",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc2",
+		"guard": {
+		"exp": {
+				"op": "∧",
+				"left": {
+				"op": "=",
+				"left": "Smoker",
+				"right": 1
+				},
+				"right": {
+				"op": "=",
+				"left": "Pollution",
+				"right": 0
+				}
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.001},
+			"assignments": [
+			{
+				"ref": "Cancer",
+				"value": 0
+			},
+			{
+				"ref": "Pollution",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.999},
+			"assignments": [
+			{
+				"ref": "Cancer",
+				"value": 1
+			},
+			{
+				"ref": "Pollution",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc2",
+		"guard": {
+		"exp": {
+				"op": "∧",
+				"left": {
+				"op": "=",
+				"left": "Smoker",
+				"right": 1
+				},
+				"right": {
+				"op": "=",
+				"left": "Pollution",
+				"right": 1
+				}
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.02},
+			"assignments": [
+			{
+				"ref": "Cancer",
+				"value": 0
+			},
+			{
+				"ref": "Pollution",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.98},
+			"assignments": [
+			{
+				"ref": "Cancer",
+				"value": 1
+			},
+			{
+				"ref": "Pollution",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc3",
+		"guard": {
+		"exp": {
+				"op": "=",
+				"left": "Cancer",
+				"right": 0
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc4",
+			"probability": {"exp": 0.9},
+			"assignments": [
+			{
+				"ref": "Xray",
+				"value": 0
+			}
+			]
+		},
+		{
+			"location": "loc4",
+			"probability": {"exp": 0.1},
+			"assignments": [
+			{
+				"ref": "Xray",
+				"value": 1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc3",
+		"guard": {
+		"exp": {
+				"op": "=",
+				"left": "Cancer",
+				"right": 1
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc4",
+			"probability": {"exp": 0.2},
+			"assignments": [
+			{
+				"ref": "Xray",
+				"value": 0
+			}
+			]
+		},
+		{
+			"location": "loc4",
+			"probability": {"exp": 0.8},
+			"assignments": [
+			{
+				"ref": "Xray",
+				"value": 1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc4",
+		"guard": {
+		"exp": {
+				"op": "=",
+				"left": "Cancer",
+				"right": 0
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc5",
+			"probability": {"exp": 0.65},
+			"assignments": [
+			{
+				"ref": "Dyspnoea",
+				"value": 0
+			},
+			{
+				"ref": "Xray",
+				"value": -1
+			},
+			{
+				"ref": "Cancer",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc5",
+			"probability": {"exp": 0.35},
+			"assignments": [
+			{
+				"ref": "Dyspnoea",
+				"value": 1
+			},
+			{
+				"ref": "Xray",
+				"value": -1
+			},
+			{
+				"ref": "Cancer",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc4",
+		"guard": {
+		"exp": {
+				"op": "=",
+				"left": "Cancer",
+				"right": 1
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc5",
+			"probability": {"exp": 0.3},
+			"assignments": [
+			{
+				"ref": "Dyspnoea",
+				"value": 0
+			},
+			{
+				"ref": "Xray",
+				"value": -1
+			},
+			{
+				"ref": "Cancer",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc5",
+			"probability": {"exp": 0.7},
+			"assignments": [
+			{
+				"ref": "Dyspnoea",
+				"value": 1
+			},
+			{
+				"ref": "Xray",
+				"value": -1
+			},
+			{
+				"ref": "Cancer",
+				"value": -1
+			}
+			]
+		}
+		]
+	}
+	]
+}
+],
+"system": {
+	"elements": [ {"automaton": "cancer"} ]
+}
+}

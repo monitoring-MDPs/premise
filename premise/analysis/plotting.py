@@ -341,3 +341,83 @@ def plot_model_timing_boxplot(
     plt.tight_layout()
     plt.savefig(output_path / "timing_boxplot.png", dpi=150)
     plt.close()
+
+
+def plot_step_runtime_scatter(
+    data: MultiModelData,
+    model_name: str,
+    output_path: Path,
+) -> None:
+    """Plot step runtime for a single model, with configs as different colors.
+
+    X-axis: Step index
+    Y-axis: Time per step (log scale)
+    Colors: Different configs
+    Each seed is plotted as a connected line with scatter points.
+    """
+    if model_name not in data.data:
+        print(f"Model '{model_name}' not found")
+        return
+
+    model_configs = data.data[model_name]
+    configs = sorted(model_configs.keys())
+
+    if not configs:
+        return
+
+    fig, ax = plt.subplots(figsize=(14, 8))
+
+    has_data = False
+
+    for j, config in enumerate(configs):
+        stats = model_configs[config]
+        if not stats.time_per_step:
+            continue
+
+        color, marker = get_model_style(j)
+        first_seed = True
+
+        # Plot each seed as a connected line
+        for seed, step_times in stats.time_per_step.items():
+            if not step_times:
+                continue
+
+            has_data = True
+            step_indices = list(range(len(step_times)))
+
+            # Plot line connecting points of same seed
+            ax.plot(
+                step_indices,
+                step_times,
+                color=color,
+                alpha=0.3,
+                linewidth=0.8,
+            )
+            # Plot scatter points
+            ax.scatter(
+                step_indices,
+                step_times,
+                c=color,
+                marker=marker,
+                label=config if first_seed else None,
+                alpha=0.5,
+                s=10,
+            )
+            first_seed = False
+
+    if not has_data:
+        plt.close()
+        return
+
+    ax.set_xlabel("Step Index")
+    ax.set_ylabel("Time per Step (s)")
+    ax.set_yscale("log")
+    ax.set_title(f"Step Runtime by Index - {model_name}")
+    ax.legend(title="Configuration", bbox_to_anchor=(1.02, 1), loc="upper left")
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+
+    safe_model = model_name.replace("/", "-").replace("=", "-")
+    plt.savefig(output_path / f"step_runtime_{safe_model}.png", dpi=150)
+    plt.close()

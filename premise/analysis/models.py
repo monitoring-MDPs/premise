@@ -22,6 +22,7 @@ class FolderStats:
     min_time: Optional[float] = None
     avg_time: Optional[float] = None
     seed_times: dict[int, float] = field(default_factory=dict)
+    time_per_step: dict[int, list[float]] = field(default_factory=dict)
     options: Optional[str] = None
 
     @property

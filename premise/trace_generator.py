@@ -1,5 +1,7 @@
 import logging
+import os
 from pathlib import Path
+import shutil
 
 import stormpy as sp
 import stormpy.simulator
@@ -116,12 +118,41 @@ def pre_generate_traces(
 ):
     print(f"Pre-generating traces for model {path}...")
 
+    newest_timestamp = sorted(
+        [
+            folder.name.replace("exp-", "")
+            for folder in base_cache_path.parent.glob("exp-*")
+        ]
+    )[-2]
+    #  The newest experiment is the current one
+    previous_cache_path = (
+        base_cache_path.parent / f"exp-{newest_timestamp}" / f"simulator-caches-{name}"
+    )
+    cache_path = base_cache_path / f"simulator-caches-{name}"
+    os.makedirs(cache_path, exist_ok=True)
+
+    cached_seeds = []
+    if previous_cache_path.exists():
+        # copy existing caches
+        for seed in seed_list:
+            previous_cache_file = previous_cache_path / f"simulator-cache-{seed}"
+            new_cache_file = cache_path / f"simulator-cache-{seed}"
+            if previous_cache_file.exists() and not new_cache_file.exists():
+                shutil.copy(previous_cache_file, new_cache_file)
+                cached_seeds.append(seed)
+
+    if len(cached_seeds) == len(seed_list):
+        print("All traces already cached.")
+        return
+
     model, _ = models.build_model_and_risk(
         models.ModelDescription(path, constants, risk_property), options
     )
 
-    cache_path = base_cache_path / f"simulator-caches-{name}"
     for seed in seed_list:
+        if seed in cached_seeds:
+            continue
+
         sim = sp.simulator.create_simulator(model, seed)
         stg = FixedLengthSimulationTraceGenerator(sim, trace_length)
         cache_file = cache_path / f"simulator-cache-{seed}"

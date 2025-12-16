@@ -48,6 +48,7 @@ def parse_stats_file(stats_path: Path) -> dict:
         "min_time": None,
         "avg_time": None,
         "seed_times": {},
+        "time_per_step": {},
         "options": None,
     }
 
@@ -59,26 +60,6 @@ def parse_stats_file(stats_path: Path) -> dict:
         for line in f:
             line = line.strip()
             if not line:
-                continue
-
-            if next_line_all_times:
-                # Parse the dictionary of seed times
-                try:
-                    # Handle format: {seed: time, seed: time, ...}
-                    times_str = line.strip()
-                    if times_str.startswith("{") and times_str.endswith("}"):
-                        times_content = times_str[1:-1]
-                        if times_content:
-                            for pair in times_content.split(","):
-                                pair = pair.strip()
-                                if ":" in pair:
-                                    seed_str, time_str = pair.split(":", 1)
-                                    result["seed_times"][int(seed_str.strip())] = float(
-                                        time_str.strip()
-                                    )
-                except (ValueError, SyntaxError):
-                    pass
-                next_line_all_times = False
                 continue
 
             if "=" in line:
@@ -103,7 +84,13 @@ def parse_stats_file(stats_path: Path) -> dict:
                 elif key == "options":
                     result["options"] = value
                 elif key == "all_times":
-                    next_line_all_times = True
+                    for pair in value.strip()[1:-1].split(","):
+                        seed_str, time_str = pair.strip().split(":", 1)
+                        result["seed_times"][int(seed_str.strip())] = float(
+                            time_str.strip()
+                        )
+                elif key == "time_per_step":
+                    result["time_per_step"] = eval(value)
 
     return result
 
@@ -129,6 +116,7 @@ def parse_folder(folder: Path) -> FolderStats:
         min_time=parsed["min_time"],
         avg_time=parsed["avg_time"],
         seed_times=parsed["seed_times"],
+        time_per_step=parsed["time_per_step"],
         options=parsed["options"],
     )
 

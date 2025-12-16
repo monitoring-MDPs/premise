@@ -21,6 +21,7 @@ if __name__ == "__main__" and __package__ is None:
         plot_all_config_comparisons,
         plot_speedup_heatmap,
         plot_model_timing_boxplot,
+        plot_step_runtime_scatter,
     )
     from correctness import (
         check_correctness as check_correctness_func,
@@ -35,6 +36,7 @@ else:
         plot_all_config_comparisons,
         plot_speedup_heatmap,
         plot_model_timing_boxplot,
+        plot_step_runtime_scatter,
     )
     from .correctness import (
         check_correctness as check_correctness_func,
@@ -208,7 +210,12 @@ def compare(
         plot_speedup_heatmap(data, baseline_config, output_path)
         print(f"  - Generated speedup heatmap vs {baseline_config}")
 
-    # Scatter plots for all config pairs
+    # Step runtime scatter plots for each model
+    for model_name in sorted(data.models):
+        plot_step_runtime_scatter(data, model_name, output_path)
+    print(f"  - Generated step runtime scatter plots for {len(data.models)} models")
+
+    # Scatter plots for all config pairs, do these last as they take longest
     plot_all_config_comparisons(data, output_path)
     print("  - Generated config comparison scatter plots")
 

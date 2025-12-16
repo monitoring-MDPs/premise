@@ -1,0 +1,675 @@
+{
+	"jani-version": 1,
+	"name": "earthquake.jani",
+	"type": "dtmc",
+	"features": [ "derived-operators" ],
+"variables": [
+	{
+	"name": "Earthquake",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "Earthquake0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "Earthquake1",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+	"name": "Burglary",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "Burglary0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "Burglary1",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+	"name": "Alarm",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "Alarm0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "Alarm1",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+	"name": "JohnCalls",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "JohnCalls0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "JohnCalls1",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+	"name": "MaryCalls",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "MaryCalls0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "MaryCalls1",
+		"transient": true,
+		"type": "bool"
+	}
+],
+"properties": [
+],
+"automata": [
+{
+	"name": "earthquake",
+	"locations": [
+		{
+		"name": "loc0"
+		},
+		{
+		"name": "loc1",
+		"transient-values": [
+		{
+			"ref": "Earthquake0",
+			"value": {
+				"op": "=",
+				"left": "Earthquake",
+				"right": 0
+			}
+		},
+		{
+			"ref": "Earthquake1",
+			"value": {
+				"op": "=",
+				"left": "Earthquake",
+				"right": 1
+			}
+		}
+		]
+		},
+		{
+		"name": "loc2",
+		"transient-values": [
+		{
+			"ref": "Burglary0",
+			"value": {
+				"op": "=",
+				"left": "Burglary",
+				"right": 0
+			}
+		},
+		{
+			"ref": "Burglary1",
+			"value": {
+				"op": "=",
+				"left": "Burglary",
+				"right": 1
+			}
+		}
+		]
+		},
+		{
+		"name": "loc3",
+		"transient-values": [
+		{
+			"ref": "Alarm0",
+			"value": {
+				"op": "=",
+				"left": "Alarm",
+				"right": 0
+			}
+		},
+		{
+			"ref": "Alarm1",
+			"value": {
+				"op": "=",
+				"left": "Alarm",
+				"right": 1
+			}
+		}
+		]
+		},
+		{
+		"name": "loc4",
+		"transient-values": [
+		{
+			"ref": "JohnCalls0",
+			"value": {
+				"op": "=",
+				"left": "JohnCalls",
+				"right": 0
+			}
+		},
+		{
+			"ref": "JohnCalls1",
+			"value": {
+				"op": "=",
+				"left": "JohnCalls",
+				"right": 1
+			}
+		}
+		]
+		},
+		{
+		"name": "loc5",
+		"transient-values": [
+		{
+			"ref": "MaryCalls0",
+			"value": {
+				"op": "=",
+				"left": "MaryCalls",
+				"right": 0
+			}
+		},
+		{
+			"ref": "MaryCalls1",
+			"value": {
+				"op": "=",
+				"left": "MaryCalls",
+				"right": 1
+			}
+		}
+		]
+		}
+],
+	"initial-locations": ["loc0"],
+	"edges": [
+	{
+		"location": "loc0",
+		"destinations": [
+		{
+			"location": "loc1",
+			"probability": {"exp": 0.02},
+			"assignments": [
+			{
+				"ref": "Earthquake",
+				"value": 0
+			}
+			]
+		},
+		{
+			"location": "loc1",
+			"probability": {"exp": 0.98},
+			"assignments": [
+			{
+				"ref": "Earthquake",
+				"value": 1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc1",
+		"destinations": [
+		{
+			"location": "loc2",
+			"probability": {"exp": 0.01},
+			"assignments": [
+			{
+				"ref": "Burglary",
+				"value": 0
+			}
+			]
+		},
+		{
+			"location": "loc2",
+			"probability": {"exp": 0.99},
+			"assignments": [
+			{
+				"ref": "Burglary",
+				"value": 1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc2",
+		"guard": {
+		"exp": {
+				"op": "∧",
+				"left": {
+				"op": "=",
+				"left": "Earthquake",
+				"right": 0
+				},
+				"right": {
+				"op": "=",
+				"left": "Burglary",
+				"right": 0
+				}
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.95},
+			"assignments": [
+			{
+				"ref": "Alarm",
+				"value": 0
+			},
+			{
+				"ref": "Burglary",
+				"value": -1
+			},
+			{
+				"ref": "Earthquake",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.05},
+			"assignments": [
+			{
+				"ref": "Alarm",
+				"value": 1
+			},
+			{
+				"ref": "Burglary",
+				"value": -1
+			},
+			{
+				"ref": "Earthquake",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc2",
+		"guard": {
+		"exp": {
+				"op": "∧",
+				"left": {
+				"op": "=",
+				"left": "Earthquake",
+				"right": 0
+				},
+				"right": {
+				"op": "=",
+				"left": "Burglary",
+				"right": 1
+				}
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.29},
+			"assignments": [
+			{
+				"ref": "Alarm",
+				"value": 0
+			},
+			{
+				"ref": "Burglary",
+				"value": -1
+			},
+			{
+				"ref": "Earthquake",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.71},
+			"assignments": [
+			{
+				"ref": "Alarm",
+				"value": 1
+			},
+			{
+				"ref": "Burglary",
+				"value": -1
+			},
+			{
+				"ref": "Earthquake",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc2",
+		"guard": {
+		"exp": {
+				"op": "∧",
+				"left": {
+				"op": "=",
+				"left": "Earthquake",
+				"right": 1
+				},
+				"right": {
+				"op": "=",
+				"left": "Burglary",
+				"right": 0
+				}
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.94},
+			"assignments": [
+			{
+				"ref": "Alarm",
+				"value": 0
+			},
+			{
+				"ref": "Burglary",
+				"value": -1
+			},
+			{
+				"ref": "Earthquake",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.06},
+			"assignments": [
+			{
+				"ref": "Alarm",
+				"value": 1
+			},
+			{
+				"ref": "Burglary",
+				"value": -1
+			},
+			{
+				"ref": "Earthquake",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc2",
+		"guard": {
+		"exp": {
+				"op": "∧",
+				"left": {
+				"op": "=",
+				"left": "Earthquake",
+				"right": 1
+				},
+				"right": {
+				"op": "=",
+				"left": "Burglary",
+				"right": 1
+				}
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.001},
+			"assignments": [
+			{
+				"ref": "Alarm",
+				"value": 0
+			},
+			{
+				"ref": "Burglary",
+				"value": -1
+			},
+			{
+				"ref": "Earthquake",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.999},
+			"assignments": [
+			{
+				"ref": "Alarm",
+				"value": 1
+			},
+			{
+				"ref": "Burglary",
+				"value": -1
+			},
+			{
+				"ref": "Earthquake",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc3",
+		"guard": {
+		"exp": {
+				"op": "=",
+				"left": "Alarm",
+				"right": 0
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc4",
+			"probability": {"exp": 0.9},
+			"assignments": [
+			{
+				"ref": "JohnCalls",
+				"value": 0
+			}
+			]
+		},
+		{
+			"location": "loc4",
+			"probability": {"exp": 0.1},
+			"assignments": [
+			{
+				"ref": "JohnCalls",
+				"value": 1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc3",
+		"guard": {
+		"exp": {
+				"op": "=",
+				"left": "Alarm",
+				"right": 1
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc4",
+			"probability": {"exp": 0.05},
+			"assignments": [
+			{
+				"ref": "JohnCalls",
+				"value": 0
+			}
+			]
+		},
+		{
+			"location": "loc4",
+			"probability": {"exp": 0.95},
+			"assignments": [
+			{
+				"ref": "JohnCalls",
+				"value": 1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc4",
+		"guard": {
+		"exp": {
+				"op": "=",
+				"left": "Alarm",
+				"right": 0
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc5",
+			"probability": {"exp": 0.7},
+			"assignments": [
+			{
+				"ref": "MaryCalls",
+				"value": 0
+			},
+			{
+				"ref": "JohnCalls",
+				"value": -1
+			},
+			{
+				"ref": "Alarm",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc5",
+			"probability": {"exp": 0.3},
+			"assignments": [
+			{
+				"ref": "MaryCalls",
+				"value": 1
+			},
+			{
+				"ref": "JohnCalls",
+				"value": -1
+			},
+			{
+				"ref": "Alarm",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc4",
+		"guard": {
+		"exp": {
+				"op": "=",
+				"left": "Alarm",
+				"right": 1
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc5",
+			"probability": {"exp": 0.01},
+			"assignments": [
+			{
+				"ref": "MaryCalls",
+				"value": 0
+			},
+			{
+				"ref": "JohnCalls",
+				"value": -1
+			},
+			{
+				"ref": "Alarm",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc5",
+			"probability": {"exp": 0.99},
+			"assignments": [
+			{
+				"ref": "MaryCalls",
+				"value": 1
+			},
+			{
+				"ref": "JohnCalls",
+				"value": -1
+			},
+			{
+				"ref": "Alarm",
+				"value": -1
+			}
+			]
+		}
+		]
+	}
+	]
+}
+],
+"system": {
+	"elements": [ {"automaton": "earthquake"} ]
+}
+}

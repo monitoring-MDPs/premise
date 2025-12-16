@@ -1,0 +1,1124 @@
+{
+	"jani-version": 1,
+	"name": "asia.jani",
+	"type": "dtmc",
+	"features": [ "derived-operators" ],
+"variables": [
+	{
+	"name": "asia",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "asia0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "asia1",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+	"name": "tub",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "tub0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "tub1",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+	"name": "smoke",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "smoke0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "smoke1",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+	"name": "lung",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "lung0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "lung1",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+	"name": "either",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "either0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "either1",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+	"name": "bronc",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "bronc0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "bronc1",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+	"name": "dysp",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "dysp0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "dysp1",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+	"name": "xray",
+	"type": {
+		"base": "int",
+		"kind": "bounded",
+		"lower-bound": -1,
+		"upper-bound": 1
+	},
+	"initial-value": -1
+	},
+		{
+		"initial-value": false,
+		"name": "xray0",
+		"transient": true,
+		"type": "bool"
+	},
+	{
+		"initial-value": false,
+		"name": "xray1",
+		"transient": true,
+		"type": "bool"
+	}
+],
+"properties": [
+],
+"automata": [
+{
+	"name": "asia",
+	"locations": [
+		{
+		"name": "loc0"
+		},
+		{
+		"name": "loc1",
+		"transient-values": [
+		{
+			"ref": "asia0",
+			"value": {
+				"op": "=",
+				"left": "asia",
+				"right": 0
+			}
+		},
+		{
+			"ref": "asia1",
+			"value": {
+				"op": "=",
+				"left": "asia",
+				"right": 1
+			}
+		}
+		]
+		},
+		{
+		"name": "loc2",
+		"transient-values": [
+		{
+			"ref": "tub0",
+			"value": {
+				"op": "=",
+				"left": "tub",
+				"right": 0
+			}
+		},
+		{
+			"ref": "tub1",
+			"value": {
+				"op": "=",
+				"left": "tub",
+				"right": 1
+			}
+		}
+		]
+		},
+		{
+		"name": "loc3",
+		"transient-values": [
+		{
+			"ref": "smoke0",
+			"value": {
+				"op": "=",
+				"left": "smoke",
+				"right": 0
+			}
+		},
+		{
+			"ref": "smoke1",
+			"value": {
+				"op": "=",
+				"left": "smoke",
+				"right": 1
+			}
+		}
+		]
+		},
+		{
+		"name": "loc4",
+		"transient-values": [
+		{
+			"ref": "lung0",
+			"value": {
+				"op": "=",
+				"left": "lung",
+				"right": 0
+			}
+		},
+		{
+			"ref": "lung1",
+			"value": {
+				"op": "=",
+				"left": "lung",
+				"right": 1
+			}
+		}
+		]
+		},
+		{
+		"name": "loc5",
+		"transient-values": [
+		{
+			"ref": "either0",
+			"value": {
+				"op": "=",
+				"left": "either",
+				"right": 0
+			}
+		},
+		{
+			"ref": "either1",
+			"value": {
+				"op": "=",
+				"left": "either",
+				"right": 1
+			}
+		}
+		]
+		},
+		{
+		"name": "loc6",
+		"transient-values": [
+		{
+			"ref": "bronc0",
+			"value": {
+				"op": "=",
+				"left": "bronc",
+				"right": 0
+			}
+		},
+		{
+			"ref": "bronc1",
+			"value": {
+				"op": "=",
+				"left": "bronc",
+				"right": 1
+			}
+		}
+		]
+		},
+		{
+		"name": "loc7",
+		"transient-values": [
+		{
+			"ref": "dysp0",
+			"value": {
+				"op": "=",
+				"left": "dysp",
+				"right": 0
+			}
+		},
+		{
+			"ref": "dysp1",
+			"value": {
+				"op": "=",
+				"left": "dysp",
+				"right": 1
+			}
+		}
+		]
+		},
+		{
+		"name": "loc8",
+		"transient-values": [
+		{
+			"ref": "xray0",
+			"value": {
+				"op": "=",
+				"left": "xray",
+				"right": 0
+			}
+		},
+		{
+			"ref": "xray1",
+			"value": {
+				"op": "=",
+				"left": "xray",
+				"right": 1
+			}
+		}
+		]
+		}
+],
+	"initial-locations": ["loc0"],
+	"edges": [
+	{
+		"location": "loc0",
+		"destinations": [
+		{
+			"location": "loc1",
+			"probability": {"exp": 0.01},
+			"assignments": [
+			{
+				"ref": "asia",
+				"value": 0
+			}
+			]
+		},
+		{
+			"location": "loc1",
+			"probability": {"exp": 0.99},
+			"assignments": [
+			{
+				"ref": "asia",
+				"value": 1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc1",
+		"guard": {
+		"exp": {
+				"op": "=",
+				"left": "asia",
+				"right": 0
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc2",
+			"probability": {"exp": 0.05},
+			"assignments": [
+			{
+				"ref": "tub",
+				"value": 0
+			},
+			{
+				"ref": "asia",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc2",
+			"probability": {"exp": 0.95},
+			"assignments": [
+			{
+				"ref": "tub",
+				"value": 1
+			},
+			{
+				"ref": "asia",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc1",
+		"guard": {
+		"exp": {
+				"op": "=",
+				"left": "asia",
+				"right": 1
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc2",
+			"probability": {"exp": 0.01},
+			"assignments": [
+			{
+				"ref": "tub",
+				"value": 0
+			},
+			{
+				"ref": "asia",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc2",
+			"probability": {"exp": 0.99},
+			"assignments": [
+			{
+				"ref": "tub",
+				"value": 1
+			},
+			{
+				"ref": "asia",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc2",
+		"destinations": [
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.5},
+			"assignments": [
+			{
+				"ref": "smoke",
+				"value": 0
+			}
+			]
+		},
+		{
+			"location": "loc3",
+			"probability": {"exp": 0.5},
+			"assignments": [
+			{
+				"ref": "smoke",
+				"value": 1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc3",
+		"guard": {
+		"exp": {
+				"op": "=",
+				"left": "smoke",
+				"right": 0
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc4",
+			"probability": {"exp": 0.1},
+			"assignments": [
+			{
+				"ref": "lung",
+				"value": 0
+			}
+			]
+		},
+		{
+			"location": "loc4",
+			"probability": {"exp": 0.9},
+			"assignments": [
+			{
+				"ref": "lung",
+				"value": 1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc3",
+		"guard": {
+		"exp": {
+				"op": "=",
+				"left": "smoke",
+				"right": 1
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc4",
+			"probability": {"exp": 0.01},
+			"assignments": [
+			{
+				"ref": "lung",
+				"value": 0
+			}
+			]
+		},
+		{
+			"location": "loc4",
+			"probability": {"exp": 0.99},
+			"assignments": [
+			{
+				"ref": "lung",
+				"value": 1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc4",
+		"guard": {
+		"exp": {
+				"op": "∧",
+				"left": {
+				"op": "=",
+				"left": "tub",
+				"right": 0
+				},
+				"right": {
+				"op": "=",
+				"left": "lung",
+				"right": 0
+				}
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc5",
+			"probability": {"exp": 1},
+			"assignments": [
+			{
+				"ref": "either",
+				"value": 0
+			},
+			{
+				"ref": "lung",
+				"value": -1
+			},
+			{
+				"ref": "tub",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc5",
+			"probability": {"exp": 0.0},
+			"assignments": [
+			{
+				"ref": "either",
+				"value": 1
+			},
+			{
+				"ref": "lung",
+				"value": -1
+			},
+			{
+				"ref": "tub",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc4",
+		"guard": {
+		"exp": {
+				"op": "∧",
+				"left": {
+				"op": "=",
+				"left": "tub",
+				"right": 0
+				},
+				"right": {
+				"op": "=",
+				"left": "lung",
+				"right": 1
+				}
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc5",
+			"probability": {"exp": 1},
+			"assignments": [
+			{
+				"ref": "either",
+				"value": 0
+			},
+			{
+				"ref": "lung",
+				"value": -1
+			},
+			{
+				"ref": "tub",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc5",
+			"probability": {"exp": 0.0},
+			"assignments": [
+			{
+				"ref": "either",
+				"value": 1
+			},
+			{
+				"ref": "lung",
+				"value": -1
+			},
+			{
+				"ref": "tub",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc4",
+		"guard": {
+		"exp": {
+				"op": "∧",
+				"left": {
+				"op": "=",
+				"left": "tub",
+				"right": 1
+				},
+				"right": {
+				"op": "=",
+				"left": "lung",
+				"right": 0
+				}
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc5",
+			"probability": {"exp": 1},
+			"assignments": [
+			{
+				"ref": "either",
+				"value": 0
+			},
+			{
+				"ref": "lung",
+				"value": -1
+			},
+			{
+				"ref": "tub",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc5",
+			"probability": {"exp": 0.0},
+			"assignments": [
+			{
+				"ref": "either",
+				"value": 1
+			},
+			{
+				"ref": "lung",
+				"value": -1
+			},
+			{
+				"ref": "tub",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc4",
+		"guard": {
+		"exp": {
+				"op": "∧",
+				"left": {
+				"op": "=",
+				"left": "tub",
+				"right": 1
+				},
+				"right": {
+				"op": "=",
+				"left": "lung",
+				"right": 1
+				}
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc5",
+			"probability": {"exp": 0.0},
+			"assignments": [
+			{
+				"ref": "either",
+				"value": 0
+			},
+			{
+				"ref": "lung",
+				"value": -1
+			},
+			{
+				"ref": "tub",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc5",
+			"probability": {"exp": 1},
+			"assignments": [
+			{
+				"ref": "either",
+				"value": 1
+			},
+			{
+				"ref": "lung",
+				"value": -1
+			},
+			{
+				"ref": "tub",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc5",
+		"guard": {
+		"exp": {
+				"op": "=",
+				"left": "smoke",
+				"right": 0
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc6",
+			"probability": {"exp": 0.6},
+			"assignments": [
+			{
+				"ref": "bronc",
+				"value": 0
+			},
+			{
+				"ref": "smoke",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc6",
+			"probability": {"exp": 0.4},
+			"assignments": [
+			{
+				"ref": "bronc",
+				"value": 1
+			},
+			{
+				"ref": "smoke",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc5",
+		"guard": {
+		"exp": {
+				"op": "=",
+				"left": "smoke",
+				"right": 1
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc6",
+			"probability": {"exp": 0.3},
+			"assignments": [
+			{
+				"ref": "bronc",
+				"value": 0
+			},
+			{
+				"ref": "smoke",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc6",
+			"probability": {"exp": 0.7},
+			"assignments": [
+			{
+				"ref": "bronc",
+				"value": 1
+			},
+			{
+				"ref": "smoke",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc6",
+		"guard": {
+		"exp": {
+				"op": "∧",
+				"left": {
+				"op": "=",
+				"left": "either",
+				"right": 0
+				},
+				"right": {
+				"op": "=",
+				"left": "bronc",
+				"right": 0
+				}
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc7",
+			"probability": {"exp": 0.9},
+			"assignments": [
+			{
+				"ref": "dysp",
+				"value": 0
+			}
+			]
+		},
+		{
+			"location": "loc7",
+			"probability": {"exp": 0.1},
+			"assignments": [
+			{
+				"ref": "dysp",
+				"value": 1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc6",
+		"guard": {
+		"exp": {
+				"op": "∧",
+				"left": {
+				"op": "=",
+				"left": "either",
+				"right": 0
+				},
+				"right": {
+				"op": "=",
+				"left": "bronc",
+				"right": 1
+				}
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc7",
+			"probability": {"exp": 0.7},
+			"assignments": [
+			{
+				"ref": "dysp",
+				"value": 0
+			}
+			]
+		},
+		{
+			"location": "loc7",
+			"probability": {"exp": 0.3},
+			"assignments": [
+			{
+				"ref": "dysp",
+				"value": 1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc6",
+		"guard": {
+		"exp": {
+				"op": "∧",
+				"left": {
+				"op": "=",
+				"left": "either",
+				"right": 1
+				},
+				"right": {
+				"op": "=",
+				"left": "bronc",
+				"right": 0
+				}
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc7",
+			"probability": {"exp": 0.8},
+			"assignments": [
+			{
+				"ref": "dysp",
+				"value": 0
+			}
+			]
+		},
+		{
+			"location": "loc7",
+			"probability": {"exp": 0.2},
+			"assignments": [
+			{
+				"ref": "dysp",
+				"value": 1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc6",
+		"guard": {
+		"exp": {
+				"op": "∧",
+				"left": {
+				"op": "=",
+				"left": "either",
+				"right": 1
+				},
+				"right": {
+				"op": "=",
+				"left": "bronc",
+				"right": 1
+				}
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc7",
+			"probability": {"exp": 0.1},
+			"assignments": [
+			{
+				"ref": "dysp",
+				"value": 0
+			}
+			]
+		},
+		{
+			"location": "loc7",
+			"probability": {"exp": 0.9},
+			"assignments": [
+			{
+				"ref": "dysp",
+				"value": 1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc7",
+		"guard": {
+		"exp": {
+				"op": "=",
+				"left": "either",
+				"right": 0
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc8",
+			"probability": {"exp": 0.98},
+			"assignments": [
+			{
+				"ref": "xray",
+				"value": 0
+			},
+			{
+				"ref": "dysp",
+				"value": -1
+			},
+			{
+				"ref": "either",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc8",
+			"probability": {"exp": 0.02},
+			"assignments": [
+			{
+				"ref": "xray",
+				"value": 1
+			},
+			{
+				"ref": "dysp",
+				"value": -1
+			},
+			{
+				"ref": "either",
+				"value": -1
+			}
+			]
+		}
+		]
+	},
+	{
+		"location": "loc7",
+		"guard": {
+		"exp": {
+				"op": "=",
+				"left": "either",
+				"right": 1
+		}
+		},
+		"destinations": [
+		{
+			"location": "loc8",
+			"probability": {"exp": 0.05},
+			"assignments": [
+			{
+				"ref": "xray",
+				"value": 0
+			},
+			{
+				"ref": "dysp",
+				"value": -1
+			},
+			{
+				"ref": "either",
+				"value": -1
+			}
+			]
+		},
+		{
+			"location": "loc8",
+			"probability": {"exp": 0.95},
+			"assignments": [
+			{
+				"ref": "xray",
+				"value": 1
+			},
+			{
+				"ref": "dysp",
+				"value": -1
+			},
+			{
+				"ref": "either",
+				"value": -1
+			}
+			]
+		}
+		]
+	}
+	]
+}
+],
+"system": {
+	"elements": [ {"automaton": "asia"} ]
+}
+}
