@@ -4,23 +4,112 @@ Plot benchmark results from JSON file.
 """
 
 import argparse
-from ast import mod
+from email.mime import base
+from itertools import product
 import json
+from math import comb
 from pathlib import Path
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from matplotlib.patches import Rectangle
 import numpy as np
 
 from benchmark import PROPERTIES
+
+# Configuration: Colormap for model colors
+COLORMAP_NAME = "tab20"  # Can be changed to any matplotlib discrete colormap (e.g., 'tab10', 'Set3', 'Paired')
+
+# Arithmetic mode display names
+ARITHMETIC_MODE_NAMES = {
+    "exact": "exact",
+    "float": "float",
+    "force-exact": "$\\varepsilon$-exact",
+}
+
+# Query type display names
+QUERY_TYPE_NAMES = {
+    "quantitative": "quantitative",
+    "bounded": "qualitative",
+}
+
+# Model display names (maps internal names to display names)
+# Only list models that need renaming; others will use their internal name
+MODEL_NAMES = {
+    # Add custom model name mappings here
+    "brp-N=16-MAX=8-PCHAN=0.010": "BRP-0.010",
+    "brp-N=16-MAX=8-PCHAN=0.015": "BRP-0.015",
+    "brp-N=16-MAX=8-PCHAN=0.020": "BRP-0.020",
+    "brp-N=16-MAX=8-PCHAN=0.025": "BRP-0.025",
+    "brp-N=16-MAX=8-PCHAN=0.030": "BRP-0.030",
+    "brp-N=16-MAX=8-PCHAN=0.035": "BRP-0.035",
+    "brp-N=16-MAX=8-PCHAN=0.040": "BRP-0.040",
+    "brp-N=16-MAX=8-PCHAN=0.045": "BRP-0.045",
+    "brp-N=16-MAX=8-PCHAN=0.050": "BRP-0.050",
+}
+
+
+def get_arithmetic_mode_name(mode):
+    """Get the display name for an arithmetic mode.
+
+    Args:
+        mode: Internal arithmetic mode name
+
+    Returns:
+        Display name for the mode
+    """
+    return ARITHMETIC_MODE_NAMES[mode]
+
+
+def get_query_type_name(query_type):
+    """Get the display name for a query type.
+
+    Args:
+        query_type: Internal query type name
+
+    Returns:
+        Display name for the query type
+    """
+    return QUERY_TYPE_NAMES[query_type]
+
+
+def get_model_name(model_name):
+    """Get the display name for a model.
+
+    Args:
+        model_name: Internal model name
+
+    Returns:
+        Display name for the model (with underscores escaped for LaTeX)
+    """
+    # Get custom name if defined, otherwise use original
+    display_name = MODEL_NAMES.get(model_name, model_name)
+    # Escape underscores for LaTeX
+    return display_name.replace("_", "\\_")
+
+
+def get_model_colors(models):
+    """Get colors for models using the configured colormap.
+
+    Args:
+        models: List of model names
+
+    Returns:
+        Dictionary mapping model names to colors
+    """
+    import matplotlib
+
+    cmap = matplotlib.colormaps.get_cmap(COLORMAP_NAME)
+    num_models = len(models)
+    # For qualitative colormaps like tab20, use discrete indices
+    colors = [cmap(i % cmap.N) for i in range(num_models)]
+    return {model: colors[i] for i, model in enumerate(models)}
 
 
 def get_properties_from_results(results):
     """Extract properties from results data, grouped by model."""
     model_props = {}
     for r in results:
-        model = r.get("model")
-        path_formula = r.get("path_formula")
+        model = r["model"]
+        path_formula = r["path_formula"]
         if model and path_formula:
             if model not in model_props:
                 model_props[model] = set()
@@ -55,7 +144,7 @@ def exclude_model(model_name: str, plot_type: str):
 def load_results(json_file):
     """Load benchmark results from JSON file."""
     with open(json_file, "r") as f:
-        return list(r for r in json.load(f) if r is not None)
+        return list(r for r in json.load(f) if r is not None and not r["unfinished"])
 
 
 def validate_results(results):
@@ -71,8 +160,9 @@ def validate_results(results):
     # Group results by model and query_type
     by_model_query = {}
     for r in results:
-        if not r.get("success") or r.get("timeout"):
+        if not r["success"] or r["timeout"]:
             continue
+
         key = (r["model"], r["query_type"], r["path_formula"])
         if key not in by_model_query:
             by_model_query[key] = []
@@ -82,22 +172,21 @@ def validate_results(results):
         if query_type == "quantitative":
             # For quantitative queries, use majority voting on exact arithmetic values
             exact_results = [
-                r for r in group_results if r.get("arithmetic_mode") == "force-exact"
+                r for r in group_results if r["arithmetic_mode"] == "force-exact"
             ]
 
             if not exact_results:
-                print(
-                    f"No force-exact results for model {model}, query {query_type}, path_formula {path_formula}, skipping validation"
+                raise ValueError(
+                    f"No force-exact results for model {model}, query {query_type}, path_formula {path_formula}"
                 )
-                continue
 
             # Get majority value (round to 10 decimal places for comparison)
             exact_values = [round(r["value"], 10) for r in exact_results]
             value_counts = Counter(exact_values)
             majority_value, count = value_counts.most_common(1)[0]
-            if count < 2:
+            if count < 2 and len(value_counts) > 1:
                 print(
-                    f"No majority value for model {model}, query {query_type}, path_formula {path_formula}, skipping validation"
+                    f"No majority value for model {model}, query {query_type}, path_formula {path_formula}: {value_counts}"
                 )
 
             # Mark all results as correct/incorrect based on majority
@@ -128,15 +217,19 @@ def validate_results(results):
         elif query_type == "bounded":
             # For bounded queries, check if they match the threshold comparison
             # First get the correct quantitative value for this model
-            quant_results = by_model_query.get(
-                (model, "quantitative", path_formula), []
-            )
+            if (model, "quantitative", path_formula) not in by_model_query:
+                raise ValueError(
+                    f"No quantitative results found for bounded query: model={model}, path_formula={path_formula}"
+                )
+            quant_results = by_model_query[(model, "quantitative", path_formula)]
             exact_quant = [
-                r for r in quant_results if r.get("arithmetic_mode") == "force-exact"
+                r for r in quant_results if r["arithmetic_mode"] == "force-exact"
             ]
 
             if not exact_quant:
-                continue
+                raise ValueError(
+                    f"No force-exact quantitative results for bounded query: model={model}, path_formula={path_formula}"
+                )
 
             # Get majority quantitative value
             exact_values = [round(r["value"], 10) for r in exact_quant]
@@ -152,7 +245,7 @@ def validate_results(results):
                     r["query_type"],
                     r["path_formula"],
                 )
-                threshold = r.get("threshold", 0.5)
+                threshold = r["threshold"]
                 expected_value = 1.0 if majority_quant_value >= threshold else 0.0
                 correctness[result_key] = r["value"] == expected_value
 
@@ -160,6 +253,232 @@ def validate_results(results):
                     wrong_by[result_key] = abs(r["value"] - expected_value)
 
     return correctness, wrong_by
+
+
+def get_model_source(model_name):
+    """Determine which folder/source a model came from.
+
+    Args:
+        model_name: Name of the model
+
+    Returns:
+        Tuple of (source_name, sort_order)
+    """
+    # BN benchmarks: Bayesian network benchmarks
+    bn_models = [
+        "alarm",
+        "andes",
+        "asia",
+        "barley",
+        "cancer",
+        "child",
+        "earthquake",
+        "hailfinder",
+        "hepar2",
+        "insurance",
+        "pathfinder",
+        "sachs",
+        "survey",
+        "win95pts",
+        "water",
+    ]
+    for bn in bn_models:
+        if model_name.startswith(bn):
+            return ("BN-benchmarks", 1)
+
+    # Transformed MDPs: brp, crowds variations
+    if model_name.startswith("brp-") or model_name.startswith("crowds_"):
+        return ("Transformed-MDP", 2)
+
+    # Concrete MDPs: wlan, other concrete models
+    if model_name.startswith("wlan"):
+        return ("Concrete-MDP", 3)
+
+    # Monitoring MDPs
+    return ("Monitoring-MDP", 4)
+
+
+def generate_latex_table(results, output_file, correctness, query_type="quantitative"):
+    """Generate a LaTeX table comparing runtimes for all models, methods, and arithmetic modes.
+
+    Args:
+        results: List of benchmark results
+        output_file: Path to output .tex file
+        correctness: Correctness dict from validate_results
+        query_type: 'quantitative' or 'bounded'
+    """
+    # Filter results by query type
+    filtered_results = [r for r in results if r["query_type"] == query_type]
+
+    if not filtered_results:
+        print(f"No results for query type {query_type}")
+        return
+
+    # Get all unique models, methods, and arithmetic modes
+    all_models = sorted(set(r["model"] for r in filtered_results))
+    methods = sorted(set(r["method"] for r in filtered_results))
+    arithmetic_modes = sorted(set(r["arithmetic_mode"] for r in filtered_results))
+
+    # Sort models by source, then by name
+    models_with_source = [(m, get_model_source(m)) for m in all_models]
+    models_with_source.sort(
+        key=lambda x: (x[1][1], x[0])
+    )  # Sort by source order, then name
+    models = [m for m, _ in models_with_source]
+    model_sources = {m: src for m, (src, _) in models_with_source}
+
+    # Get properties per model
+    properties_map = get_properties_from_results(filtered_results)
+
+    # Create method×arithmetic combinations
+    configs = [(method, arith) for arith in arithmetic_modes for method in methods]
+
+    # Build data structure: model -> property -> config -> (time, is_correct, is_timeout)
+    data = {}
+    for model in models:
+        data[model] = {}
+        if model not in properties_map:
+            raise ValueError(f"Model {model} not found in properties_map")
+        for prop in properties_map[model]:
+            data[model][prop] = {}
+            for method, arith in configs:
+                matching = [
+                    r
+                    for r in filtered_results
+                    if r["model"] == model
+                    and r["path_formula"] == prop
+                    and r["method"] == method
+                    and r["arithmetic_mode"] == arith
+                ]
+                if matching:
+                    r = matching[0]
+                    key = (model, method, arith, query_type, prop)
+                    is_timeout = r["timeout"]
+                    if is_timeout:
+                        is_correct = None
+                    else:
+                        is_correct = correctness[key]
+
+                    time_val = r["time"]
+                    data[model][prop][(method, arith)] = (
+                        time_val,
+                        is_correct,
+                        is_timeout,
+                    )
+
+    # Start building LaTeX table
+    lines = []
+
+    # Calculate number of columns: 2 for Model & Property, then num_configs for data
+    num_configs = len(configs)
+    col_spec = (
+        "ll" + "r" * num_configs
+    )  # Two left-aligned columns for Model & Property, right-aligned for data
+
+    lines.append(f"\\begin{{tabular}}{{{col_spec}}}")
+    lines.append("\\toprule")
+
+    # Header: method names spanning columns
+    header1 = "Model & Prop"
+    method_spans = {}
+    for method in methods:
+        count = sum(1 for m, a in configs if m == method)
+        method_spans[method] = count
+
+    for method in methods:
+        span = method_spans[method]
+        if span > 1:
+            header1 += f" & \\multicolumn{{{span}}}{{c}}{{{method}}}"
+        else:
+            header1 += f" & {method}"
+    header1 += " \\\\"
+    lines.append(header1)
+
+    # Header: arithmetic mode names
+    header2 = " & "
+    for method in methods:
+        for arith in arithmetic_modes:
+            if (method, arith) in configs:
+                header2 += f" & {get_arithmetic_mode_name(arith)}"
+    header2 += " \\\\"
+    lines.append(header2)
+    lines.append("\\midrule")
+
+    # Data rows
+    prev_source = None
+    for model_idx, model in enumerate(models):
+        if model not in properties_map:
+            raise ValueError(f"Model {model} not found in properties_map")
+        props = properties_map[model]
+        if not props:
+            raise ValueError(f"Model {model} has no properties")
+
+        # Add horizontal line between different sources
+        current_source = model_sources[model]
+        if prev_source is not None and current_source != prev_source:
+            lines.append("\\midrule")
+        prev_source = current_source
+
+        for i, prop in enumerate(props):
+            # Model name only on first row for this model
+            if i == 0:
+                # Get display name for model (with LaTeX escaping)
+                model_tex = get_model_name(model)
+                lines.append(f"\\multirow{{{len(props)}}}{{*}}{{{model_tex}}}")
+            else:
+                lines.append("")
+
+            # Property number (1-indexed)
+            row = f" & {i+1}"
+
+            # Find best time for this row (excluding timeouts and incorrect results)
+            best_time = min(
+                t
+                for t, c, to in data[model][prop].values()
+                if c and not to and t is not None
+            )
+
+            # Add data cells
+            for config in configs:
+                if config in data[model][prop]:
+                    time_val, is_correct, is_timeout = data[model][prop][config]
+
+                    if is_timeout:
+                        cell = "TO"
+                    elif is_correct is False:
+                        cell = "$\\times$"
+                    elif time_val is None:
+                        cell = "---"
+                    else:
+                        # Format time with appropriate precision
+                        if time_val < 0.01:
+                            cell = f"{time_val:.4f}"
+                        elif time_val < 1:
+                            cell = f"{time_val:.3f}"
+                        elif time_val < 10:
+                            cell = f"{time_val:.2f}"
+                        else:
+                            cell = f"{time_val:.1f}"
+
+                        # Bold if this is the best time
+                        if best_time is not None and abs(time_val - best_time) < 1e-9:
+                            cell = f"\\textbf{{{cell}}}"
+                else:
+                    cell = "---"
+
+                row += f" & {cell}"
+
+            row += " \\\\"
+            lines.append(row)
+
+    lines.append("\\bottomrule")
+    lines.append("\\end{tabular}")
+
+    # Write to file
+    with open(output_file, "w") as f:
+        f.write("\n".join(lines))
+
+    print(f"Generated LaTeX table: {output_file}")
 
 
 def plot_method_scatter(results, output_dir, correctness):
@@ -170,7 +489,7 @@ def plot_method_scatter(results, output_dir, correctness):
     from itertools import combinations
 
     # Include both successful results and timeouts
-    plottable = [r for r in results if r.get("success") or r.get("timeout")]
+    plottable = [r for r in results if r["success"] or r["timeout"]]
 
     if not plottable:
         print("No results with arithmetic_mode to plot")
@@ -181,6 +500,8 @@ def plot_method_scatter(results, output_dir, correctness):
         set((r["method"], r["arithmetic_mode"]) for r in plottable)
     )
 
+    baselines = [combo for combo in combinations_set if combo[0] == "restart"]
+
     if len(combinations_set) < 2:
         print(
             f"Scatter plot requires at least 2 method×arithmetic combinations, found {len(combinations_set)}"
@@ -188,11 +509,14 @@ def plot_method_scatter(results, output_dir, correctness):
         return
 
     # Create scatter plots for all combination pairs
-    combo_pairs = list(combinations(combinations_set, 2))
+    combo_pairs = list(product(combinations_set, baselines))
 
     for (method1, arith1), (method2, arith2) in combo_pairs:
-        combo1_name = f"{method1}/{arith1}"
-        combo2_name = f"{method2}/{arith2}"
+        if (method1, arith1) == (method2, arith2):
+            continue  # Skip comparing method to itself
+
+        combo1_name = f"{method1}/{get_arithmetic_mode_name(arith1)}"
+        combo2_name = f"{method2}/{get_arithmetic_mode_name(arith2)}"
 
         combo1_results = [
             r
@@ -206,7 +530,9 @@ def plot_method_scatter(results, output_dir, correctness):
         ]
 
         if not combo1_results or not combo2_results:
-            continue
+            raise ValueError(
+                f"Missing results for comparison: {combo1_name} has {len(combo1_results)} results, {combo2_name} has {len(combo2_results)} results"
+            )
 
         # Extract properties from results for these combinations
         properties_map = get_properties_from_results(combo1_results + combo2_results)
@@ -220,28 +546,21 @@ def plot_method_scatter(results, output_dir, correctness):
                 if not exclude_model(r["model"], "scatter")
             )
         )
-        palette = [
-            "#1f77b4",
-            "#ff7f0e",
-            "#2ca02c",
-            "#d62728",
-            "#9467bd",
-            "#8c564b",
-            "#e377c2",
-            "#7f7f7f",
-            "#bcbd22",
-            "#17becf",
-        ]
-        color_map = {m: palette[i % len(palette)] for i, m in enumerate(models)}
+        color_map = get_model_colors(models)
 
         query_types = ["quantitative", "bounded"]
         markers = {"quantitative": "o", "bounded": "^"}
+        marker_labels = {qt: get_query_type_name(qt).capitalize() for qt in query_types}
 
         # Collect points for this combination pair
         points = []  # (t1, t2, model, qtype, is_correct1, is_correct2)
         for model in models:
+            if model not in properties_map:
+                raise ValueError(
+                    f"Model {model} not found in properties_map for scatter plot"
+                )
             for qtype in query_types:
-                for path_formula in properties_map.get(model, []):
+                for path_formula in properties_map[model]:
                     r1_list = [
                         r
                         for r in combo1_results
@@ -259,10 +578,10 @@ def plot_method_scatter(results, output_dir, correctness):
                     if r1_list and r2_list:
                         key1 = (model, method1, arith1, qtype, path_formula)
                         key2 = (model, method2, arith2, qtype, path_formula)
-                        is_correct1 = correctness.get(key1, True)
-                        is_correct2 = correctness.get(key2, True)
-                        is_timeout1 = r1_list[0].get("timeout", False)
-                        is_timeout2 = r2_list[0].get("timeout", False)
+                        is_correct1 = key1 in correctness and correctness[key1]
+                        is_correct2 = key2 in correctness and correctness[key2]
+                        is_timeout1 = r1_list[0]["timeout"]
+                        is_timeout2 = r2_list[0]["timeout"]
                         points.append(
                             (
                                 r1_list[0]["time"],
@@ -276,15 +595,38 @@ def plot_method_scatter(results, output_dir, correctness):
                             )
                         )
 
+                        # if (
+                        #     combo2_name == "restart/exact"
+                        #     and combo1_name == "bisection/float"
+                        #     and not is_timeout1
+                        #     and not is_timeout2
+                        # ):
+                        #     if (
+                        #         r1_list[0]["time"] / r2_list[0]["time"] > 100
+                        #         or r2_list[0]["time"] / r1_list[0]["time"] > 100
+                        #     ):
+                        #         print(
+                        #             f"Large time difference for model {model}, query {qtype}, path_formula {path_formula} between "
+                        #             f"{combo1_name} {r1_list[0]['index']} ({r1_list[0]['time']}s) and {combo2_name} {r2_list[0]['index']} ({r2_list[0]['time']}s)"
+                        #         )
+
         if not points:
-            continue
+            raise ValueError(
+                f"No data points found for scatter plot: {combo1_name} vs {combo2_name}"
+            )
 
         fig, ax = plt.subplots(figsize=(10, 8))
 
         # Find max time to place incorrect points on a line above
         max_time = max(
-            max((t1 for t1, _, _, _, c1, _, _, _ in points if c1), default=1.0),
-            max((t2 for _, t2, _, _, _, c2, _, _ in points if c2), default=1.0),
+            max(
+                (t1 for t1, _, _, _, c1, _, to1, _ in points if c1 and not to1),
+                default=1.0,
+            ),
+            max(
+                (t2 for _, t2, _, _, _, c2, _, to2 in points if c2 and not to2),
+                default=1.0,
+            ),
         )
         error_line = max_time * 5  # Place error line 5x higher
         timeout_line = max_time * 10  # Place timeout line 10x higher
@@ -292,7 +634,7 @@ def plot_method_scatter(results, output_dir, correctness):
         # Plot correct points
         labeled_models = set()
         for t1, t2, model, qtype, c1, c2, to1, to2 in points:
-            label = model if model not in labeled_models else None
+            label = get_model_name(model) if model not in labeled_models else None
             if label:
                 labeled_models.add(model)
             # Timeouts go to timeout_line, wrong results go to error_line
@@ -305,11 +647,10 @@ def plot_method_scatter(results, output_dir, correctness):
             elif not c2:
                 t2 = error_line
 
-            # Use normal marker for all points
             ax.scatter(
                 t1,
                 t2,
-                c=color_map[model],
+                color=color_map[model],
                 marker=markers[qtype],
                 s=110,
                 alpha=0.75,
@@ -330,8 +671,8 @@ def plot_method_scatter(results, output_dir, correctness):
 
         # Reference lines
         min_time = min(
-            min(t1 for t1, _, _, _, _, _, _, _ in points),
-            min(t2 for _, t2, _, _, _, _, _, _ in points),
+            min(t1 for t1, _, _, _, c1, _, to1, _ in points if c1 and not to1),
+            min(t2 for _, t2, _, _, _, c2, _, to2 in points if c2 and not to2),
         )
         min_stop_lines = min_time * 0.1
 
@@ -392,7 +733,7 @@ def plot_method_scatter(results, output_dir, correctness):
                 markerfacecolor="w",
                 markeredgecolor="k",
                 markersize=9,
-                label=f"{qt.capitalize()}",
+                label=marker_labels[qt],
             )
             for qt in query_types
         ]
@@ -440,11 +781,30 @@ def plot_method_scatter(results, output_dir, correctness):
         ]
         ax.set_xticklabels(tick_labels)
 
-        ax.set_xlim(left=min_time * 0.5, right=timeout_line * 2)
-        ax.set_ylim(bottom=min_time * 0.5, top=timeout_line * 2)
+        # Set limits, ensuring they're positive for log scale
+        left_lim = max(min_time * 0.5, 1e-6)  # Ensure positive value for log scale
+        right_lim = timeout_line * 2
+        bottom_lim = max(min_time * 0.5, 1e-6)  # Ensure positive value for log scale
+        top_lim = timeout_line * 2
+
+        ax.set_xlim(left=left_lim, right=right_lim)
+        ax.set_ylim(bottom=bottom_lim, top=top_lim)
 
         plt.tight_layout()
-        filename = f"scatter_{combo1_name.replace('/', '_')}_vs_{combo2_name.replace('/', '_')}.pdf"
+        # Sanitize names for filename (remove LaTeX symbols)
+        combo1_file = (
+            combo1_name.replace("/", "_")
+            .replace("$", "")
+            .replace("\\", "")
+            .replace("varepsilon", "eps")
+        )
+        combo2_file = (
+            combo2_name.replace("/", "_")
+            .replace("$", "")
+            .replace("\\", "")
+            .replace("varepsilon", "eps")
+        )
+        filename = f"scatter_{combo1_file}_vs_{combo2_file}.pdf"
         plt.savefig(output_dir / filename, backend="pgf")
         plt.close()
         print(f"Saved: {output_dir / filename}")
@@ -464,9 +824,9 @@ def plot_speedup_heatmap(
     filtered_results = [
         r
         for r in results
-        if r.get("query_type") == query_type
-        and (r.get("success") or r.get("timeout"))
-        and r.get("arithmetic_mode")
+        if r["query_type"] == query_type
+        and (r["success"] or r["timeout"])
+        and r["arithmetic_mode"]
     ]
 
     if not filtered_results:
@@ -490,7 +850,7 @@ def plot_speedup_heatmap(
     combinations = []
     for mode in arithmetic_modes:
         for method in methods:
-            combo = f"{method}/{mode}"
+            combo = f"{method}/{get_arithmetic_mode_name(mode)}"
             if not (method == baseline[0] and mode == baseline[1]):
                 combinations.append(combo)
 
@@ -505,7 +865,9 @@ def plot_speedup_heatmap(
     model_boundaries = []  # Track where each model's columns start
     col_idx = 0
     for model in models:
-        model_props = properties_map.get(model, [])
+        if model not in properties_map:
+            raise ValueError(f"Model {model} not found in properties_map for heatmap")
+        model_props = properties_map[model]
         model_boundaries.append((model, col_idx, col_idx + len(model_props)))
         for prop in model_props:
             columns.append((model, prop))
@@ -516,6 +878,9 @@ def plot_speedup_heatmap(
     # Calculate speedups: baseline_time / method_time (baseline = exact restart)
     speedup_matrix = np.zeros((len(combinations), num_columns))
     wrong_answer_matrix = np.zeros((len(combinations), num_columns), dtype=bool)
+    wrong_quantitative_answer_matrix = np.zeros(
+        (len(combinations), num_columns), dtype=bool
+    )
     timeout_matrix = np.zeros((len(combinations), num_columns), dtype=bool)
     baseline_timeout_matrix = np.zeros((len(combinations), num_columns), dtype=bool)
     missing_matrix = np.zeros((len(combinations), num_columns), dtype=bool)
@@ -547,19 +912,23 @@ def plot_speedup_heatmap(
                 method_time = method_results[0]["time"]
                 key = (model, method, mode, query_type, path_prop)
 
-                is_timeout = method_results[0].get("timeout", False)
-                is_baseline_timeout = baseline_results[0].get("timeout", False)
-                is_correct = correctness.get(key, True)
+                is_timeout = method_results[0]["timeout"]
+                is_baseline_timeout = baseline_results[0]["timeout"]
+                is_correct = key in correctness and correctness[key]
+                quan_key = (model, method, mode, "quantitative", path_prop)
+                is_quan_correct = quan_key in correctness and correctness[quan_key]
 
                 timeout_matrix[i, j] = is_timeout
                 baseline_timeout_matrix[i, j] = is_baseline_timeout
                 wrong_answer_matrix[i, j] = not is_correct
+                wrong_quantitative_answer_matrix[i, j] = not is_quan_correct
 
                 if (
-                    method_time > 0
-                    and is_correct
+                    is_correct
+                    and is_quan_correct
                     and not is_timeout
                     and not is_baseline_timeout
+                    and method_time > 0
                 ):
                     speedup_matrix[i, j] = baseline_time / method_time
                 elif is_timeout or is_baseline_timeout or not is_correct:
@@ -586,7 +955,7 @@ def plot_speedup_heatmap(
         )
         return
 
-    fig_width = max(num_columns * 0.4, 8) + 3
+    fig_width = max(num_columns * 0.7, 8) + 3
     fig_height = len(combinations) * 0.5 + 2
     fig, ax = plt.subplots(figsize=(fig_width, fig_height))
 
@@ -606,7 +975,7 @@ def plot_speedup_heatmap(
     vmax = 10**log_range
 
     norm = LogNorm(vmin=vmin, vmax=vmax)
-    cmap = plt.cm.RdYlGn
+    cmap = plt.cm.RdYlGn  # type: ignore
 
     im = ax.imshow(speedup_matrix, aspect="auto", cmap=cmap, norm=norm)
 
@@ -617,7 +986,7 @@ def plot_speedup_heatmap(
         if end_col > start_col:
             center = (start_col + end_col - 1) / 2
             tick_positions.append(center)
-            tick_labels.append(model)
+            tick_labels.append(get_model_name(model))
             # Draw vertical lines to separate model groups
             if start_col > 0:
                 ax.axvline(x=start_col - 0.5, color="k", linestyle="-", linewidth=1.5)
@@ -669,6 +1038,17 @@ def plot_speedup_heatmap(
                     fontsize=9,
                     weight="bold",
                 )
+            elif wrong_quantitative_answer_matrix[i, j]:
+                ax.text(
+                    j,
+                    i,
+                    "✗Q",
+                    ha="center",
+                    va="center",
+                    color="red",
+                    fontsize=6,
+                    weight="bold",
+                )
             elif missing_matrix[i, j]:
                 pass  # Leave empty for missing data
             elif not is_masked:
@@ -687,7 +1067,9 @@ def plot_speedup_heatmap(
     ax.set_xlabel("Model × Property")
     ax.set_ylabel("Method/Arithmetic")
     query_label = (
-        "Quantitative (Pmax=?)" if query_type == "quantitative" else "Bounded (Pmax>=θ)"
+        "Quantitative (Pmax=?)"
+        if query_type == "quantitative"
+        else "Qualitative (Pmax>=θ)"
     )
     ax.set_title(
         f"Speedup relative to {baseline[0]}/{baseline[1]} - {query_label}\n(baseline_time / method_time)"
@@ -697,7 +1079,7 @@ def plot_speedup_heatmap(
     cbar.set_label("Speedup Factor")
 
     plt.tight_layout()
-    filename = f"speedup_heatmap_{query_type}.pdf"
+    filename = f"speedup_heatmap_{get_query_type_name(query_type)}.pdf"
     plt.savefig(output_dir / filename, dpi=150)
     plt.close()
     print(f"Saved: {output_dir / filename}")
@@ -749,27 +1131,29 @@ def plot_speedup_vs_marginal(
     for base_combo, tgt_combo in combos_to_plot:
         base_method, base_arith = base_combo
         tgt_method, tgt_arith = tgt_combo
-        base_name = f"{base_method}/{base_arith}"
-        tgt_name = f"{tgt_method}/{tgt_arith}"
+        base_name = f"{base_method}/{get_arithmetic_mode_name(base_arith)}"
+        tgt_name = f"{tgt_method}/{get_arithmetic_mode_name(tgt_arith)}"
 
         # Get results for both configurations, include timeouts
         baseline_results = [
             r
             for r in results
-            if (r.get("success") or r.get("timeout"))
+            if (r["success"] or r["timeout"])
             and r["method"] == base_method
             and r["arithmetic_mode"] == base_arith
         ]
         target_results = [
             r
             for r in results
-            if (r.get("success") or r.get("timeout"))
+            if (r["success"] or r["timeout"])
             and r["method"] == tgt_method
             and r["arithmetic_mode"] == tgt_arith
         ]
 
         if not baseline_results or not target_results:
-            continue
+            raise ValueError(
+                f"Missing results for comparison: {base_name} has {len(baseline_results)} results, {tgt_name} has {len(target_results)} results"
+            )
 
         # Extract properties from these results
         properties_map = get_properties_from_results(baseline_results + target_results)
@@ -782,28 +1166,23 @@ def plot_speedup_vs_marginal(
                 if not exclude_model(r["model"], "speedup_vs_marginal")
             )
         )
-        palette = [
-            "#1f77b4",
-            "#ff7f0e",
-            "#2ca02c",
-            "#d62728",
-            "#9467bd",
-            "#8c564b",
-            "#e377c2",
-            "#7f7f7f",
-            "#bcbd22",
-            "#17becf",
-        ]
-        color_map = {m: palette[i % len(palette)] for i, m in enumerate(models)}
+        color_map = get_model_colors(models)
 
         # Markers for query types
         markers = {"quantitative": "o", "bounded": "^"}
         query_types = ["quantitative", "bounded"]
+        marker_labels = {qt: get_query_type_name(qt).capitalize() for qt in query_types}
 
         # Collect all data points (model, property, query_type, marginal, speedup, is_correct)
         points = []
         for model in models:
-            for path_formula in properties_map.get(model, []):
+            # if not model.startswith("brp-"):
+            #     continue
+            if model not in properties_map:
+                raise ValueError(
+                    f"Model {model} not found in properties_map for speedup_vs_marginal"
+                )
+            for path_formula in properties_map[model]:
                 for query_type in query_types:
                     baseline = [
                         r
@@ -822,39 +1201,53 @@ def plot_speedup_vs_marginal(
 
                     if baseline and target:
                         # Use baseline marginal since target may timeout and lack marginal
-                        marginal = baseline[0].get(
-                            "marginal", baseline[0].get("value", 0)
+                        marginal = (
+                            baseline[0]["marginal"]
+                            if "marginal" in baseline[0]
+                            else baseline[0]["value"]
                         )
-                        # Skip if no marginal available
-                        if marginal is None or marginal == 0:
-                            continue
+                        # Raise exception if no marginal available
+                        if marginal is None:
+                            raise ValueError(
+                                f"Missing marginal for model={model}, path_formula={path_formula}, query_type={query_type}"
+                            )
 
-                        speedup = (
-                            baseline[0]["time"] / target[0]["time"]
-                            if target[0]["time"] > 0
-                            else 0
-                        )
+                        if target[0]["timeout"]:
+                            speedup = 0
+                        else:
+                            speedup = (
+                                baseline[0]["time"] / target[0]["time"]
+                                if target[0]["time"] > 0
+                                else 0
+                            )
+
                         # Clamp to positive for log scale
                         speedup = max(speedup, 1e-12)
 
-                        key_base = (
-                            model,
-                            base_method,
-                            base_arith,
-                            query_type,
-                            path_formula,
-                        )
-                        key_tgt = (
-                            model,
-                            tgt_method,
-                            tgt_arith,
-                            query_type,
-                            path_formula,
-                        )
-                        if key_tgt not in correctness:
-                            continue
-                        is_correct = correctness[key_tgt]
-                        is_timeout = target[0].get("timeout", False)
+                        is_timeout = target[0]["timeout"] or baseline[0]["timeout"]
+
+                        if not is_timeout:
+                            key_base = (
+                                model,
+                                base_method,
+                                base_arith,
+                                query_type,
+                                path_formula,
+                            )
+                            key_tgt = (
+                                model,
+                                tgt_method,
+                                tgt_arith,
+                                query_type,
+                                path_formula,
+                            )
+                            if key_tgt not in correctness:
+                                raise ValueError(
+                                    f"Correctness not found for key: model={model}, method={tgt_method}, arith={tgt_arith}, query_type={query_type}, path_formula={path_formula}"
+                                )
+                            is_correct = correctness[key_tgt] and correctness[key_base]
+                        else:
+                            is_correct = True
 
                         points.append(
                             (
@@ -869,8 +1262,7 @@ def plot_speedup_vs_marginal(
                         )
 
         if not points:
-            print(f"No valid data points for {base_name} vs {tgt_name}")
-            continue
+            raise ValueError(f"No valid data points for {base_name} vs {tgt_name}")
 
         fig, ax = plt.subplots(figsize=(12, 8))
 
@@ -879,14 +1271,15 @@ def plot_speedup_vs_marginal(
         all_speedups = [s for _, s, _, _, _, _, _ in points]
         if correct_speedups:
             min_speedup = min(correct_speedups)
+            max_speedup = max(correct_speedups)
         else:
             min_speedup = min(all_speedups) if all_speedups else 1.0
-        max_speedup = max(all_speedups) if all_speedups else 1.0
+            max_speedup = max(all_speedups) if all_speedups else 1.0
 
         error_line_y = min(0.1, max(min_speedup / 5.0, 1e-12))
         timeout_line_y = error_line_y / 2.0
         y_min = timeout_line_y / 2.0
-        y_max = max(max_speedup * 2.0 if max_speedup > 0 else 2.0, error_line_y * 2.0)
+        y_max = max(max_speedup * 2.0, error_line_y * 2.0)
 
         # Track which models/query types we've already labeled
         labeled = set()
@@ -902,7 +1295,11 @@ def plot_speedup_vs_marginal(
             path_formula,
         ) in points:
             label_key = (model, qtype)
-            label = f"{model}-{qtype[0]}" if label_key not in labeled else None
+            label = (
+                f"{get_model_name(model)}-{qtype[0]}"
+                if label_key not in labeled
+                else None
+            )
             if label:
                 labeled.add(label_key)
 
@@ -916,7 +1313,7 @@ def plot_speedup_vs_marginal(
             ax.scatter(
                 marginal,
                 y_val,
-                c=color_map[model],
+                color=color_map[model],
                 marker=markers[qtype],
                 s=100,
                 alpha=0.7,
@@ -932,13 +1329,12 @@ def plot_speedup_vs_marginal(
             y=timeout_line_y, color="orange", linestyle=":", alpha=0.4, linewidth=1.5
         )
 
-        ax.set_xscale("log")
+        # ax.set_xscale("log")
         ax.set_xlabel("Marginal Probability")
         ax.set_ylabel(
             f"Speedup ({base_name.replace('/', '_')}/{tgt_name.replace('/', '_')})"
         )
         ax.set_yscale("log")
-        ax.set_ylim(bottom=y_min, top=y_max)
         ax.set_title(
             f"Speedup vs Marginal: {base_name} vs {tgt_name}\n(all properties and query types)"
         )
@@ -955,7 +1351,7 @@ def plot_speedup_vs_marginal(
                 markersize=8,
                 markeredgecolor="k",
                 markeredgewidth=0.5,
-                label=m,
+                label=get_model_name(m),
             )
             for m in models
         ]
@@ -968,7 +1364,7 @@ def plot_speedup_vs_marginal(
                 color="k",
                 linestyle="",
                 markersize=9,
-                label=f"{qt.capitalize()}",
+                label=marker_labels[qt],
             )
             for qt in query_types
         ]
@@ -987,8 +1383,9 @@ def plot_speedup_vs_marginal(
             handles=model_handles + qtype_handles,
             title="Model / Query Type",
             framealpha=0.9,
-            loc="best",
             ncol=2,
+            bbox_to_anchor=(1.05, 1),
+            loc="upper left",
         )
 
         # Y ticks: include error line at bottom with × label
@@ -1004,8 +1401,23 @@ def plot_speedup_vs_marginal(
         ]
         ax.set_yticklabels(tick_labels)
 
+        ax.set_ylim(bottom=y_min, top=y_max)
+
         plt.tight_layout()
-        filename = f"speedup_vs_marginal_{base_name.replace('/', '_')}_vs_{tgt_name.replace('/', '_')}.pdf"
+        # Sanitize names for filename (remove LaTeX symbols)
+        base_file = (
+            base_name.replace("/", "_")
+            .replace("$", "")
+            .replace("\\", "")
+            .replace("varepsilon", "eps")
+        )
+        tgt_file = (
+            tgt_name.replace("/", "_")
+            .replace("$", "")
+            .replace("\\", "")
+            .replace("varepsilon", "eps")
+        )
+        filename = f"speedup_vs_marginal_{base_file}_vs_{tgt_file}.pdf"
         plt.savefig(output_dir / filename, dpi=150)
         plt.close()
         print(f"Saved: {output_dir / filename}")
@@ -1017,10 +1429,13 @@ def main():
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("plots"),
+        default=None,
         help="Output directory for plots (default: plots/)",
     )
     args = parser.parse_args()
+
+    if args.output is None:
+        args.output = Path(args.json_file).parent / "plots"
 
     if not args.json_file.exists():
         print(f"Error: {args.json_file} does not exist")
@@ -1046,6 +1461,21 @@ def main():
                 f"  Model: {model}, Method: {method}, Arithmetic: {arith}, Query: {qtype}, Path: {path_formula}, Wrong by: {diff}"
             )
 
+    # Generate LaTeX tables
+    print("\nGenerating LaTeX tables...")
+    generate_latex_table(
+        results,
+        args.output / "runtime_table_quantitative.tex",
+        correctness,
+        query_type="quantitative",
+    )
+    generate_latex_table(
+        results,
+        args.output / "runtime_table_bounded.tex",
+        correctness,
+        query_type="bounded",
+    )
+
     # Generate plots
     print("\nGenerating plots...")
     plot_speedup_heatmap(results, args.output, correctness, query_type="quantitative")
@@ -1053,7 +1483,7 @@ def main():
     plot_speedup_vs_marginal(results, args.output, correctness)
     plot_method_scatter(results, args.output, correctness)
 
-    print(f"\nAll plots saved to {args.output}/")
+    print(f"\nAll plots and tables saved to {args.output}/")
 
 
 if __name__ == "__main__":

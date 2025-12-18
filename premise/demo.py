@@ -1,4 +1,5 @@
 import argparse
+import logging
 
 import stormpy
 
@@ -72,10 +73,20 @@ def main():
         default=None,
         help="Risk threshold for conditional methods",
     )
+    parser.add_argument(
+        "--create-benchmark",
+        type=str,
+        default=None,
+        help="Create models based on monitoring which can be used for benchmarking conditional probability queries in Storm.",
+    )
     args = parser.parse_args()
 
     trace_length = args.trace_length
     promptness_deadline = args.promptness_deadline  # in ms
+
+    if args.create_benchmark is not None:
+        args.number_traces = 1
+
     if args.seed is None:
         seed = [random.getrandbits(64) for _ in range(args.number_traces)]
     else:
@@ -100,6 +111,12 @@ def main():
     else:
         raise RuntimeError("Unknown method!")
 
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s %(levelname)s %(filename)s:%(lineno)d %(message)s",
+        force=True,
+    )
+
     if args.verbose:
         import os
 
@@ -107,6 +124,18 @@ def main():
         stormpy.set_loglevel_trace()
 
     stormpy.install_signal_handlers(1)
+
+    if args.create_benchmark is not None:
+        monitoring.create_benchmark_models(
+            args.model,
+            args.constants,
+            args.risk,
+            options,
+            trace_length,
+            seed,
+            args.create_benchmark,
+        )
+        return
 
     monitoring.run_monitor(
         args.model,

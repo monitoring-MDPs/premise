@@ -497,7 +497,6 @@ def run_monitor(
             )
         else:
             assert use_unfolding and mon is not None
-            # unrolled_model_path(options, model_id, seed)
             annotated_trace = monitor.execute_monitor(stg, mon, tqdm_bar=False)
             time_per_step[seed] = mon.risk_times.copy()
             times_taken[seed] = sum(mon.risk_times)
@@ -511,8 +510,6 @@ def run_monitor(
                 model,
                 trace_file,
             )
-
-            # unfolding(stormpy_environment, simulator, unfolder, trace_length, stats_file, deadline=promptness_deadline, dump_file_path=unrolled_drn_file_prefix)
 
     with open(os.path.join(stats_folder, "stats.out"), "w") as file:
         file.write(f"states={model.nr_states}\n")
@@ -531,3 +528,54 @@ def run_monitor(
         )
         file.write(f"all_times={times_taken}\n")
         file.write(f"time_per_step={time_per_step}\n")
+
+
+def create_benchmark_models(
+    path, constants, risk_property, options, trace_length, seeds, model_path
+):
+    logger.info("Parse MDP representation")
+    model, risk_assessment = models.build_model_and_risk(
+        models.ModelDescription(path, constants, risk_property), options
+    )
+    logger.info(f"Model has {model.nr_states} states")
+
+    logger.info("Initialize unfolder")
+    stormpy_environment = options.stormpy_environment
+    expr_manager = stormpy.ExpressionManager()
+    unfolding_options = stormpy.pomdp.ObservationTraceUnfolderOptions()
+    unfolding_options.rejection_sampling = False
+
+    if options.conditional_method is not None:
+        stormpy_environment.model_checker_environment.conditional_algorithm = (
+            options.conditional_method
+        )
+
+    if options.model_checking_method is not None:
+        stormpy_environment.solver_environment.minmax_solver_environment.method = (
+            options.model_checking_method
+        )
+
+    if options.force_exact:
+        stormpy_environment.solver_environment.set_force_exact()
+
+    stormpy_environment.solver_environment.minmax_solver_environment.precision = (
+        sp.Rational(1e-6)
+    )
+
+    unfolder = stormpy.pomdp.create_observation_trace_unfolder(
+        model, risk_assessment, expr_manager, unfolding_options
+    )
+
+    logger.info("Looping over seeds to create benchmark models")
+    for seed in seeds:
+        logger.info(f"Creating benchmark model for seed {seed}")
+        stg = trace_generator.make_simulation_wrapper(model, trace_length, seed)
+
+        observations = [stg.initialize()]
+        for i in range(trace_length):
+            obs = stg.step()
+            observations.append(obs)
+
+        logger.info(f"Creating unrolled model for seed {seed}")
+        mdp = unfolder.extend(observations)
+        sp.export_to_drn(mdp, model_path + f"{Path(path).stem}.drn")

@@ -1,5 +1,5 @@
 #!/bin/bash
-# set -x
+set -x
 
 uncertainty=0.2
 vt=exact
@@ -50,12 +50,32 @@ wlan_filename="wlan.nm"
 for constants in "${wlan_constants_list[@]}"; do
     new_filename="wlan-${constants}.drn"
     echo "Processing $wlan_filename with constants $constants"
-    if [ -f "$out_folder/$new_filename" ]; then
+    if [ -f "./premise/examples/concrete-mdps/$new_filename" ]; then
         echo "Output file already exists, skipping..."
         continue
     fi
-    ../storm-cond/build/bin/storm --prism ./premise/examples/baier-mdps/wlan.nm --constants "$constants" --exportbuild ./premise/examples/concrete-mdps/wlan-${constants}.drn --build-all-labels
+    ../storm-cond/build/bin/storm --prism ./premise/examples/baier-mdps/wlan.nm --constants "$constants" --exportbuild ./premise/examples/concrete-mdps/${new_filename} --build-all-labels
 done
+
+# Build Monitoring models
+out_folder="premise/examples/monitoring-cond-mdps/"
+trace_length=450
+if [ ! -f "$out_folder/airportA-7.drn" ]; then
+    python premise/demo.py --unfolding --exact --model premise/examples/airportA-7.nm --constants "DMAX=400,PMAX=100" --risk "Pmax=? [F \"crash\"]" --trace-length $trace_length --seed 1 --create-benchmark $out_folder
+fi
+if [ ! -f "$out_folder/airportB-7.drn" ]; then
+    python premise/demo.py --unfolding --exact --model premise/examples/airportB-7.nm --constants "DMAX=400,PMAX=100" --risk "Pmax=? [F \"crash\"]" --trace-length $trace_length --seed 1 --create-benchmark $out_folder
+fi
+if [ ! -f "$out_folder/hidden-incentive.drn" ]; then
+    python premise/demo.py --unfolding --exact --model premise/examples/hidden-incentive.nm --constants "N=20" --risk "Pmax=? [F<=21 \"crash\"]" --trace-length $trace_length --seed 0 --create-benchmark $out_folder
+fi
+if [ ! -f "$out_folder/evade-monitoring.drn" ]; then
+    python premise/demo.py --unfolding --exact --model premise/examples/evade-monitoring.nm --constants "N=14,RADIUS=4" --risk "Pmax=? [F<=12 \"crash\"]" --trace-length $trace_length --seed 1 --create-benchmark $out_folder
+fi
+if [ ! -f "$out_folder/refuelB.drn" ]; then
+    python premise/demo.py --unfolding --exact --model premise/examples/refuelB.nm --constants "N=25,ENERGY=150" --risk "Pmax=? [F<=8 \"empty\"]" --trace-length $trace_length --seed 0 --create-benchmark $out_folder
+fi
+
 
 # Load BN benchmarks
 jani_folder="premise/examples/BN-benchmarks-dtmc"
