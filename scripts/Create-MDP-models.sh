@@ -59,21 +59,22 @@ done
 
 # Build Monitoring models
 out_folder="premise/examples/monitoring-cond-mdps/"
-trace_length=450
+trace_length=250
+num_traces=25
 if [ ! -f "$out_folder/airportA-7.drn" ]; then
-    python premise/demo.py --unfolding --exact --model premise/examples/airportA-7.nm --constants "DMAX=400,PMAX=100" --risk "Pmax=? [F \"crash\"]" --trace-length $trace_length --seed 1 --create-benchmark $out_folder
+    python premise/demo.py --unfolding --exact --model premise/examples/airportA-7.nm --constants "DMAX=500,PMAX=300" --risk "Pmax=? [F \"crash\"]" --trace-length $trace_length --number-traces $num_traces --seed 0 --create-benchmark $out_folder
 fi
 if [ ! -f "$out_folder/airportB-7.drn" ]; then
-    python premise/demo.py --unfolding --exact --model premise/examples/airportB-7.nm --constants "DMAX=400,PMAX=100" --risk "Pmax=? [F \"crash\"]" --trace-length $trace_length --seed 1 --create-benchmark $out_folder
+    python premise/demo.py --unfolding --exact --model premise/examples/airportB-7.nm --constants "DMAX=500,PMAX=300" --risk "Pmax=? [F \"crash\"]" --trace-length $trace_length --number-traces $num_traces --seed 0 --create-benchmark $out_folder
 fi
 if [ ! -f "$out_folder/hidden-incentive.drn" ]; then
-    python premise/demo.py --unfolding --exact --model premise/examples/hidden-incentive.nm --constants "N=20" --risk "Pmax=? [F<=21 \"crash\"]" --trace-length $trace_length --seed 0 --create-benchmark $out_folder
+    python premise/demo.py --unfolding --exact --model premise/examples/hidden-incentive.nm --constants "N=35" --risk "Pmax=? [F<=36 \"crash\"]" --trace-length $trace_length --number-traces $num_traces --seed 0 --create-benchmark $out_folder
 fi
 if [ ! -f "$out_folder/evade-monitoring.drn" ]; then
-    python premise/demo.py --unfolding --exact --model premise/examples/evade-monitoring.nm --constants "N=14,RADIUS=4" --risk "Pmax=? [F<=12 \"crash\"]" --trace-length $trace_length --seed 1 --create-benchmark $out_folder
+    python premise/demo.py --unfolding --exact --model premise/examples/evade-monitoring.nm --constants "N=20,RADIUS=20" --risk "Pmax=? [F<=75 \"crash\"]" --trace-length $trace_length --number-traces $num_traces --seed 0 --create-benchmark $out_folder
 fi
 if [ ! -f "$out_folder/refuelB.drn" ]; then
-    python premise/demo.py --unfolding --exact --model premise/examples/refuelB.nm --constants "N=25,ENERGY=150" --risk "Pmax=? [F<=8 \"empty\"]" --trace-length $trace_length --seed 0 --create-benchmark $out_folder
+    python premise/demo.py --unfolding --exact --model premise/examples/refuelB.nm --constants "N=33,ENERGY=250" --risk "Pmax=? [F<=20 \"empty\"]" --trace-length $trace_length --number-traces $num_traces --seed 0 --create-benchmark $out_folder
 fi
 
 

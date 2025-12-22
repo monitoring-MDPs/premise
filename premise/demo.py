@@ -84,9 +84,6 @@ def main():
     trace_length = args.trace_length
     promptness_deadline = args.promptness_deadline  # in ms
 
-    if args.create_benchmark is not None:
-        args.number_traces = 1
-
     if args.seed is None:
         seed = [random.getrandbits(64) for _ in range(args.number_traces)]
     else:

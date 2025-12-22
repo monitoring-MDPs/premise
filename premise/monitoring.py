@@ -578,4 +578,10 @@ def create_benchmark_models(
 
         logger.info(f"Creating unrolled model for seed {seed}")
         mdp = unfolder.extend(observations)
-        sp.export_to_drn(mdp, model_path + f"{Path(path).stem}.drn")
+        sp.export_to_drn(
+            mdp,
+            model_path
+            + f"{Path(path).stem}"
+            + (f"-{seed}" if len(seeds) > 1 else "")
+            + ".drn",
+        )
