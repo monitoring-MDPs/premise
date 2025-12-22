@@ -305,7 +305,7 @@ def _parse_storm_output(output: str, tasks: list, parrallel_index: int):
     Returns:
         Dictionary with result information
     """
-    sys.set_int_max_str_digits(10000)
+    sys.set_int_max_str_digits(100000)
 
     task_index = re.search(r"--dot-maxwidth (\d+)", output)
     if task_index:

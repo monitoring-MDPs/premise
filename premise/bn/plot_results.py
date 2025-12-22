@@ -35,15 +35,33 @@ QUERY_TYPE_NAMES = {
 # Only list models that need renaming; others will use their internal name
 MODEL_NAMES = {
     # Add custom model name mappings here
-    "brp-N=16-MAX=8-PCHAN=0.010": "BRP-0.010",
-    "brp-N=16-MAX=8-PCHAN=0.015": "BRP-0.015",
-    "brp-N=16-MAX=8-PCHAN=0.020": "BRP-0.020",
-    "brp-N=16-MAX=8-PCHAN=0.025": "BRP-0.025",
-    "brp-N=16-MAX=8-PCHAN=0.030": "BRP-0.030",
-    "brp-N=16-MAX=8-PCHAN=0.035": "BRP-0.035",
-    "brp-N=16-MAX=8-PCHAN=0.040": "BRP-0.040",
-    "brp-N=16-MAX=8-PCHAN=0.045": "BRP-0.045",
-    "brp-N=16-MAX=8-PCHAN=0.050": "BRP-0.050",
+    "brp-N=16-MAX=8-PCHAN=0.010": "BRP-16-0.010",
+    "brp-N=16-MAX=8-PCHAN=0.015": "BRP-16-0.015",
+    "brp-N=16-MAX=8-PCHAN=0.020": "BRP-16-0.020",
+    "brp-N=16-MAX=8-PCHAN=0.025": "BRP-16-0.025",
+    "brp-N=16-MAX=8-PCHAN=0.030": "BRP-16-0.030",
+    "brp-N=16-MAX=8-PCHAN=0.035": "BRP-16-0.035",
+    "brp-N=16-MAX=8-PCHAN=0.040": "BRP-16-0.040",
+    "brp-N=16-MAX=8-PCHAN=0.045": "BRP-16-0.045",
+    "brp-N=16-MAX=8-PCHAN=0.050": "BRP-16-0.050",
+    "brp-N=32-MAX=9-PCHAN=0.010": "BRP-32-0.010",
+    "brp-N=32-MAX=9-PCHAN=0.015": "BRP-32-0.015",
+    "brp-N=32-MAX=9-PCHAN=0.020": "BRP-32-0.020",
+    "brp-N=32-MAX=9-PCHAN=0.025": "BRP-32-0.025",
+    "brp-N=32-MAX=9-PCHAN=0.030": "BRP-32-0.030",
+    "brp-N=32-MAX=9-PCHAN=0.035": "BRP-32-0.035",
+    "brp-N=32-MAX=9-PCHAN=0.040": "BRP-32-0.040",
+    "brp-N=32-MAX=9-PCHAN=0.045": "BRP-32-0.045",
+    "brp-N=32-MAX=9-PCHAN=0.050": "BRP-32-0.050",
+    "brp-N=64-MAX=10-PCHAN=0.010": "BRP-64-0.010",
+    "brp-N=64-MAX=10-PCHAN=0.015": "BRP-64-0.015",
+    "brp-N=64-MAX=10-PCHAN=0.020": "BRP-64-0.020",
+    "brp-N=64-MAX=10-PCHAN=0.025": "BRP-64-0.025",
+    "brp-N=64-MAX=10-PCHAN=0.030": "BRP-64-0.030",
+    "brp-N=64-MAX=10-PCHAN=0.035": "BRP-64-0.035",
+    "brp-N=64-MAX=10-PCHAN=0.040": "BRP-64-0.040",
+    "brp-N=64-MAX=10-PCHAN=0.045": "BRP-64-0.045",
+    "brp-N=64-MAX=10-PCHAN=0.050": "BRP-64-0.050",
 }
 
 
@@ -134,8 +152,8 @@ def exclude_model(model_name: str, plot_type: str):
         "brp-N=64-MAX=10-PCHAN=0.010",
     ]
 
-    if plot_type == "heatmap":
-        if model_name.startswith("brp-") and model_name not in allowed_brp:
+    if plot_type != "marginal":
+        if model_name.startswith("brp-") and "0.010" not in model_name:
             return True
 
     return False
@@ -175,18 +193,25 @@ def validate_results(results):
                 r for r in group_results if r["arithmetic_mode"] == "force-exact"
             ]
 
-            if not exact_results:
-                raise ValueError(
-                    f"No force-exact results for model {model}, query {query_type}, path_formula {path_formula}"
+            if exact_results:
+                # Get majority value (round to 10 decimal places for comparison)
+                exact_values = [round(r["value"], 10) for r in exact_results]
+                value_counts = Counter(exact_values)
+                majority_value, count = value_counts.most_common(1)[0]
+                if count < 2 and len(value_counts) > 1:
+                    print(
+                        f"No majority value for model {model}, query {query_type}, path_formula {path_formula}: {value_counts}"
+                    )
+            else:
+                # No force-exact results, fall back to exact
+                exact_results = [
+                    r for r in group_results if r["arithmetic_mode"] == "exact"
+                ]
+                majority_value = np.average(
+                    [round(r["value"], 10) for r in exact_results]
                 )
-
-            # Get majority value (round to 10 decimal places for comparison)
-            exact_values = [round(r["value"], 10) for r in exact_results]
-            value_counts = Counter(exact_values)
-            majority_value, count = value_counts.most_common(1)[0]
-            if count < 2 and len(value_counts) > 1:
                 print(
-                    f"No majority value for model {model}, query {query_type}, path_formula {path_formula}: {value_counts}"
+                    f"WARNING, no force-exact results for model {model}, query {query_type}, path_formula {path_formula}, using exact average {majority_value} for validation."
                 )
 
             # Mark all results as correct/incorrect based on majority
@@ -226,15 +251,21 @@ def validate_results(results):
                 r for r in quant_results if r["arithmetic_mode"] == "force-exact"
             ]
 
-            if not exact_quant:
-                raise ValueError(
-                    f"No force-exact quantitative results for bounded query: model={model}, path_formula={path_formula}"
+            if exact_quant:
+                # Get majority quantitative value
+                exact_values = [round(r["value"], 10) for r in exact_quant]
+                value_counts = Counter(exact_values)
+                majority_quant_value, _ = value_counts.most_common(1)[0]
+            else:
+                exact_quant = [
+                    r for r in quant_results if r["arithmetic_mode"] == "exact"
+                ]
+                majority_quant_value = np.average(
+                    [round(r["value"], 10) for r in exact_quant]
                 )
-
-            # Get majority quantitative value
-            exact_values = [round(r["value"], 10) for r in exact_quant]
-            value_counts = Counter(exact_values)
-            majority_quant_value, _ = value_counts.most_common(1)[0]
+                print(
+                    f"WARNING, no force-exact quantitative results for model {model}, using exact average {majority_quant_value} for bounded validation."
+                )
 
             # For each bounded result, check if it matches the expected boolean
             for r in group_results:
@@ -315,7 +346,13 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
         return
 
     # Get all unique models, methods, and arithmetic modes
-    all_models = sorted(set(r["model"] for r in filtered_results))
+    all_models = sorted(
+        set(
+            r["model"]
+            for r in filtered_results
+            if not exclude_model(r["model"], "table")
+        )
+    )
     methods = sorted(set(r["method"] for r in filtered_results))
     arithmetic_modes = sorted(set(r["arithmetic_mode"] for r in filtered_results))
 
@@ -331,9 +368,13 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
     properties_map = get_properties_from_results(filtered_results)
 
     # Create method×arithmetic combinations
-    configs = [(method, arith) for arith in arithmetic_modes for method in methods]
+    configs = [(method, arith) for method in methods for arith in arithmetic_modes]
 
     # Build data structure: model -> property -> config -> (time, is_correct, is_timeout)
+    # Also collect model stats (states, transitions) and property marginals
+    model_stats = {}  # model -> (states, transitions)
+    property_marginals = {}  # (model, prop) -> marginal
+
     data = {}
     for model in models:
         data[model] = {}
@@ -359,43 +400,65 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
                     else:
                         is_correct = correctness[key]
 
+                    quan_key = (model, method, arith, "quantitative", prop)
+                    if quan_key in correctness:
+                        is_quan_correct = correctness[
+                            (model, method, arith, "quantitative", prop)
+                        ]
+                    else:
+                        is_quan_correct = None
+
                     time_val = r["time"]
                     data[model][prop][(method, arith)] = (
                         time_val,
                         is_correct,
+                        is_quan_correct,
                         is_timeout,
                     )
+
+                    # Store model stats (same for all properties)
+                    if (
+                        model not in model_stats
+                        and "states" in r
+                        and "transitions" in r
+                    ):
+                        model_stats[model] = (r["states"], r["transitions"])
+
+                    # Store property marginal
+                    if (model, prop) not in property_marginals and "marginal" in r:
+                        property_marginals[(model, prop)] = r["marginal"]
 
     # Start building LaTeX table
     lines = []
 
-    # Calculate number of columns: 2 for Model & Property, then num_configs for data
+    # Calculate number of columns: Model, States, Transitions, Property, Marginal, then num_configs for data
     num_configs = len(configs)
-    col_spec = (
-        "ll" + "r" * num_configs
-    )  # Two left-aligned columns for Model & Property, right-aligned for data
+    col_spec = "lrrrr" + "".join(
+        ["|" + "".join("r" for _ in arithmetic_modes) for _ in methods]
+    )  # Model (left), States (right), Transitions (right), Property (right), Marginal (right), then data columns
 
     lines.append(f"\\begin{{tabular}}{{{col_spec}}}")
     lines.append("\\toprule")
 
     # Header: method names spanning columns
-    header1 = "Model & Prop"
+    header1 = "Model & States & Trans. & Prop & Marg."
     method_spans = {}
     for method in methods:
         count = sum(1 for m, a in configs if m == method)
         method_spans[method] = count
 
-    for method in methods:
+    for i, method in enumerate(methods):
         span = method_spans[method]
+        vline = "|" if i != len(methods) - 1 else ""
         if span > 1:
-            header1 += f" & \\multicolumn{{{span}}}{{c}}{{{method}}}"
+            header1 += f" & \\multicolumn{{{span}}}{{c{vline}}}{{{method}}}"
         else:
             header1 += f" & {method}"
     header1 += " \\\\"
     lines.append(header1)
 
     # Header: arithmetic mode names
-    header2 = " & "
+    header2 = " & & & &"
     for method in methods:
         for arith in arithmetic_modes:
             if (method, arith) in configs:
@@ -420,45 +483,62 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
         prev_source = current_source
 
         for i, prop in enumerate(props):
-            # Model name only on first row for this model
+            # Model name, states, and transitions only on first row for this model
             if i == 0:
                 # Get display name for model (with LaTeX escaping)
                 model_tex = get_model_name(model)
                 lines.append(f"\\multirow{{{len(props)}}}{{*}}{{{model_tex}}}")
-            else:
-                lines.append("")
 
-            # Property number (1-indexed)
-            row = f" & {i+1}"
+                # Add states and transitions
+                if model in model_stats:
+                    states, transitions = model_stats[model]
+                    lines[
+                        -1
+                    ] += f" & \\multirow{{{len(props)}}}{{*}}{{{states}}} & \\multirow{{{len(props)}}}{{*}}{{{transitions}}}"
+                else:
+                    lines[
+                        -1
+                    ] += f" & \\multirow{{{len(props)}}}{{*}}{{---}} & \\multirow{{{len(props)}}}{{*}}{{---}}"
+            else:
+                lines.append(" & &")
+
+            # Property number (1-indexed) and marginal
+            marginal = property_marginals.get((model, prop))
+            if marginal is not None:
+                # Format marginal to 3 decimal places
+                marginal_str = f"{marginal:.3f}"
+            else:
+                marginal_str = "---"
+            row = f" & {i+1} & {marginal_str}"
 
             # Find best time for this row (excluding timeouts and incorrect results)
             best_time = min(
                 t
-                for t, c, to in data[model][prop].values()
-                if c and not to and t is not None
+                for t, c, qc, to in data[model][prop].values()
+                if c and qc and not to and t is not None
             )
 
             # Add data cells
             for config in configs:
                 if config in data[model][prop]:
-                    time_val, is_correct, is_timeout = data[model][prop][config]
+                    time_val, is_correct, is_quan_correct, is_timeout = data[model][
+                        prop
+                    ][config]
 
                     if is_timeout:
                         cell = "TO"
                     elif is_correct is False:
                         cell = "$\\times$"
+                    elif is_quan_correct is False:
+                        cell = "$\\dagger$"
                     elif time_val is None:
                         cell = "---"
                     else:
-                        # Format time with appropriate precision
-                        if time_val < 0.01:
-                            cell = f"{time_val:.4f}"
-                        elif time_val < 1:
-                            cell = f"{time_val:.3f}"
-                        elif time_val < 10:
-                            cell = f"{time_val:.2f}"
-                        else:
-                            cell = f"{time_val:.1f}"
+                        # Format time with at most 3 decimal places
+                        cell = f"{time_val:.3f}"
+                        # Remove trailing zeros after decimal point
+                        if "." in cell:
+                            cell = cell.rstrip("0").rstrip(".")
 
                         # Bold if this is the best time
                         if best_time is not None and abs(time_val - best_time) < 1e-9:
@@ -479,6 +559,201 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
         f.write("\n".join(lines))
 
     print(f"Generated LaTeX table: {output_file}")
+
+
+def create_scatter_plot(
+    points,
+    color_map,
+    markers,
+    marker_labels,
+    xlabel,
+    ylabel,
+    title,
+    filename,
+    output_dir,
+):
+    """Abstract scatter plot creation with error and timeout handling.
+
+    Args:
+        points: List of tuples (val1, val2, model, qtype, is_correct1, is_correct2, is_timeout1, is_timeout2)
+        color_map: Dictionary mapping model names to colors
+        markers: Dictionary mapping query types to marker symbols
+        marker_labels: Dictionary mapping query types to display labels
+        xlabel: X-axis label
+        ylabel: Y-axis label
+        title: Plot title
+        filename: Output filename
+        output_dir: Output directory path
+    """
+    fig, ax = plt.subplots(figsize=(10, 8))
+
+    # Find max value to place incorrect points on a line above
+    max_val = max(
+        max(
+            (v1 for v1, _, _, _, c1, _, to1, _ in points if c1 and not to1),
+            default=1.0,
+        ),
+        max(
+            (v2 for _, v2, _, _, _, c2, _, to2 in points if c2 and not to2),
+            default=1.0,
+        ),
+    )
+    error_line = max_val * 5  # Place error line 5x higher
+    timeout_line = max_val * 10  # Place timeout line 10x higher
+
+    # Plot points
+    labeled_models = set()
+    for v1, v2, model, qtype, c1, c2, to1, to2 in points:
+        label = get_model_name(model) if model not in labeled_models else None
+        if label:
+            labeled_models.add(model)
+        # Timeouts go to timeout_line, wrong results go to error_line
+        if to1:
+            v1 = timeout_line
+        elif not c1:
+            v1 = error_line
+        if to2:
+            v2 = timeout_line
+        elif not c2:
+            v2 = error_line
+
+        ax.scatter(
+            v1,
+            v2,
+            color=color_map[model],
+            marker=markers[qtype],
+            s=110,
+            alpha=0.75,
+            edgecolors="k",
+            linewidths=0.4,
+            label=label,
+        )
+
+    # Draw horizontal error line and timeout line
+    ax.axvline(x=error_line, color="k", linestyle="--", alpha=0.3, linewidth=1)
+    ax.axhline(y=error_line, color="k", linestyle="--", alpha=0.3, linewidth=1)
+    ax.axvline(x=timeout_line, color="orange", linestyle=":", alpha=0.4, linewidth=1.5)
+    ax.axhline(y=timeout_line, color="orange", linestyle=":", alpha=0.4, linewidth=1.5)
+
+    # Reference lines
+    min_val = min(
+        min(v1 for v1, _, _, _, c1, _, to1, _ in points if c1 and not to1),
+        min(v2 for _, v2, _, _, _, c2, _, to2 in points if c2 and not to2),
+    )
+    min_stop_lines = min_val * 0.1
+
+    ax.plot(
+        [min_stop_lines, error_line],
+        [min_stop_lines, error_line],
+        "k-",
+        linewidth=1,
+        label="1:1",
+    )
+    ax.plot(
+        [min_stop_lines / 10, error_line / 10],
+        [min_stop_lines, error_line],
+        "k--",
+        linewidth=0.6,
+        alpha=0.5,
+        label="10x",
+    )
+    ax.plot(
+        [min_stop_lines, error_line],
+        [min_stop_lines / 10, error_line / 10],
+        "k--",
+        linewidth=0.6,
+        alpha=0.5,
+    )
+    ax.plot(
+        [min_stop_lines / 100, error_line / 100],
+        [min_stop_lines, error_line],
+        "k:",
+        linewidth=0.6,
+        alpha=0.5,
+        label="100x",
+    )
+    ax.plot(
+        [min_stop_lines, error_line],
+        [min_stop_lines / 100, error_line / 100],
+        "k:",
+        linewidth=0.6,
+        alpha=0.5,
+    )
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+
+    # Build legend
+    model_handles, model_labels = ax.get_legend_handles_labels()
+    marker_handles = [
+        Line2D(
+            [0],
+            [0],
+            marker=markers[qt],
+            color="k",
+            linestyle="",
+            markerfacecolor="w",
+            markeredgecolor="k",
+            markersize=9,
+            label=marker_labels[qt],
+        )
+        for qt in markers.keys()
+    ]
+
+    ax.legend(
+        model_handles + marker_handles,
+        model_labels + [h.get_label() for h in marker_handles],
+        title="Model / Query Type",
+        framealpha=0.9,
+        bbox_to_anchor=(1.05, 1),
+        loc="upper left",
+    )
+
+    # Add tick labels for incorrect results on the error line and timeout line
+    yticks = list(t for t in ax.get_yticks() if t < error_line)
+    yticks.extend([error_line, timeout_line])
+    ax.set_yticks(yticks)
+    ax.set_yticks([t for t in ax.get_yticks(minor=True) if t < error_line], minor=True)
+    tick_labels = [
+        (
+            rf"$10^{{{int(np.log10(t))}}}$"
+            if t not in [error_line, timeout_line]
+            else (r"$\times$" if t == error_line else r"$\mathcal{T}$")
+        )
+        for t in ax.get_yticks()
+    ]
+    ax.set_yticklabels(tick_labels)
+
+    xticks = list(t for t in ax.get_xticks() if t < error_line)
+    xticks.extend([error_line, timeout_line])
+    ax.set_xticks(xticks)
+    ax.set_xticks([t for t in ax.get_xticks(minor=True) if t < error_line], minor=True)
+    tick_labels = [
+        (
+            rf"$10^{{{int(np.log10(t))}}}$"
+            if t not in [error_line, timeout_line]
+            else (r"$\times$" if t == error_line else r"$\mathcal{T}$")
+        )
+        for t in ax.get_xticks()
+    ]
+    ax.set_xticklabels(tick_labels)
+
+    # Set limits, ensuring they're positive for log scale
+    left_lim = max(min_val * 0.5, 1e-6)
+    right_lim = timeout_line * 2
+    bottom_lim = max(min_val * 0.5, 1e-6)
+    top_lim = timeout_line * 2
+
+    ax.set_xlim(left=left_lim, right=right_lim)
+    ax.set_ylim(bottom=bottom_lim, top=top_lim)
+
+    plt.tight_layout()
+    plt.savefig(output_dir / filename, backend="pgf")
+    plt.close()
+    print(f"Saved: {output_dir / filename}")
 
 
 def plot_method_scatter(results, output_dir, correctness):
@@ -553,7 +828,9 @@ def plot_method_scatter(results, output_dir, correctness):
         marker_labels = {qt: get_query_type_name(qt).capitalize() for qt in query_types}
 
         # Collect points for this combination pair
-        points = []  # (t1, t2, model, qtype, is_correct1, is_correct2)
+        points = (
+            []
+        )  # (t1, t2, model, qtype, is_correct1, is_correct2, is_timeout1, is_timeout2)
         for model in models:
             if model not in properties_map:
                 raise ValueError(
@@ -595,202 +872,11 @@ def plot_method_scatter(results, output_dir, correctness):
                             )
                         )
 
-                        # if (
-                        #     combo2_name == "restart/exact"
-                        #     and combo1_name == "bisection/float"
-                        #     and not is_timeout1
-                        #     and not is_timeout2
-                        # ):
-                        #     if (
-                        #         r1_list[0]["time"] / r2_list[0]["time"] > 100
-                        #         or r2_list[0]["time"] / r1_list[0]["time"] > 100
-                        #     ):
-                        #         print(
-                        #             f"Large time difference for model {model}, query {qtype}, path_formula {path_formula} between "
-                        #             f"{combo1_name} {r1_list[0]['index']} ({r1_list[0]['time']}s) and {combo2_name} {r2_list[0]['index']} ({r2_list[0]['time']}s)"
-                        #         )
-
         if not points:
             raise ValueError(
                 f"No data points found for scatter plot: {combo1_name} vs {combo2_name}"
             )
 
-        fig, ax = plt.subplots(figsize=(10, 8))
-
-        # Find max time to place incorrect points on a line above
-        max_time = max(
-            max(
-                (t1 for t1, _, _, _, c1, _, to1, _ in points if c1 and not to1),
-                default=1.0,
-            ),
-            max(
-                (t2 for _, t2, _, _, _, c2, _, to2 in points if c2 and not to2),
-                default=1.0,
-            ),
-        )
-        error_line = max_time * 5  # Place error line 5x higher
-        timeout_line = max_time * 10  # Place timeout line 10x higher
-
-        # Plot correct points
-        labeled_models = set()
-        for t1, t2, model, qtype, c1, c2, to1, to2 in points:
-            label = get_model_name(model) if model not in labeled_models else None
-            if label:
-                labeled_models.add(model)
-            # Timeouts go to timeout_line, wrong results go to error_line
-            if to1:
-                t1 = timeout_line
-            elif not c1:
-                t1 = error_line
-            if to2:
-                t2 = timeout_line
-            elif not c2:
-                t2 = error_line
-
-            ax.scatter(
-                t1,
-                t2,
-                color=color_map[model],
-                marker=markers[qtype],
-                s=110,
-                alpha=0.75,
-                edgecolors="k",
-                linewidths=0.4,
-                label=label,
-            )
-
-        # Draw horizontal error line and timeout line
-        ax.axvline(x=error_line, color="k", linestyle="--", alpha=0.3, linewidth=1)
-        ax.axhline(y=error_line, color="k", linestyle="--", alpha=0.3, linewidth=1)
-        ax.axvline(
-            x=timeout_line, color="orange", linestyle=":", alpha=0.4, linewidth=1.5
-        )
-        ax.axhline(
-            y=timeout_line, color="orange", linestyle=":", alpha=0.4, linewidth=1.5
-        )
-
-        # Reference lines
-        min_time = min(
-            min(t1 for t1, _, _, _, c1, _, to1, _ in points if c1 and not to1),
-            min(t2 for _, t2, _, _, _, c2, _, to2 in points if c2 and not to2),
-        )
-        min_stop_lines = min_time * 0.1
-
-        ax.plot(
-            [min_stop_lines, error_line],
-            [min_stop_lines, error_line],
-            "k-",
-            linewidth=1,
-            label="1:1",
-        )
-        ax.plot(
-            [min_stop_lines / 10, error_line / 10],
-            [min_stop_lines, error_line],
-            "k--",
-            linewidth=0.6,
-            alpha=0.5,
-            label="10x",
-        )
-        ax.plot(
-            [min_stop_lines, error_line],
-            [min_stop_lines / 10, error_line / 10],
-            "k--",
-            linewidth=0.6,
-            alpha=0.5,
-        )
-        ax.plot(
-            [min_stop_lines / 100, error_line / 100],
-            [min_stop_lines, error_line],
-            "k:",
-            linewidth=0.6,
-            alpha=0.5,
-            label="100x",
-        )
-        ax.plot(
-            [min_stop_lines, error_line],
-            [min_stop_lines / 100, error_line / 100],
-            "k:",
-            linewidth=0.6,
-            alpha=0.5,
-        )
-
-        ax.set_xscale("log")
-        ax.set_yscale("log")
-        ax.set_xlabel(f"Time for {combo1_name} (s)")
-        ax.set_ylabel(f"Time for {combo2_name} (s)")
-        ax.set_title(f"Method Comparison: {combo1_name} vs {combo2_name}")
-        # ax.grid(True, alpha=0.3)
-
-        # Build legend
-        model_handles, model_labels = ax.get_legend_handles_labels()
-        marker_handles = [
-            Line2D(
-                [0],
-                [0],
-                marker=markers[qt],
-                color="k",
-                linestyle="",
-                markerfacecolor="w",
-                markeredgecolor="k",
-                markersize=9,
-                label=marker_labels[qt],
-            )
-            for qt in query_types
-        ]
-
-        ax.legend(
-            model_handles + marker_handles,
-            model_labels + [h.get_label() for h in marker_handles],
-            title="Model / Query Type",
-            framealpha=0.9,
-            bbox_to_anchor=(1.05, 1),
-            loc="upper left",
-        )
-
-        # Add tick labels for incorrect results on the error line and timeout line
-
-        yticks = list(t for t in ax.get_yticks() if t < error_line)
-        yticks.extend([error_line, timeout_line])
-        ax.set_yticks(yticks)
-        ax.set_yticks(
-            [t for t in ax.get_yticks(minor=True) if t < error_line], minor=True
-        )
-        tick_labels = [
-            (
-                rf"$10^{{{int(np.log10(t))}}}$"
-                if t not in [error_line, timeout_line]
-                else (r"$\times$" if t == error_line else r"$\mathcal{T}$")
-            )
-            for t in ax.get_yticks()
-        ]
-        ax.set_yticklabels(tick_labels)
-
-        xticks = list(t for t in ax.get_xticks() if t < error_line)
-        xticks.extend([error_line, timeout_line])
-        ax.set_xticks(xticks)
-        ax.set_xticks(
-            [t for t in ax.get_xticks(minor=True) if t < error_line], minor=True
-        )
-        tick_labels = [
-            (
-                rf"$10^{{{int(np.log10(t))}}}$"
-                if t not in [error_line, timeout_line]
-                else (r"$\times$" if t == error_line else r"$\mathcal{T}$")
-            )
-            for t in ax.get_xticks()
-        ]
-        ax.set_xticklabels(tick_labels)
-
-        # Set limits, ensuring they're positive for log scale
-        left_lim = max(min_time * 0.5, 1e-6)  # Ensure positive value for log scale
-        right_lim = timeout_line * 2
-        bottom_lim = max(min_time * 0.5, 1e-6)  # Ensure positive value for log scale
-        top_lim = timeout_line * 2
-
-        ax.set_xlim(left=left_lim, right=right_lim)
-        ax.set_ylim(bottom=bottom_lim, top=top_lim)
-
-        plt.tight_layout()
         # Sanitize names for filename (remove LaTeX symbols)
         combo1_file = (
             combo1_name.replace("/", "_")
@@ -805,9 +891,152 @@ def plot_method_scatter(results, output_dir, correctness):
             .replace("varepsilon", "eps")
         )
         filename = f"scatter_{combo1_file}_vs_{combo2_file}.pdf"
-        plt.savefig(output_dir / filename, backend="pgf")
-        plt.close()
-        print(f"Saved: {output_dir / filename}")
+
+        create_scatter_plot(
+            points=points,
+            color_map=color_map,
+            markers=markers,
+            marker_labels=marker_labels,
+            xlabel=f"Time for {combo1_name} (s)",
+            ylabel=f"Time for {combo2_name} (s)",
+            title=f"Method Comparison: {combo1_name} vs {combo2_name}",
+            filename=filename,
+            output_dir=output_dir,
+        )
+
+
+def plot_iterations_scatter(results, output_dir, correctness):
+    """Create scatter plots comparing iterations between bisection and bisection-advanced for same arithmetic modes."""
+
+    # Include both successful results and timeouts
+    plottable = [
+        r for r in results if (r["success"] or r["timeout"]) and "iterations" in r
+    ]
+
+    if not plottable:
+        print("No results with iterations data to plot")
+        return
+
+    # Get all arithmetic modes
+    arithmetic_modes = sorted(set(r["arithmetic_mode"] for r in plottable))
+
+    # Filter to only bisection and bisection-advanced methods
+    method1 = "bisection"
+    method2 = "bisection-advanced"
+
+    for arith in arithmetic_modes:
+        arith_name = get_arithmetic_mode_name(arith)
+
+        method1_results = [
+            r
+            for r in plottable
+            if r["method"] == method1 and r["arithmetic_mode"] == arith
+        ]
+        method2_results = [
+            r
+            for r in plottable
+            if r["method"] == method2 and r["arithmetic_mode"] == arith
+        ]
+
+        if not method1_results or not method2_results:
+            continue
+
+        # Extract properties from results for these methods
+        properties_map = get_properties_from_results(method1_results + method2_results)
+
+        # Collect per-model colors
+        all_results = method1_results + method2_results
+        models = sorted(
+            set(
+                r["model"]
+                for r in all_results
+                if not exclude_model(r["model"], "iterations_scatter")
+            )
+        )
+        color_map = get_model_colors(models)
+
+        query_types = ["quantitative", "bounded"]
+        markers = {"quantitative": "o", "bounded": "^"}
+        marker_labels = {qt: get_query_type_name(qt).capitalize() for qt in query_types}
+
+        # Collect points for this arithmetic mode
+        points = []
+        # (iter1, iter2, model, qtype, is_correct1, is_correct2, is_timeout1, is_timeout2)
+
+        for model in models:
+            if model not in properties_map:
+                print(
+                    f"Model {model} not found in properties_map for iterations scatter plot"
+                )
+
+            qtype = "quantitative"
+            for path_formula in properties_map[model]:
+                r1_list = [
+                    r
+                    for r in method1_results
+                    if r["model"] == model
+                    and r["query_type"] == qtype
+                    and r["path_formula"] == path_formula
+                ]
+                r2_list = [
+                    r
+                    for r in method2_results
+                    if r["model"] == model
+                    and r["query_type"] == qtype
+                    and r["path_formula"] == path_formula
+                ]
+                if r1_list and r2_list:
+                    key1 = (model, method1, arith, qtype, path_formula)
+                    key2 = (model, method2, arith, qtype, path_formula)
+                    is_correct1 = key1 in correctness and correctness[key1]
+                    is_correct2 = key2 in correctness and correctness[key2]
+                    is_timeout1 = r1_list[0]["timeout"]
+                    is_timeout2 = r2_list[0]["timeout"]
+
+                    # Get iterations, default to 1 if not present, timeout, or None
+                    iter1 = r1_list[0]["iterations"]
+                    iter2 = r2_list[0]["iterations"]
+
+                    # Ensure minimum value of 1 for log scale
+                    iter1 = iter1 if not is_timeout1 else 1
+                    iter2 = iter2 if not is_timeout2 else 1
+
+                    points.append(
+                        (
+                            iter1,
+                            iter2,
+                            model,
+                            qtype,
+                            is_correct1,
+                            is_correct2,
+                            is_timeout1,
+                            is_timeout2,
+                        )
+                    )
+
+        if not points:
+            continue
+
+        # Sanitize names for filename
+        arith_file = (
+            arith_name.replace("/", "_")
+            .replace("$", "")
+            .replace("\\", "")
+            .replace("varepsilon", "eps")
+        )
+        filename = f"scatter_iterations_{method1}_vs_{method2}_{arith_file}.pdf"
+
+        create_scatter_plot(
+            points=points,
+            color_map=color_map,
+            markers=markers,
+            marker_labels=marker_labels,
+            xlabel=f"Iterations for {method1}/{arith_name}",
+            ylabel=f"Iterations for {method2}/{arith_name}",
+            title=f"Iterations Comparison: {method1} vs {method2} ({arith_name})",
+            filename=filename,
+            output_dir=output_dir,
+        )
 
 
 def plot_speedup_heatmap(
@@ -850,7 +1079,7 @@ def plot_speedup_heatmap(
     combinations = []
     for mode in arithmetic_modes:
         for method in methods:
-            combo = f"{method}/{get_arithmetic_mode_name(mode)}"
+            combo = (method, mode, f"{method}/{get_arithmetic_mode_name(mode)}")
             if not (method == baseline[0] and mode == baseline[1]):
                 combinations.append(combo)
 
@@ -885,8 +1114,7 @@ def plot_speedup_heatmap(
     baseline_timeout_matrix = np.zeros((len(combinations), num_columns), dtype=bool)
     missing_matrix = np.zeros((len(combinations), num_columns), dtype=bool)
 
-    for i, combo in enumerate(combinations):
-        method, mode = combo.split("/")
+    for i, (method, mode, combo_name) in enumerate(combinations):
         for j, (model, path_prop) in enumerate(columns):
             # Baseline is exact restart
             baseline_results = [
@@ -995,7 +1223,7 @@ def plot_speedup_heatmap(
     ax.set_xticklabels(tick_labels, rotation=45, ha="right")
 
     ax.set_yticks(np.arange(len(combinations)))
-    ax.set_yticklabels(combinations)
+    ax.set_yticklabels([combo_name for _, _, combo_name in combinations])
 
     # Add text annotations
     for i in range(len(combinations)):
@@ -1163,7 +1391,7 @@ def plot_speedup_vs_marginal(
             set(
                 r["model"]
                 for r in baseline_results + target_results
-                if not exclude_model(r["model"], "speedup_vs_marginal")
+                if not exclude_model(r["model"], "marginal")
             )
         )
         color_map = get_model_colors(models)
@@ -1208,9 +1436,10 @@ def plot_speedup_vs_marginal(
                         )
                         # Raise exception if no marginal available
                         if marginal is None:
-                            raise ValueError(
-                                f"Missing marginal for model={model}, path_formula={path_formula}, query_type={query_type}"
+                            print(
+                                f"WARNING: No marginal for model={model}, property={path_formula}, query_type={query_type}"
                             )
+                            continue
 
                         if target[0]["timeout"]:
                             speedup = 0
@@ -1480,6 +1709,7 @@ def main():
     print("\nGenerating plots...")
     plot_speedup_heatmap(results, args.output, correctness, query_type="quantitative")
     plot_speedup_heatmap(results, args.output, correctness, query_type="bounded")
+    plot_iterations_scatter(results, args.output, correctness)
     plot_speedup_vs_marginal(results, args.output, correctness)
     plot_method_scatter(results, args.output, correctness)
 
