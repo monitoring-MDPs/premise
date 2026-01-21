@@ -513,9 +513,10 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
 
             # Find best time for this row (excluding timeouts and incorrect results)
             best_time = min(
-                t
+                (t
                 for t, c, qc, to in data[model][prop].values()
-                if c and qc and not to and t is not None
+                if c and qc and not to and t is not None),
+                default=None,
             )
 
             # Add data cells

@@ -222,8 +222,8 @@ def _build_storm_command_from_task(
         cmd.extend(["--conditional", "pi"])
 
     # Turn on VI for exact bisection
-    if "bisection" in method and "exact" in exact_mode:
-        cmd.extend(["--minmax:method", "vi"])
+    # if "bisection" in method and "exact" in exact_mode:
+    #     cmd.extend(["--minmax:method", "vi"])
 
     return cmd
 

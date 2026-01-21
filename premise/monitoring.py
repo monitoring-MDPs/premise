@@ -1,11 +1,14 @@
 from collections.abc import Iterable
 import csv
+from fractions import Fraction
 import logging
 import os
 import os.path
 from pathlib import Path
+from statistics import mean, stdev
 import time
 
+from matplotlib.pylab import f
 import stormpy as sp
 import stormpy.pomdp
 from tqdm import tqdm
@@ -537,6 +540,15 @@ def create_benchmark_models(
     model, risk_assessment = models.build_model_and_risk(
         models.ModelDescription(path, constants, risk_property), options
     )
+    sp.export_to_drn(
+        model,
+        model_path
+        + f"full-{Path(path).stem}"
+        + ".drn",
+    )
+    fraction_risks = [Fraction(str(risk)) for risk in risk_assessment]
+    avg_risk = mean(fraction_risks)
+    std_risk = stdev(fraction_risks)
     logger.info(f"Model has {model.nr_states} states")
 
     logger.info("Initialize unfolder")
@@ -545,39 +557,41 @@ def create_benchmark_models(
     unfolding_options = stormpy.pomdp.ObservationTraceUnfolderOptions()
     unfolding_options.rejection_sampling = False
 
-    if options.conditional_method is not None:
-        stormpy_environment.model_checker_environment.conditional_algorithm = (
-            options.conditional_method
-        )
-
-    if options.model_checking_method is not None:
-        stormpy_environment.solver_environment.minmax_solver_environment.method = (
-            options.model_checking_method
-        )
-
-    if options.force_exact:
-        stormpy_environment.solver_environment.set_force_exact()
-
-    stormpy_environment.solver_environment.minmax_solver_environment.precision = (
-        sp.Rational(1e-6)
-    )
-
     unfolder = stormpy.pomdp.create_observation_trace_unfolder(
         model, risk_assessment, expr_manager, unfolding_options
     )
 
     logger.info("Looping over seeds to create benchmark models")
+
+    marginals = {}
     for seed in seeds:
         logger.info(f"Creating benchmark model for seed {seed}")
         stg = trace_generator.make_simulation_wrapper(model, trace_length, seed)
 
         observations = [stg.initialize()]
-        for i in range(trace_length):
-            obs = stg.step()
-            observations.append(obs)
+
+        for _ in range(trace_length):
+            observations.append(stg.step())
 
         logger.info(f"Creating unrolled model for seed {seed}")
-        mdp = unfolder.extend(observations)
+        mdp = unfolder.transform(observations)
+        prop = sp.parse_properties(
+            f'Pmax=? [F "_end"]'
+        )[0]
+        result = sp.model_checking(
+            mdp,
+            prop,
+            environment=stormpy_environment,
+            only_initial_states=True,
+        )
+        marginal = result.at(mdp.initial_states[0])
+        marginals[seed] = marginal
+        print(f"Seed {seed}, marginal: {marginal}")
+        if marginal == 0:
+            raise RuntimeError(
+                "The marginal risk of reaching the condition is 0, incorrect benchmark model."
+            )
+
         sp.export_to_drn(
             mdp,
             model_path
@@ -585,3 +599,12 @@ def create_benchmark_models(
             + (f"-{seed}" if len(seeds) > 1 else "")
             + ".drn",
         )
+    
+    with open(model_path + Path(path).stem + "-stats.out", "w") as file:
+        file.write(f"states={model.nr_states}\n")
+        file.write(f"transitions={model.nr_transitions}\n")
+        file.write(f"avg_risk= ({float(avg_risk)}) {avg_risk}\n")
+        file.write(f"std_risk= ({float(std_risk)}) {std_risk}\n")
+        file.write("marginals:\n")
+        for seed, marginal in marginals.items():
+            file.write(f"  seed {seed}: ({float(marginal)}) {marginal}\n")
