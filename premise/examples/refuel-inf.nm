@@ -1,7 +1,7 @@
 pomdp
 
 observables
-start, ax, ay, meter
+start
 endobservables
 
 const int N;
@@ -28,10 +28,11 @@ formula westenabled = ay != ayMIN;
 formula eastenabled = ay != ayMAX;
 formula done = false; //start & ax = axMAX & ay = ayMAX;
 formula crash =  (ax = ob1x & ay = ob1y);
-formula atStation = (ax = rf1x & ay = rf1y) | (ax = rf2x & ay = rf2y) |  (ax = rf3x & ay = rf3y);
+formula atStation = (ax = axMIN) | (ay = ayMIN);
 formula canRefuel = atStation  & fuel < fuelCAP;
 observable "fuelempty" = fuel > 0;
 observable "fuelfull" = fuel = ENERGY;
+observable "isAtStation" = atStation;
 
 module master
     start : bool init false;
@@ -49,23 +50,14 @@ module tank
     fuel : [0..fuelCAP] init fuelCAP;
 
     [refuel] canRefuel -> 1:(fuel'=fuelCAP);
-    [north] fuel > 0 & !canRefuel -> 0.9:(fuel'=fuel-1) + 0.1:(fuel'=max(fuel-2,0));
-    [south] fuel > 0 & !canRefuel -> 0.9:(fuel'=fuel-1)+ 0.1:(fuel'=max(fuel-2,0));
-    [east] fuel > 0 & !canRefuel -> 0.9:(fuel'=fuel-1)+ 0.1:(fuel'=max(fuel-2,0));
-    [west] fuel > 0 & !canRefuel -> 0.9:(fuel'=fuel-1)+ 0.1:(fuel'=max(fuel-2,0));
+    [north] fuel > 0 & !canRefuel -> 0.6:(fuel'=fuel) + 0.3:(fuel'=fuel-1) + 0.1:(fuel'=max(fuel-2,0));
+    [south] fuel > 0 & !canRefuel -> 0.6:(fuel'=fuel) + 0.3:(fuel'=fuel-1) + 0.1:(fuel'=max(fuel-2,0));
+    [east] fuel > 0 & !canRefuel -> 0.6:(fuel'=fuel) + 0.3:(fuel'=fuel-1) + 0.1:(fuel'=max(fuel-2,0));
+    [west] fuel > 0 & !canRefuel -> 0.6:(fuel'=fuel) + 0.3:(fuel'=fuel-1) + 0.1:(fuel'=max(fuel-2,0));
     [empty] fuel = 0 & !canRefuel -> 1:(fuel'=0);
 endmodule
 
-module sensor
-// notice that the sensor always reads the *old* fuel value.
-    meter : [0..fuelCAP] init fuelCAP;
-    [refuel] true -> (meter'=fuelCAP);
-    [north] true ->  0.10: (meter'=max(fuel-3,0)) + 0.45: (meter'=max(fuel-2,0)) + 0.4: (meter'=fuel-1) + 0.05: (meter'=fuel);
-    [south] true ->  0.10: (meter'=max(fuel-3,0)) + 0.45: (meter'=max(fuel-2,0)) + 0.4: (meter'=fuel-1) + 0.05: (meter'=fuel);
-    [east] true -> 0.10: (meter'=max(fuel-3,0)) + 0.45: (meter'=max(fuel-2,0)) + 0.4: (meter'=fuel-1) + 0.05: (meter'=fuel);
-    [west] true -> 0.10: (meter'=max(fuel-3,0)) + 0.45: (meter'=max(fuel-2,0)) + 0.4: (meter'=fuel-1) + 0.05: (meter'=fuel);
-    [empty] true -> (meter'=0);
-endmodule
+
 
 module rover
     ax : [axMIN..axMAX] init 0;

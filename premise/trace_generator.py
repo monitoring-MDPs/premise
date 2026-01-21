@@ -2,13 +2,12 @@ import logging
 
 import stormpy as sp
 import stormpy.simulator
-from logging import getLogger
 
 logger = logging.getLogger(__name__)
 
-def make_simulation_wrapper(model, length=None):
+def make_simulation_wrapper(model, length=None, seed=None):
     logger.info("Initialize simulator...")
-    simulator = sp.simulator.create_simulator(model)
+    simulator = sp.simulator.create_simulator(model, seed=seed)
     if length is None:
         return SimulationTraceGenerator(simulator)
     else:

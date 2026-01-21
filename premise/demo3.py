@@ -1,0 +1,35 @@
+import time
+from pathlib import Path
+
+
+import premise
+import models
+import monitor
+import trace_generator
+import traces
+import learning.oracle as oracle
+
+def ensure_path_exists(path):
+    Path(path).mkdir(parents=True, exist_ok=True)
+
+options = monitor.PremiseOptions()
+options.rejection_sampling = False
+modelnames = ["refuelC-15-15"]
+for modelname in modelnames:
+    oracle_interface, generator, tracemapper = premise.construct_learning_interfaces(models.default_models[modelname],
+                                                                                     options)
+    print("Model created...")
+
+    for seed in range(20):
+        for trlen in [25,50,75,100]: # [,200,400,600,1000]:
+            generator.set_seed(seed)
+            trace = generator.generate_random_trace(trlen)
+            start_time = time.time()
+            risk = oracle_interface.membership(trace, intermediate_results=False)
+            end_time = time.time()
+            print(float(risk))
+            print(end_time - start_time)
+            total_time = end_time - start_time
+            if float(risk) > 0.001 and risk < 1 and total_time > 1:
+                path = f"filedump/{modelname}-{seed}"
+                oracle_interface.dump_internal_data(f"{path}")

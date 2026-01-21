@@ -16,8 +16,8 @@ module plane
     [stay] true -> 1: (d'=d);
 endmodule
 
-formula L = p = 0;
-formula M = p > 0 & p <= Pr-1;
+formula L = 2*p <= Pr-5;
+formula M = !L & !R;
 formula R = p >= Pr-1;
 
 module gv

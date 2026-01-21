@@ -18,7 +18,6 @@ import traces
 logger = logging.getLogger(__name__)
 
 
-
 def filtering(stormpy_environment, simulator, tracker, trace_length, convex_reduction, stats_file, verbose, observation_valuations = None, terminate_on_deadline = True, deadline=None):
     """
 
@@ -273,6 +272,3 @@ def run_monitor(path, risk_property, constants, trace_length, options, verbose=F
             trace_mapper = traces.TraceMapper(model)
             trace_file = f"{stats_folder}/trace-{model_id}-{options.method_id}-{seed}.csv"
             traces.export_annotated_high_level(trace_mapper.annotated_trace_to_highlevel(annotated_trace), model, trace_file)
-
-
-            #unfolding(stormpy_environment, simulator, unfolder, trace_length, stats_file, deadline=promptness_deadline, dump_file_path=unrolled_drn_file_prefix)

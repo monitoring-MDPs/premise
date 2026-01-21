@@ -22,4 +22,7 @@ class Oracle:
     def conformance(self, generator, hypothesis):
         pass
 
+    def dump_internal_data(self, path):
+        self._monitor.dump_internal_data(path)
+
 

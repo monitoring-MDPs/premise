@@ -15,23 +15,27 @@ class PremiseOptions:
     promptness_deadline: int = 1000000000
     verbose: bool = False
     use_unfolding: bool = True
-
+    restart_semantics: bool = True
+    simulator_seed: int|None = None
 
 
 class MonitorTimeOutException(Exception):
-    """"""
+    """
+    Exception raised when a monitor times out
+    """
     pass
+
 
 class Monitor:
     def __init__(self, riskassessor, deadline):
         self._risk_assessor = riskassessor
         self._deadline = deadline
 
-    def initialize(self, observation, compute_risk = True):
+    def initialize(self, observation : int):
+        assert observation is not None
         self._risk_assessor.initialize(observation)
 
-
-    def step(self, observation, compute_risk = True):
+    def step(self, observation : int, compute_risk : bool = True):
         start_time = time.monotonic()
         self._risk_assessor.step(observation)
         if compute_risk:
@@ -46,32 +50,65 @@ class Monitor:
             raise MonitorTimeOutException
         return risk
 
+    def dump_internal_data(self, path):
+        """
+        Dumps internal data from the risk assessor.
+        """
+        self._risk_assessor.dump_internal_data(path)
+
 
 class UnfoldingRiskAssessment:
+    """
+    This class supports computing the risk based on unfolding the Markov model along the trace.
+    """
     def __init__(self, stormpy_environment, unfolder):
         self._stormpy_env = stormpy_environment
         self._unfolder = unfolder
         self._mdp = None
         self._current_step = 0
-        self._prop = sp.parse_properties("Pmax=? [F \"_goal\"]")[0]
+        self._cache_until_compute = False # TODO set to true
+        self._observation_cache = []
+        self._prop = sp.parse_properties("Pmax=? [F \"_goal\"]")[0] if self._use_restart_semantics else sp.parse_properties("Pmax=? [F \"_goal\" || F \"_end\"]")[0]
+
+    @property
+    def _use_restart_semantics(self):
+        return True
+        ## TODO
+        # return self._unfolder.is_restart_semantics_set()
 
     def initialize(self, observation):
         self._mdp = self._unfolder.reset(observation)
+        self._current_step = 0
 
-    """
-    Makes a new step with the given observation.
-    """
-    def step(self, observation, dump_model_to = None):
-        self._mdp = self._unfolder.extend(observation)
-        if dump_model_to is not None:
-            path = dump_model_to + f"-{self._current_step + 1}.drn"
-            logger.info(f"Export MDP to {path}")
-            sp.export_to_drn(self._mdp, path)
+    def step(self, observation):
+        """
+        Makes a new step with the given observation.
+        """
+        if self._cache_until_compute:
+            self._observation_cache.append(observation)
+        else:
+            self._mdp = self._unfolder.extend(observation)
+        self._current_step += 1
 
-    """
-    Computes the risk
-    """
+    def dump_internal_data(self, path):
+        """ Dumps the last created MDP model. """
+        self.dump_model_to(path)
+
+    def dump_model_to(self, base_path):
+        """
+        Dumps the last created MDP model to the given path.
+        """
+        path = base_path + f"-{self._current_step + 1}.drn"
+        logger.info(f"Export MDP to {path}")
+        sp.export_to_drn(self._mdp, path)
+
     def get_risk(self, deadline = None):
+        """
+        Computes the risk
+        """
+        if self._cache_until_compute:
+            self._mdp = self._unfolder.extend(self._observation_cache)
+            self._observation_cache = []
         sp.reset_timeout()
         if deadline:
             sp.set_timeout(int(deadline / 1000))
@@ -85,12 +122,16 @@ class UnfoldingRiskAssessment:
         sp.reset_timeout()
         return True, risk
 
+
 class FilterBasedRiskAssessment:
+    """
+    This class supports computing the risk based on a forward filtering.
+    """
     def __init__(self, tracker):
         self._tracker = tracker
 
     def initialize(self, observation):
-        self._tracker.reset(observation)
+        result = self._tracker.reset(observation)
 
     def step(self, observation):
         self._tracker.reduce()
@@ -99,17 +140,24 @@ class FilterBasedRiskAssessment:
             raise RuntimeError("Tracking failed")
 
     def get_risk(self):
-        return self._tracker.obtain_current_risk()
+        return True, self._tracker.obtain_current_risk()
 
+    def dump_internal_data(self, path):
+        """ Dumps internal data. Currently not implemented. """
+        pass
 
 
 def initialize_monitor(model, risk_structure, premise_options) -> Monitor:
     stormpy_environment = premise_options.stormpy_environment
     expr_manager = sp.ExpressionManager()
-    if premise_options.use_unfolding:
-        unfolder = sp.pomdp.create_observation_trace_unfolder(model, risk_structure, expr_manager)
-        ura = UnfoldingRiskAssessment(stormpy_environment, unfolder)
-    mon = Monitor(ura, premise_options.promptness_deadline)
+    if True: # premise_options.use_unfolding:
+        unfolder = sp.pomdp.create_observation_trace_unfolder(model, risk_structure, expr_manager) # restart_semantics= premise_options.restart_semantics
+        riskassessor = UnfoldingRiskAssessment(stormpy_environment, unfolder)
+    else:
+        tracker = sp.pomdp.create_nondeterminstic_belief_tracker(model, premise_options.promptness_deadline, premise_options.promptness_deadline)
+        riskassessor = FilterBasedRiskAssessment(tracker)
+        tracker.set_risk(risk_structure)
+    mon = Monitor(riskassessor, premise_options.promptness_deadline)
     return mon
 
 
