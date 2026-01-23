@@ -140,5 +140,5 @@ label "retries_MAX_min_2" = nrtr=MAX-2;
 label "retries_MAX_min_3" = nrtr=MAX-3;
 label "retries_MAX_min_4" = nrtr=MAX-4;
 label "retries_MAX_min_5" = nrtr=MAX-5;
-label "success" = srep=3;
+label "success" = rrep=3;
 label "target" = s=5;

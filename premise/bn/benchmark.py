@@ -16,6 +16,8 @@ import time
 BRP_PROPERTIES = [
     'F "success" || F "retries_MAX_min_1"',
     'F "success" || F "retries_MAX_min_3"',
+    'F "target" || F "retries_MAX_min_1"',
+    'F "target" || F "retries_MAX_min_3"',
 ]
 
 CROWDS_PROPERTIES = [
@@ -24,7 +26,12 @@ CROWDS_PROPERTIES = [
 ]
 
 WLAN_PROPERTIES = [
-    'F "collision4" || F "collision2"',
+    'F "collision8" || F "collision2"',
+    'F "collision1" || F "bothbackoff"'
+]
+
+COIN_PROPERTIES = [
+    'F "finished" & "all_coins_equal_0"  || F "all_coins_equal_1"'
 ]
 
 MONITORING_PROPERTY = [
@@ -33,7 +40,7 @@ MONITORING_PROPERTY = [
 
 # Define properties for each model
 PROPERTIES = {
-    "alarm": ['F "HYPOVOLEMIA1" || F "ANAPHYLAXIS1"', 'F "PAP0" || F "HR0"'],
+    "alarm": ['F "HYPOVOLEMIA1" || F "ANAPHYLAXIS1"', 'F "PAP0" || F "HRSAT1"'],
     "andes": [
         'F "SNode_1251" || F ("SNode_111" | "SNode_201" | "FORCE601")',
         'F "SNode_1251" || F "SNode_80"',
@@ -78,12 +85,9 @@ PROPERTIES = {
         'F "CKNI_12_452" || F "CKNI_12_000"',
         'F "CBODD_12_150" || F "CNON_12_453"',
     ],
-    "brp-N=16-MAX=8": BRP_PROPERTIES,
-    "brp-N=32-MAX=9": BRP_PROPERTIES,
-    "brp-N=64-MAX=10": BRP_PROPERTIES,
-    "crowds_3-5": CROWDS_PROPERTIES,
-    "crowds_5-5": CROWDS_PROPERTIES,
-    # "crowds_10-5": CROWDS_PROPERTIES,
+    "brp": BRP_PROPERTIES,
+    "coin" : COIN_PROPERTIES,
+    "crowds" : CROWDS_PROPERTIES,
     "wlan": WLAN_PROPERTIES,
     "airportA-7": MONITORING_PROPERTY,
     "airportB-7": MONITORING_PROPERTY,
@@ -95,7 +99,7 @@ PROPERTIES = {
 # Threshold for bounded properties (can be changed)
 THRESHOLD = 0.5
 
-STORM_BINARY = "../storm-cond/build/bin/storm"
+STORM_BINARY = "../storm/build/bin/storm"
 
 
 def _build_tasks(args):
@@ -111,7 +115,7 @@ def _build_tasks(args):
         list(bn_benchmark_dir.glob("*.drn"))
         + list(common_benchmark_dir.glob("*.drn"))
         + list(mdp_benchmark_dir.glob("*.drn"))
-        + list(monitoring_benchmark_dir.glob("*.drn"))
+        #+ list(monitoring_benchmark_dir.glob("*.drn"))
     )
 
     # Filter models if specified
@@ -124,7 +128,7 @@ def _build_tasks(args):
         models = all_models
 
     print(f"Benchmarking {len(models)} models with methods: {args.methods}")
-    print(f"Testing both exact, force-exact and float\n")
+    print(f"Testing both exact, exact-tolerance and float\n")
 
     # Build tasks - one task per single model checking call
     tasks = []
@@ -138,31 +142,39 @@ def _build_tasks(args):
         else:
             print(f"Skipping model {model_name} - no properties defined.")
             continue
-        for exact_mode in ["exact", "float", "force-exact"]:
+        for exact_mode in ["exact", "float", "exact-tolerance"]:
             for method in args.methods:
+                if method == "restart" and exact_mode == "exact-tolerance":
+                    continue
                 for path_formula in PROPERTIES[model_key]:
                     # Quantitative query
-                    tasks.append(
-                        (
-                            str(drn_file),
-                            exact_mode,
-                            method,
-                            path_formula,
-                            "quantitative",
-                            THRESHOLD,
+                    print(f"SKIP QUANTITIVE: {args.skip_quantitative}")
+
+                    if not args.skip_quantitative:
+                        print(f"NOT SKIP QUANTITIVEs")
+                        tasks.append(
+                            (
+                                str(drn_file),
+                                exact_mode,
+                                method,
+                                path_formula,
+                                "quantitative",
+                                THRESHOLD,
+                            )
                         )
-                    )
-                    # Bounded query
-                    tasks.append(
-                        (
-                            str(drn_file),
-                            exact_mode,
-                            method,
-                            path_formula,
-                            "bounded",
-                            THRESHOLD,
+
+                    if exact_mode != "exact_tolerance" and method in ["bisection", "restart"]:
+                        # Bounded query
+                        tasks.append(
+                            (
+                                str(drn_file),
+                                exact_mode,
+                                method,
+                                path_formula,
+                                "bounded",
+                                THRESHOLD,
+                            )
                         )
-                    )
 
     return tasks
 
@@ -198,32 +210,32 @@ def _build_storm_command_from_task(
         "--timeout",
         str(timeout),
         "--dot-maxwidth",
-        str(index),
-        "--debug",
+        str(index)#,
+        #"--debug",
     ]
 
     # Exact mode
-    if exact_mode in ["exact", "force-exact"]:
+    if exact_mode in ["exact", "exact-tolerance"]:
         cmd.append("--exact")
 
-    if exact_mode == "force-exact":
-        cmd.extend(["--minmax:precision", "0.0"])
+    if exact_mode == "exact":
+        cmd.extend(["--minmax:precision", "0.0", "-condtol", "0"])
     else:
-        cmd.extend(["--minmax:precision", "1e-6"])
+        cmd.extend(["--minmax:precision", "1e-6", "-condtol", "1e-6"])
 
     # Method
     if method == "bisection":
         cmd.extend(["--conditional", "bisection"])
     elif method == "bisection-advanced":
         cmd.extend(["--conditional", "bisection-advanced"])
+    elif method == "bisection-pt":
+        cmd.extend(["--conditional", "bisection-pt"])
+    elif method == "bisection-advanced-pt":
+        cmd.extend(["--conditional", "bisection-advanced-pt"])
     elif method == "restart":
         cmd.extend(["--conditional", "restart"])
     elif method == "pi":
         cmd.extend(["--conditional", "pi"])
-
-    # Turn on VI for exact bisection
-    # if "bisection" in method and "exact" in exact_mode:
-    #     cmd.extend(["--minmax:method", "vi"])
 
     return cmd
 
@@ -471,8 +483,8 @@ def main():
     parser.add_argument(
         "--methods",
         nargs="+",
-        default=["bisection", "restart"],
-        choices=["bisection", "bisection-advanced", "restart", "pi"],
+        default=["bisection", "bisection-pt", "restart", "bisection-advanced", "bisection-advanced-pt" ],
+        choices=["bisection", "bisection-advanced", "bisection-pt", "bisection-advanced-pt", "restart", "pi"],
         help="Conditional methods to test (default: bisection restart)",
     )
     parser.add_argument(
@@ -498,7 +510,14 @@ def main():
         action="store_true",
         help="Only reparse existing log files without rerunning benchmarks",
     )
+    parser.add_argument(
+        "--skip-quantitative",
+        action="store_true",
+        help="Skip quantitative tests"
+    )
+
     args = parser.parse_args()
+
 
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -523,7 +542,7 @@ def main():
     try:
         while process.poll() is None:
             _write_results(tasks, output_dir)
-            time.sleep(5)
+            time.sleep(20)
     except KeyboardInterrupt:
         print("Benchmarking interrupted by user. Terminating processes...")
         process.terminate()

@@ -18,7 +18,7 @@
 
 # 22 states
 query='Pmax=? [F "A0" || F "T0"]'
-../storm-cond/build/bin/storm -drn premise/examples/BN-benchmarks-mdp/survey.drn --prop "$query" --conditional bisection --exact --exportresult survey-bisection.json --exportscheduler s-bisection.txt
+../storm/build/bin/storm -drn premise/examples/BN-benchmarks-mdp/survey.drn --prop "$query" --conditional bisection --exact --exportresult survey-bisection.json --exportscheduler s-bisection.txt
 ../storm-cond/build/bin/storm -drn premise/examples/BN-benchmarks-mdp/survey.drn --prop "$query" --conditional bisection-advanced --exact --exportresult survey-bisection-advanced.json --exportscheduler s-bisection-advanced.txt
 ../storm-cond/build/bin/storm -drn premise/examples/BN-benchmarks-mdp/survey.drn --prop "$query" --conditional restart --exact --exportresult survey-restart.json --exportscheduler s-restart.txt
 

@@ -22,7 +22,7 @@ COLORMAP_NAME = "tab20"  # Can be changed to any matplotlib discrete colormap (e
 ARITHMETIC_MODE_NAMES = {
     "exact": "exact",
     "float": "float",
-    "force-exact": "$\\varepsilon$-exact",
+    "exact-tolerance": "$\\varepsilon$-exact",
 }
 
 # Query type display names
@@ -146,15 +146,15 @@ def exclude_model(model_name: str, plot_type: str):
     Returns:
         True if model should be excluded, False otherwise
     """
-    allowed_brp = [
-        "brp-N=16-MAX=8-PCHAN=0.010",
-        "brp-N=32-MAX=9-PCHAN=0.010",
-        "brp-N=64-MAX=10-PCHAN=0.010",
-    ]
-
-    if plot_type != "marginal":
-        if model_name.startswith("brp-") and "0.010" not in model_name:
-            return True
+    # allowed_brp = [
+    #     "brp-N=16-MAX=8-PCHAN=0.010",
+    #     "brp-N=32-MAX=9-PCHAN=0.010",
+    #     "brp-N=64-MAX=10-PCHAN=0.010",
+    # ]
+    #
+    # if plot_type != "marginal":
+    #     if model_name.startswith("brp-") and "0.010" not in model_name:
+    #         return True
 
     return False
 
@@ -190,7 +190,7 @@ def validate_results(results):
         if query_type == "quantitative":
             # For quantitative queries, use majority voting on exact arithmetic values
             exact_results = [
-                r for r in group_results if r["arithmetic_mode"] == "force-exact"
+                r for r in group_results if r["arithmetic_mode"] == "exact"
             ]
 
             if exact_results:
@@ -205,13 +205,13 @@ def validate_results(results):
             else:
                 # No force-exact results, fall back to exact
                 exact_results = [
-                    r for r in group_results if r["arithmetic_mode"] == "exact"
+                    r for r in group_results if r["arithmetic_mode"] == "exact-tolerance"
                 ]
                 majority_value = np.average(
                     [round(r["value"], 10) for r in exact_results]
                 )
                 print(
-                    f"WARNING, no force-exact results for model {model}, query {query_type}, path_formula {path_formula}, using exact average {majority_value} for validation."
+                    f"WARNING, no exact results for model {model}, query {query_type}, path_formula {path_formula}, using exact-tolerance average {majority_value} for validation."
                 )
 
             # Mark all results as correct/incorrect based on majority
@@ -225,12 +225,12 @@ def validate_results(results):
                 )
                 rounded_value = round(r["value"], 10)
 
-                if r["arithmetic_mode"] == "force-exact":
+                if r["arithmetic_mode"] == "exact":
                     correctness[result_key] = rounded_value == majority_value
                     if not correctness[result_key]:
                         # This is very suspect, as exact arithmetic should agree
                         print(
-                            f"Discrepancy in force-exact arithmetic for {result_key}: value {rounded_value} vs majority {majority_value}. All force-exact results: { {r['method']: r['value'] for r in exact_results} }"
+                            f"Discrepancy in exact arithmetic for {result_key}: value {rounded_value} vs majority {majority_value}. All exact results: { {r['method']: r['value'] for r in exact_results} }"
                         )
                 else:  # float or imprecise exact
                     # Float values should be close to majority (within 1e-5)
@@ -242,29 +242,21 @@ def validate_results(results):
         elif query_type == "bounded":
             # For bounded queries, check if they match the threshold comparison
             # First get the correct quantitative value for this model
-            if (model, "quantitative", path_formula) not in by_model_query:
-                raise ValueError(
-                    f"No quantitative results found for bounded query: model={model}, path_formula={path_formula}"
-                )
-            quant_results = by_model_query[(model, "quantitative", path_formula)]
-            exact_quant = [
-                r for r in quant_results if r["arithmetic_mode"] == "force-exact"
-            ]
-
-            if exact_quant:
+            majority_quant_value =  None
+            if (model, "quantitative", path_formula) in by_model_query:
+                quant_results = by_model_query[(model, "quantitative", path_formula)]
+                exact_quant = [
+                    r for r in quant_results if r["arithmetic_mode"] == "exact"
+                ]
                 # Get majority quantitative value
                 exact_values = [round(r["value"], 10) for r in exact_quant]
                 value_counts = Counter(exact_values)
                 majority_quant_value, _ = value_counts.most_common(1)[0]
-            else:
-                exact_quant = [
-                    r for r in quant_results if r["arithmetic_mode"] == "exact"
-                ]
-                majority_quant_value = np.average(
-                    [round(r["value"], 10) for r in exact_quant]
-                )
+
+
+            if majority_quant_value is None:
                 print(
-                    f"WARNING, no force-exact quantitative results for model {model}, using exact average {majority_quant_value} for bounded validation."
+                    f"WARNING, no exact quantitative results for model {model}."
                 )
 
             # For each bounded result, check if it matches the expected boolean
@@ -277,11 +269,15 @@ def validate_results(results):
                     r["path_formula"],
                 )
                 threshold = r["threshold"]
-                expected_value = 1.0 if majority_quant_value >= threshold else 0.0
-                correctness[result_key] = r["value"] == expected_value
+                if majority_quant_value is not None:
+                    expected_value = 1.0 if majority_quant_value >= threshold else 0.0
+                    correctness[result_key] = r["value"] == expected_value
+                    if not correctness[result_key]:
+                        wrong_by[result_key] = abs(r["value"] - expected_value)
+                else:
+                    correctness[result_key] = None
 
-                if not correctness[result_key]:
-                    wrong_by[result_key] = abs(r["value"] - expected_value)
+
 
     return correctness, wrong_by
 
@@ -318,11 +314,11 @@ def get_model_source(model_name):
             return ("BN-benchmarks", 1)
 
     # Transformed MDPs: brp, crowds variations
-    if model_name.startswith("brp-") or model_name.startswith("crowds_"):
+    if model_name.startswith("brp") or model_name.startswith("crowds"):
         return ("Transformed-MDP", 2)
 
     # Concrete MDPs: wlan, other concrete models
-    if model_name.startswith("wlan"):
+    if model_name.startswith("wlan") or model_name.startswith("coin"):
         return ("Concrete-MDP", 3)
 
     # Monitoring MDPs
@@ -398,7 +394,11 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
                     if is_timeout:
                         is_correct = None
                     else:
-                        is_correct = correctness[key]
+                        if key in correctness:
+                            is_correct = correctness[key]
+                        else:
+                            print(f"WARNING: key {key} not found in correctness.")
+                            is_correct = None
 
                     quan_key = (model, method, arith, "quantitative", prop)
                     if quan_key in correctness:
@@ -609,12 +609,18 @@ def create_scatter_plot(
         if label:
             labeled_models.add(model)
         # Timeouts go to timeout_line, wrong results go to error_line
+
         if to1:
             v1 = timeout_line
+        elif c1 is None:
+            pass
         elif not c1:
             v1 = error_line
+
         if to2:
             v2 = timeout_line
+        elif c2 is None:
+            pass
         elif not c2:
             v2 = error_line
 
@@ -956,8 +962,8 @@ def plot_iterations_scatter(results, output_dir, correctness):
         )
         color_map = get_model_colors(models)
 
-        query_types = ["quantitative", "bounded"]
-        markers = {"quantitative": "o", "bounded": "^"}
+        query_types = ["quantitative"]
+        markers = {"quantitative": "o"}
         marker_labels = {qt: get_query_type_name(qt).capitalize() for qt in query_types}
 
         # Collect points for this arithmetic mode
@@ -997,11 +1003,14 @@ def plot_iterations_scatter(results, output_dir, correctness):
                     # Get iterations, default to 1 if not present, timeout, or None
                     iter1 = r1_list[0]["iterations"]
                     iter2 = r2_list[0]["iterations"]
+                    iter1 = 1 if iter1 is None else iter1
+                    iter2 = 1 if iter2 is None else iter2
 
                     # Ensure minimum value of 1 for log scale
                     iter1 = iter1 if not is_timeout1 else 1
                     iter2 = iter2 if not is_timeout2 else 1
-
+                    assert iter1 is not None
+                    assert iter2 is not None
                     points.append(
                         (
                             iter1,
@@ -1060,7 +1069,7 @@ def plot_speedup_heatmap(
     ]
 
     if not filtered_results:
-        print(f"No {query_type} results with arithmetic_mode to plot heatmap")
+        print(f"No {query_type} results to plot heatmap")
         return
 
     models = sorted(
@@ -1143,9 +1152,9 @@ def plot_speedup_heatmap(
 
                 is_timeout = method_results[0]["timeout"]
                 is_baseline_timeout = baseline_results[0]["timeout"]
-                is_correct = key in correctness and correctness[key]
+                is_correct = key in correctness and (correctness[key] is None or correctness[key])
                 quan_key = (model, method, mode, "quantitative", path_prop)
-                is_quan_correct = quan_key in correctness and correctness[quan_key]
+                is_quan_correct = not quan_key in correctness or (correctness[quan_key] is None or correctness[quan_key])
 
                 timeout_matrix[i, j] = is_timeout
                 baseline_timeout_matrix[i, j] = is_baseline_timeout

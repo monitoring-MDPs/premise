@@ -26,6 +26,9 @@ formula free = c1=0 & c2=0; // channel is free
 label "collision2" = col=2;
 label "collision4" = col=4;
 label "collision8" = col=8;
+label "collision" = col>0;
+label "bothbackoff" = bc1>0 & bc2>0;
+
 
 module medium
 	

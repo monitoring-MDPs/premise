@@ -55,7 +55,7 @@ def load_prism_dtmc(
         )
 
     options = stormpy.BuilderOptions()
-    options.set_build_state_valuations()
+    #options.set_build_state_valuations()
     options.set_build_all_labels()
     if exact_arithmetic:
         return stormpy.build_sparse_exact_model_with_options(prism_program, options)
@@ -81,8 +81,9 @@ def add_uncertainty_to_dtmc(dtmc, uncertainty: float | stormpy.Rational):
     else:
         add_uncertainty = stormpy.AddUncertaintyDouble(dtmc)
         min_prob = 0.0000001
+    max_transitions = 3
 
-    idtmc = add_uncertainty.transform(uncertainty, min_prob)
+    idtmc = add_uncertainty.transform(uncertainty, min_prob, max_transitions)
     return idtmc
 
 
@@ -120,60 +121,73 @@ def transform_idtmc_to_mdp(
 
         # Collect all transitions for the state
         transitions = {}
+        has_proper_interval = False
         for action in state.actions:
             for transition in action.transitions:
                 transitions[transition.column] = transition.value()
+                if transition.value().lower() != transition.value().upper():
+                    has_proper_interval = True
 
-        # Calculate the minimum probability to ensure every interval has at least a lowerbound
-        min_prob = to_vt(0.0, exact)
-        for state in transitions:
-            min_prob += to_vt(transitions[state].lower(), exact)
-
-        # Build all possible actions based on the transition interval ordernings
-        builder.new_row_group(current_row)
-        actions = set()
-
-        stack = [(frozenset(), to_vt(1.0, exact) - min_prob, set(transitions.keys()))]
-        while stack:
-            trans_prob, buget, remaining = stack.pop()
-            for state in remaining:
-                up = to_vt(transitions[state].upper(), exact)
-                low = to_vt(transitions[state].lower(), exact)
-                if up <= buget:
-                    new_trans_prob = trans_prob.union({(state, up)})
-                    new_buget = buget - (up - low)
-                    new_remaining = remaining.difference({state})
-                    stack.append((new_trans_prob, new_buget, new_remaining))
-                else:
-                    action_trans_probs = trans_prob.union(
-                        [(state, low + buget)]
-                        + [
-                            (s, to_vt(transitions[s].lower(), exact))
-                            for s in remaining
-                            if s != state
-                        ]
-                    )
-                    actions.add(frozenset(action_trans_probs))
-
-        # Add all actions to the builder
-        for action_trans_probs in actions:
-            total = to_vt(0.0, exact)
-            for state, prob in sorted(action_trans_probs):
-                builder.add_next_value(current_row, state, prob)
-                total += prob
-            if (
-                exact
-                and total != 1
-                or not exact
-                and not math.isclose(total, 1.0, rel_tol=1e-5)
-            ):
-                raise ValueError(
-                    f"Transition probabilities for state {state} do not sum to 1 (sum={total}, diff={total - 1}) [{action_trans_probs}, {transitions}]."
-                )
+        if not has_proper_interval:
+            builder.new_row_group(current_row)
+            for target, prob in transitions.items():
+                builder.add_next_value(current_row, target, to_vt(prob.lower(), exact))
             current_row += 1
+        else:
+            if len(transitions) > 4:
+                print("problem")
+
+            # Calculate the minimum probability to ensure every interval has at least a lowerbound
+            min_prob = to_vt(0.0, exact)
+            for state in transitions:
+                min_prob += to_vt(transitions[state].lower(), exact)
+
+            # Build all possible actions based on the transition interval ordernings
+            builder.new_row_group(current_row)
+            actions = set()
+
+            stack = [(frozenset(), to_vt(1.0, exact) - min_prob, set(transitions.keys()))]
+            while stack:
+                trans_prob, buget, remaining = stack.pop()
+                for state in remaining:
+                    up = to_vt(transitions[state].upper(), exact)
+                    low = to_vt(transitions[state].lower(), exact)
+                    if up <= buget:
+                        new_trans_prob = trans_prob.union({(state, up)})
+                        new_buget = buget - (up - low)
+                        new_remaining = remaining.difference({state})
+                        stack.append((new_trans_prob, new_buget, new_remaining))
+                    else:
+                        action_trans_probs = trans_prob.union(
+                            [(state, low + buget)]
+                            + [
+                                (s, to_vt(transitions[s].lower(), exact))
+                                for s in remaining
+                                if s != state
+                            ]
+                        )
+                        actions.add(frozenset(action_trans_probs))
+
+            # Add all actions to the builder
+            for action_trans_probs in actions:
+                total = to_vt(0.0, exact)
+                for state, prob in sorted(action_trans_probs):
+                    builder.add_next_value(current_row, state, prob)
+                    total += prob
+                if (
+                    exact
+                    and total != 1
+                    or not exact
+                    and not math.isclose(total, 1.0, rel_tol=1e-5)
+                ):
+                    raise ValueError(
+                        f"Transition probabilities for state {state} do not sum to 1 (sum={total}, diff={total - 1}) [{action_trans_probs}, {transitions}]."
+                    )
+                current_row += 1
 
     labeling = idtmc.labeling
-    state_valuations = idtmc.state_valuations
+    if idtmc.has_state_valuations():
+        state_valuations = idtmc.state_valuations
     new_labeling = stormpy.StateLabeling(idtmc.nr_states)
     del idtmc
 
@@ -199,11 +213,13 @@ def transform_idtmc_to_mdp(
     # Build MDP
     if exact:
         components = stormpy.SparseExactModelComponents(transition_matrix, new_labeling)
-        components.state_valuations = state_valuations
+        if components.state_valuations is not None:
+            components.state_valuations = state_valuations
         return stormpy.SparseExactMdp(components)
     else:
         components = stormpy.SparseModelComponents(transition_matrix, new_labeling)
-        components.state_valuations = state_valuations
+        if components.state_valuations is not None:
+            components.state_valuations = state_valuations
         return stormpy.SparseMdp(components)
 
 
