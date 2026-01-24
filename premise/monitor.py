@@ -16,6 +16,7 @@ class PremiseOptions:
     promptness_deadline: int = 1000000000
     verbose: bool = False
     use_unfolding: bool = True
+    use_rejection: bool = True
 
 
 class MonitorTimeOutException(Exception):
@@ -27,17 +28,17 @@ class UnfoldingRiskAssessment:
         self,
         stormpy_environment,
         unfolder,
-        use_conditional_method=False,
         threshold=None,
     ):
         self._stormpy_env = stormpy_environment
         self._unfolder = unfolder
         self._mdp = None
         self._current_step = 0
+        use_conditional_method = not unfolder.is_rejection_sampling_set()
 
         self._threshold = threshold
         if threshold is not None:
-            threshold_prop = f"<={threshold}"
+            threshold_prop = f"max<={threshold}"
         else:
             threshold_prop = "max=?"
 
@@ -47,6 +48,7 @@ class UnfoldingRiskAssessment:
             )[0]
         else:
             self._prop = sp.parse_properties(f'P{threshold_prop} [F "_goal"]')[0]
+        print(self._prop)
 
     def initialize(self, observation):
         self._mdp = self._unfolder.reset(observation)
@@ -67,7 +69,8 @@ class UnfoldingRiskAssessment:
         """
         sp.reset_timeout()
         if deadline:
-            sp.set_timeout(int(deadline / 1000))
+            pass
+            #sp.set_timeout(int(deadline / 1000))
         try:
             result = sp.model_checking(
                 self._mdp,
@@ -75,12 +78,14 @@ class UnfoldingRiskAssessment:
                 environment=self._stormpy_env,
                 only_initial_states=True,
             )
+            sp.reset_timeout()
             risk = result.at(self._mdp.initial_states[0])
         except RuntimeError:
             print("What")
+            sp.reset_timeout()
             logger.warning("Time out")
             return False, 0
-        sp.reset_timeout()
+
         return True, risk
 
 
@@ -137,10 +142,14 @@ def initialize_monitor(model, risk_structure, premise_options) -> Monitor:
     stormpy_environment = premise_options.stormpy_environment
     expr_manager = sp.ExpressionManager()
     if premise_options.use_unfolding:
+        otu_options = sp.pomdp.ObservationTraceUnfolderOptions()
+        otu_options.rejection_sampling = premise_options.rejection_sampling
         unfolder = sp.pomdp.create_observation_trace_unfolder(
-            model, risk_structure, expr_manager
+            model, risk_structure, expr_manager, options=otu_options
         )
         ura = UnfoldingRiskAssessment(stormpy_environment, unfolder)
+    else:
+        raise NotImplementedError("Something is missing here.")
     mon = Monitor(ura, premise_options.promptness_deadline)
     return mon
 

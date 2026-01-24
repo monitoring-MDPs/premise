@@ -6,6 +6,8 @@ from pathlib import Path
 import random
 import time
 import traceback
+
+import stormpy
 import stormpy as sp
 import argparse
 
@@ -93,24 +95,36 @@ def create_custom_str(exact, conditional_mode, threshold):
         parts.append(f"thresh={threshold}")
     return "-".join(parts)
 
+def make_environment(exact: bool, mode : str, threshold : bool|None) -> sp.Environment:
+    env = sp.Environment()
+    if exact:
+        env.solver_environment.set_force_exact()
+    if threshold is None:
+        env.solver_environment.minmax_solver_environment.precision = (
+            sp.Rational(1e-2)
+        )
+    if mode == "restart":
+        env.model_checker_environment.conditional_algorithm = (sp.ConditionalAlgorithmSetting.restart)
+    elif mode == "bisection":
+        env.model_checker_environment.conditional_algorithm = (sp.ConditionalAlgorithmSetting.bisection)
+
+    return env
 
 configurations = [
     monitoring.UnfoldingOptions(
-        env=None,
+        env=make_environment(exact, conditional_mode, threshold),
         exact_arithmetic=exact,
         use_rejection_sampling=(conditional_mode == "rejection"),
         conditional_method=conditional_mode,
-        model_checking_method=(
-            "value_iteration" if conditional_mode == "bisection" else None
-        ),
+        model_checking_method=None,
         threshold=threshold,
         custom_str=create_custom_str(exact, conditional_mode, threshold),
     )
     for exact in [False, True]
-    for force_exact in [False, True]
+    #for force_exact in [False, True]
     for conditional_mode in ["bisection", "rejection", "restart"]
-    for threshold in [0.2, None]
-    if not (not exact and force_exact)
+    for threshold in [0.05, None]
+    #if not (not exact and force_exact)
 ]
 
 
@@ -128,13 +142,6 @@ def run_benchmark_with_config(args):
         format="%(asctime)s %(levelname)s %(filename)s:%(lineno)d %(message)s",
         force=True,
     )
-
-    environment = sp.Environment()
-    environment.solver_environment.minmax_solver_environment.precision = sp.Rational(
-        "0.01"
-    )
-
-    config.stormpy_environment = environment
 
     monitoring.run_monitor(
         benchmark.modelpath,
@@ -176,6 +183,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--sequential",
         action="store_true",
+        default=True,
         help="Run experiments sequentially (default is parallel)",
     )
     parser.add_argument(
@@ -199,6 +207,17 @@ if __name__ == "__main__":
 
     if args.sequential:
         for benchmark in benchmarks:
+            pre_generate_traces(
+                benchmark.name,
+                benchmark.modelpath,
+                benchmark.constants,
+                benchmark.risk_def,
+                monitoring.UnfoldingOptions(sp.Environment()),
+                trace_length,
+                stats_path,
+                seeds,
+            )
+
             for config in configurations:
                 print(f"Running {benchmark.name} with {str(config)}")
                 monitoring.run_monitor(

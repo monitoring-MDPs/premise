@@ -30,6 +30,21 @@ if [ "$skip" -le 0 ]; then
       done
     done
 
+    egl_constants_list=("N=4,L=12" "N=5,L=16")
+    uncertainty_list=("0.05" "0.15")
+    egl_filename="egl.pm"
+    for uncertainty in "${uncertainty_list[@]}"; do
+      for constants in "${egl_constants_list[@]}"; do
+          new_filename="egl-${constants//,/-}-${uncertainty}.drn"
+          echo "Processing $egl_filename with constants $constants"
+          if [ -f "$out_folder/$new_filename" ]; then
+              echo "Output file already exists, skipping..."
+              continue
+          fi
+          python premise/bn/add_uncertainty.py "$prism_folder/$egl_filename" "$out_folder/$new_filename" --type mdp --uncertainty ${uncertainty} --$vt --constants "$constants" --copy-labels
+      done
+    done
+
     too_big=("crowds_20-5")
     uncertainty_list=("0.01" "0.05" "0.15")
     for uncertainty in "${uncertainty_list[@]}"; do

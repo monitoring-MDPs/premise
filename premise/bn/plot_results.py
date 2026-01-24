@@ -251,7 +251,8 @@ def validate_results(results):
                 # Get majority quantitative value
                 exact_values = [round(r["value"], 10) for r in exact_quant]
                 value_counts = Counter(exact_values)
-                majority_quant_value, _ = value_counts.most_common(1)[0]
+                if len(value_counts) > 0:
+                    majority_quant_value, _ = value_counts.most_common(1)[0]
 
 
             if majority_quant_value is None:

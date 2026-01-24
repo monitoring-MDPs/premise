@@ -398,7 +398,7 @@ def run_monitor(
     if not os.path.isdir(stats_folder):
         os.makedirs(stats_folder)
     else:
-        raise RuntimeWarning(f"We are writing to an existing folder '{stats_folder}'.")
+         logger.warning(f"We are writing to an existing folder '{stats_folder}'.")
 
     use_forward_filtering = isinstance(options, ForwardFilteringOptions)
     use_unfolding = isinstance(options, UnfoldingOptions)
@@ -423,26 +423,25 @@ def run_monitor(
         assert isinstance(options, UnfoldingOptions)
         logger.info("Initialize unfolder...")
         stormpy_environment = options.stormpy_environment
+        print(stormpy_environment.model_checker_environment.conditional_algorithm)
         expr_manager = stormpy.ExpressionManager()
         unfolding_options = stormpy.pomdp.ObservationTraceUnfolderOptions()
         unfolding_options.rejection_sampling = options.use_rejection_sampling
 
-        if options.conditional_method is not None:
-            stormpy_environment.model_checker_environment.conditional_algorithm = (
-                options.conditional_method
-            )
+        # if options.conditional_method is not None:
+        #     stormpy_environment.model_checker_environment.conditional_algorithm = (
+        #         options.conditional_method
+        #     )
 
-        if options.model_checking_method is not None:
-            stormpy_environment.solver_environment.minmax_solver_environment.method = (
-                options.model_checking_method
-            )
+        # if options.model_checking_method is not None:
+        #     stormpy_environment.solver_environment.minmax_solver_environment.method = (
+        #         options.model_checking_method
+        #     )
 
-        if options.force_exact:
-            stormpy_environment.solver_environment.set_force_exact()
+        # if options.exact_arithmetic:
+        #     stormpy_environment.solver_environment.set_force_exact()
+        #
 
-        stormpy_environment.solver_environment.minmax_solver_environment.precision = (
-            sp.Rational(1e-6)
-        )
 
         unfolder = stormpy.pomdp.create_observation_trace_unfolder(
             model, risk_assessment, expr_manager, unfolding_options
@@ -451,8 +450,7 @@ def run_monitor(
         ura = monitor.UnfoldingRiskAssessment(
             stormpy_environment,
             unfolder,
-            not options.use_rejection_sampling,
-            options.threshold,
+            options.threshold
         )
 
         mon = monitor.Monitor(ura, promptness_deadline)

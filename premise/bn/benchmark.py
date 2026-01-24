@@ -91,8 +91,8 @@ PROPERTIES = {
     "wlan": WLAN_PROPERTIES,
     "airportA-7": MONITORING_PROPERTY,
     "airportB-7": MONITORING_PROPERTY,
-    "evade-monitoring": MONITORING_PROPERTY,
-    "hidden-incentive": MONITORING_PROPERTY,
+    "evade": MONITORING_PROPERTY,
+    "hidden": MONITORING_PROPERTY,
     "refuel": MONITORING_PROPERTY,
     "patrol": MONITORING_PROPERTY,
 }
@@ -199,7 +199,7 @@ def _build_storm_command_from_task(
     else:  # bounded
         prop_str = f"Pmax>={threshold} [{path_formula}]"
 
-    marginal_prop_str = f"Pmax=? [{path_formula.split('||')[1].strip()}]"
+    marginal_prop_str = f"Pmax=? [true]"
 
     # Base command
     cmd = [
