@@ -15,7 +15,7 @@ class PremiseOptions:
     promptness_deadline: int = 1000000000
     verbose: bool = False
     use_unfolding: bool = True
-    restart_semantics: bool = True
+    restart_semantics: bool = False
     simulator_seed: int|None = None
 
 
@@ -39,7 +39,7 @@ class Monitor:
         start_time = time.monotonic()
         self._risk_assessor.step(observation)
         if compute_risk:
-            status, risk = self._risk_assessor.get_risk()
+            status, risk = self._risk_assessor.get_risk(deadline=self._deadline)
             if not status:
                 raise MonitorTimeOutException
         else:
@@ -66,15 +66,14 @@ class UnfoldingRiskAssessment:
         self._unfolder = unfolder
         self._mdp = None
         self._current_step = 0
-        self._cache_until_compute = False # TODO set to true
+        self._cache_until_compute = True # TODO set to true
         self._observation_cache = []
         self._prop = sp.parse_properties("Pmax=? [F \"_goal\"]")[0] if self._use_restart_semantics else sp.parse_properties("Pmax=? [F \"_goal\" || F \"_end\"]")[0]
 
     @property
     def _use_restart_semantics(self):
-        return True
         ## TODO
-        # return self._unfolder.is_restart_semantics_set()
+        return self._unfolder.is_rejection_sampling_set()
 
     def initialize(self, observation):
         self._mdp = self._unfolder.reset(observation)
@@ -114,12 +113,14 @@ class UnfoldingRiskAssessment:
             sp.set_timeout(int(deadline / 1000))
         try:
             result = sp.model_checking(self._mdp, self._prop, environment= self._stormpy_env, only_initial_states=True)
+            sp.reset_timeout()
             risk = result.at(self._mdp.initial_states[0])
         except RuntimeError:
-            print("What")
+            print("TIMEOUT")
             logger.warning("Time out")
+            sp.reset_timeout()
             return False, 0
-        sp.reset_timeout()
+
         return True, risk
 
 
@@ -150,8 +151,10 @@ class FilterBasedRiskAssessment:
 def initialize_monitor(model, risk_structure, premise_options) -> Monitor:
     stormpy_environment = premise_options.stormpy_environment
     expr_manager = sp.ExpressionManager()
-    if True: # premise_options.use_unfolding:
-        unfolder = sp.pomdp.create_observation_trace_unfolder(model, risk_structure, expr_manager) # restart_semantics= premise_options.restart_semantics
+    if premise_options.use_unfolding:
+        otu_options = sp.pomdp.ObservationTraceUnfolderOptions()
+        otu_options.rejection_sampling = premise_options.restart_semantics
+        unfolder = sp.pomdp.create_observation_trace_unfolder(model, risk_structure, expr_manager, options=otu_options) # restart_semantics= premise_options.restart_semantics
         riskassessor = UnfoldingRiskAssessment(stormpy_environment, unfolder)
     else:
         tracker = sp.pomdp.create_nondeterminstic_belief_tracker(model, premise_options.promptness_deadline, premise_options.promptness_deadline)

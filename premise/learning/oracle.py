@@ -1,5 +1,8 @@
 import typing
 
+from premise.monitor import MonitorTimeOutException
+
+
 class Oracle:
     """
     This class provides an interface for running a premise-based oracle as a backend for an active learner.
@@ -14,7 +17,10 @@ class Oracle:
         result = [self._monitor.initialize(trace[0])]
         for t in trace[1:-1]:
             result.append(self._monitor.step(t, compute_risk=intermediate_results))
-        result.append(self._monitor.step(trace[-1], compute_risk=True))
+        try:
+            result.append(self._monitor.step(trace[-1], compute_risk=True))
+        except MonitorTimeOutException:
+            result.append(None)
         if threshold is not None:
             result = [entry <= threshold for entry in result]
         return result if intermediate_results else result[-1]

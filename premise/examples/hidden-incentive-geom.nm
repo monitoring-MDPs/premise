@@ -16,7 +16,9 @@ const int dxMAX = xMAX;
 const int dyMAX = yMAX;
 const int dxMIN = 0;
 const int dyMIN = 0;
-const double slippery = 0.2;
+const double slippery = 0.4;
+const int GMAX;
+const double g = 0.5;
 
 formula done = ax = aXMIN & ay = aYMIN;
 observable "done" = done;
@@ -51,17 +53,20 @@ module drone
     dx : [dxMIN..dxMAX] init 0;
     dy : [dyMIN..dyMAX] init 0;
     incentive : [0..3] init 1;
-    geom : [0..GMAX] init 0;
 
-    [adv] geom = 0 -> 0.25: (incentive'=0 & geom' = GMAX) + 0.25: (incentive'=1) + 0.25: (incentive'=2) + 0.25: (incentive'=3);
 
-    [adv] incentive = 0 & dx > dxMIN -> (1-slippery): (dx'=max(dx-1,dxMIN)) + slippery/2: (dy'=max(dy-1,dyMIN)) + slippery/2: (dy'=min(dy+1,dyMAX)) ;
-    [adv] incentive = 1 & dx < dxMAX -> (1-slippery): (dx'=min(dx+1,dxMAX)) + slippery/2: (dy'=max(dy-1,dyMIN)) + slippery/2: (dy'=min(dy+1,dyMAX)) ;
-    [adv] incentive = 2 & dy < dxMAX -> (1-slippery): (dy'=min(dy+1,dyMAX)) + slippery/2: (dx'=max(dx-1,dxMIN)) + slippery/2: (dx'=min(dx+1,dxMAX)) ;
-    [adv] incentive = 3 & dy > dyMIN -> (1-slippery): (dy'=max(dy-1,dyMIN)) + slippery/2: (dx'=max(dx-1,dxMIN)) + slippery/2: (dx'=min(dx+1,dxMAX)) ;
+    [adv] geom = 0 -> 0.25: (incentive'=0)  + 0.25: (incentive'=1)  + 0.25: (incentive'=2) + 0.25: (incentive'=3);
+
+    [adv] geom > 0 & incentive = 0 & dx > dxMIN -> (1-slippery): (dx'=max(dx-1,dxMIN)) + slippery/2: (dy'=max(dy-1,dyMIN)) + slippery/2: (dy'=min(dy+1,dyMAX)) ;
+    [adv]  geom > 0 &  incentive = 1 & dx < dxMAX -> (1-slippery): (dx'=min(dx+1,dxMAX)) + slippery/2: (dy'=max(dy-1,dyMIN)) + slippery/2: (dy'=min(dy+1,dyMAX)) ;
+    [adv]  geom > 0 &  incentive = 2 & dy < dxMAX -> (1-slippery): (dy'=min(dy+1,dyMAX)) + slippery/2: (dx'=max(dx-1,dxMIN)) + slippery/2: (dx'=min(dx+1,dxMAX)) ;
+    [adv]  geom > 0 & incentive = 3 & dy > dyMIN -> (1-slippery): (dy'=max(dy-1,dyMIN)) + slippery/2: (dx'=max(dx-1,dxMIN)) + slippery/2: (dx'=min(dx+1,dxMAX)) ;
 endmodule
 
 module dronegeom
+    geom : [0..GMAX] init 0;
+
+    [adv] geom = 0 -> (geom' = GMAX);
     [adv] geom > 0 -> g: (geom'=geom-1) + (1-g): (geom'=geom);
 endmodule
 

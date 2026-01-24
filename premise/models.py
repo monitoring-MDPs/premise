@@ -17,15 +17,34 @@ default_models =  {
     "airportA-7-50-30" : ModelDescription(Path(__file__).parent  / "examples/airportA-7.nm", "DMAX=50,PMAX=30", "Pmax=? [F \"crash\"]"),
     "airportA-7-200-50": ModelDescription(Path(__file__).parent / "examples/airportA-7.nm", "DMAX=200,PMAX=50",
                                          "Pmax=? [F \"crash\"]"),
+"airportA-7-200-30": ModelDescription(Path(__file__).parent / "examples/airportA-7.nm", "DMAX=200,PMAX=30",
+                                         "Pmax=? [F \"crash\"]"),
 "airportA-7-300-100": ModelDescription(Path(__file__).parent / "examples/airportA-7.nm", "DMAX=300,PMAX=100",
                                          "Pmax=? [F \"crash\"]"),
+"airportA-7-400-40": ModelDescription(Path(__file__).parent / "examples/airportA-7.nm", "DMAX=400,PMAX=40",
+                                         "Pmax=? [F \"crash\"]"),
     "airportB-3-50-30": ModelDescription(Path(__file__).parent / "examples/airportB-3.nm", "DMAX=50,PMAX=30", "Pmax=? [F \"crash\"]"),
+    "airportB-3-200-30": ModelDescription(Path(__file__).parent / "examples/airportB-3.nm", "DMAX=200,PMAX=30",
+                                         "Pmax=? [F \"crash\"]"),
+
     "airportB-7-50-30": ModelDescription( Path(__file__).parent / "examples/airportB-7.nm", "DMAX=50,PMAX=30", "Pmax=? [F \"crash\"]"),
+    "airportB-7-200-30": ModelDescription(Path(__file__).parent / "examples/airportB-7.nm", "DMAX=200,PMAX=30",
+                                         "Pmax=? [F \"crash\"]"),
+
     "evadeI-15": ModelDescription(Path(__file__).parent / "examples/hidden-incentive.nm", "N=15", "Pmax=? [F<=12 \"crash\"]"),
-    "evadeI-19": ModelDescription(Path(__file__).parent / "examples/hidden-incentive.nm", "N=19", "Pmax=? [F<=20 \"crash\"]"),
+    "evadeI-19": ModelDescription(Path(__file__).parent / "examples/hidden-incentive.nm", "N=19", "Pmax=? [F<=50 \"crash\"]"),
+    "evadeIG-15-4": ModelDescription(Path(__file__).parent / "examples/hidden-incentive-geom.nm", "N=15, GMAX=4",
+                                  "Pmax=? [F<=50 \"crash\"]"),
+
     "evadeV-5-3": ModelDescription(Path(__file__).parent / "examples/evade-monitoring.nm", "N=5,RADIUS=3", "Pmax=? [F<=12 \"crash\"]"),
     "evadeV-6-3": ModelDescription(Path(__file__).parent / "examples/evade-monitoring.nm", "N=6,RADIUS=3", "Pmax=? [F<=12 \"crash\"]"),
+    "evadeV-9-3": ModelDescription(Path(__file__).parent / "examples/evade-monitoring.nm", "N=9,RADIUS=3",
+                                   "Pmax=? [F<=12 \"crash\"]"),
+
     "evadeV-12-4": ModelDescription(Path(__file__).parent / "examples/evade-monitoring.nm", "N=12,RADIUS=4", "Pmax=? [F<=18 \"crash\"]"),
+    "evadeV-14-4": ModelDescription(Path(__file__).parent / "examples/evade-monitoring.nm", "N=14,RADIUS=4",
+                                    "Pmax=? [F<=18 \"crash\"]"),
+
     "evadeV-16-5": ModelDescription(Path(__file__).parent / "examples/evade-monitoring.nm", "N=16,RADIUS=5", "Pmax=? [F<=18 \"crash\"]"),
     "patrol-12-2": ModelDescription(Path(__file__).parent / "examples/avoid-monitoring.nm", "N=12,RADIUS=2", "Pmin=? [F<=4 \"traps\"]"),
     "patrol-15-3": ModelDescription(Path(__file__).parent / "examples/avoid-monitoring.nm", "N=15,RADIUS=3", "Pmin=? [F<=6 \"traps\"]"),
@@ -40,16 +59,20 @@ default_models =  {
 
     "refuelB-12-50": ModelDescription(Path(__file__).parent / "examples/refuelB.nm", "N=12,ENERGY=50", "Pmax=? [F<=12 \"empty\"]"),
      "refuelA-15-80": ModelDescription(Path(__file__).parent / "examples/refuel.nm", "N=15,ENERGY=80", "Pmax=? [F<=20 \"empty\"]"),
-      "refuelB-15-40": ModelDescription(Path(__file__).parent / "examples/refuelB.nm", "N=15,ENERGY=40", "Pmax=? [F<=20 \"empty\"]"),
+    "refuelA-30-70": ModelDescription(Path(__file__).parent / "examples/refuel.nm", "N=30,ENERGY=70",
+                                      "Pmax=? [F<=20 \"empty\"]"),
+"refuelA-25-100": ModelDescription(Path(__file__).parent / "examples/refuel.nm", "N=25,ENERGY=100",
+                                      "Pmax=? [F<=20 \"empty\"]"),
+
+    "refuelB-15-40": ModelDescription(Path(__file__).parent / "examples/refuelB.nm", "N=15,ENERGY=40", "Pmax=? [F<=20 \"empty\"]"),
     "refuelA-18-100": ModelDescription(Path(__file__).parent / "examples/refuel.nm", "N=18,ENERGY=100",
                                       "Pmax=? [F<=12 \"empty\"]"),
     "refuelB-15-100": ModelDescription(Path(__file__).parent / "examples/refuelB.nm", "N=15,ENERGY=100",
                                        "Pmax=? [F<=10 \"empty\"]"),
+"refuelB-18-200": ModelDescription(Path(__file__).parent / "examples/refuelB.nm", "N=18,ENERGY=200",
+                                       "Pmax=? [F<=20 \"empty\"]"),
 
 }
-
-
-
 def build_model_and_risk(model_description : ModelDescription, options):
     prism_program = sp.parse_prism_program(str(model_description.prism_program_path))
     prop = sp.parse_properties_for_prism_program(model_description.risk_property, prism_program)[0]
