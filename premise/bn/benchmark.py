@@ -93,7 +93,8 @@ PROPERTIES = {
     "airportB-7": MONITORING_PROPERTY,
     "evade-monitoring": MONITORING_PROPERTY,
     "hidden-incentive": MONITORING_PROPERTY,
-    "refuelB": MONITORING_PROPERTY,
+    "refuel": MONITORING_PROPERTY,
+    "patrol": MONITORING_PROPERTY,
 }
 
 # Threshold for bounded properties (can be changed)
@@ -112,10 +113,10 @@ def _build_tasks(args):
         Path(__file__).parent.parent / "examples" / "monitoring-cond-mdps"
     )
     all_models = sorted(
-        list(bn_benchmark_dir.glob("*.drn"))
-        + list(common_benchmark_dir.glob("*.drn"))
-        + list(mdp_benchmark_dir.glob("*.drn"))
-        #+ list(monitoring_benchmark_dir.glob("*.drn"))
+        #list(bn_benchmark_dir.glob("*.drn"))
+        #+ list(common_benchmark_dir.glob("*.drn"))
+        #+ list(mdp_benchmark_dir.glob("*.drn"))
+        list(monitoring_benchmark_dir.glob("*.drn"))
     )
 
     # Filter models if specified
