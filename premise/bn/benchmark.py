@@ -30,6 +30,10 @@ WLAN_PROPERTIES = [
     'F "collision1" || F "bothbackoff"'
 ]
 
+EGL_PROPERTIES = [
+    'F "target" || F "condition"'
+]
+
 COIN_PROPERTIES = [
     'F "finished" & "all_coins_equal_0"  || F "all_coins_equal_1"'
 ]
@@ -89,6 +93,7 @@ PROPERTIES = {
     "coin" : COIN_PROPERTIES,
     "crowds" : CROWDS_PROPERTIES,
     "wlan": WLAN_PROPERTIES,
+    "egl": EGL_PROPERTIES,
     "airportA-7": MONITORING_PROPERTY,
     "airportB-7": MONITORING_PROPERTY,
     "evade": MONITORING_PROPERTY,
