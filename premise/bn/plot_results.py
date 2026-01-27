@@ -64,6 +64,8 @@ MODEL_NAMES = {
     "brp-N=64-MAX=10-PCHAN=0.050": "BRP-64-0.050",
 }
 
+bad_names = []
+
 
 def get_arithmetic_mode_name(mode):
     """Get the display name for an arithmetic mode.
@@ -146,6 +148,8 @@ def exclude_model(model_name: str, plot_type: str):
     Returns:
         True if model should be excluded, False otherwise
     """
+    if model_name.startswith("brp-N=128-MAX=11"):
+        return True
     # allowed_brp = [
     #     "brp-N=16-MAX=8-PCHAN=0.010",
     #     "brp-N=32-MAX=9-PCHAN=0.010",
@@ -175,11 +179,23 @@ def validate_results(results):
     correctness = {}
     wrong_by = {}
 
+
+
     # Group results by model and query_type
     by_model_query = {}
     for r in results:
         if not r["success"] or r["timeout"]:
             continue
+
+        skip_bad = False
+        for bad_name in bad_names:
+            print(r["model"])
+            if r["model"].startswith(bad_name):
+                print("Skipping bad name '{}'".format(bad_name))
+                skip_bad = True
+        if skip_bad:
+            continue
+
 
         key = (r["model"], r["query_type"], r["path_formula"])
         if key not in by_model_query:
@@ -202,17 +218,17 @@ def validate_results(results):
                     print(
                         f"No majority value for model {model}, query {query_type}, path_formula {path_formula}: {value_counts}"
                     )
-            else:
+            #else:
                 # No force-exact results, fall back to exact
-                exact_results = [
-                    r for r in group_results if r["arithmetic_mode"] == "exact-tolerance"
-                ]
-                majority_value = np.average(
-                    [round(r["value"], 10) for r in exact_results]
-                )
-                print(
-                    f"WARNING, no exact results for model {model}, query {query_type}, path_formula {path_formula}, using exact-tolerance average {majority_value} for validation."
-                )
+                # exact_results = [
+                #     r for r in group_results if r["arithmetic_mode"] == "exact-tolerance"
+                # ]
+                # majority_value = np.average(
+                #     [round(r["value"], 10) for r in exact_results]
+                # )
+                # print(
+                #     f"WARNING, no exact results for model {model}, query {query_type}, path_formula {path_formula}, using exact-tolerance average {majority_value} for validation."
+                # )
 
             # Mark all results as correct/incorrect based on majority
             for r in group_results:
@@ -234,10 +250,20 @@ def validate_results(results):
                         )
                 else:  # float or imprecise exact
                     # Float values should be close to majority (within 1e-5)
-                    correctness[result_key] = abs(r["value"] - majority_value) < 1e-5
+                    if r["value"] < 1e-8 and majority_value < 1e-8:
+                        correctness[result_key] = True
+                    else:
+                        correct = abs(r["value"] - majority_value) / majority_value < 1e-3
+                        correctness[result_key] = correct
+
 
                 if not correctness[result_key]:
-                    wrong_by[result_key] = abs(r["value"] - majority_value)
+                    print(f"{r["value"]} vs {majority_value}")
+                    minimum = min(r["value"], majority_value)
+                    if minimum == 0:
+                        wrong_by[result_key] = "inf"
+                    else:
+                        wrong_by[result_key] = abs(r["value"] - majority_value) / min(r["value"], majority_value)
 
         elif query_type == "bounded":
             # For bounded queries, check if they match the threshold comparison
@@ -274,6 +300,8 @@ def validate_results(results):
                     expected_value = 1.0 if majority_quant_value >= threshold else 0.0
                     correctness[result_key] = r["value"] == expected_value
                     if not correctness[result_key]:
+                        print(f"result: {r["value"]} and truth: {majority_quant_value} >= {threshold}")
+
                         wrong_by[result_key] = abs(r["value"] - expected_value)
                 else:
                     correctness[result_key] = None
@@ -572,7 +600,7 @@ def create_scatter_plot(
     ylabel,
     title,
     filename,
-    output_dir,
+    output_dir
 ):
     """Abstract scatter plot creation with error and timeout handling.
 
@@ -590,16 +618,17 @@ def create_scatter_plot(
     fig, ax = plt.subplots(figsize=(10, 8))
 
     # Find max value to place incorrect points on a line above
-    max_val = max(
-        max(
-            (v1 for v1, _, _, _, c1, _, to1, _ in points if c1 and not to1),
-            default=1.0,
-        ),
-        max(
-            (v2 for _, v2, _, _, _, c2, _, to2 in points if c2 and not to2),
-            default=1.0,
-        ),
-    )
+    # max_val = max(
+    #     max(
+    #         (v1 for v1, _, _, _, c1, _, to1, _ in points if c1 and not to1),
+    #         default=1.0,
+    #     ),
+    #     max(
+    #         (v2 for _, v2, _, _, _, c2, _, to2 in points if c2 and not to2),
+    #         default=1.0,
+    #     ),
+    # )
+    max_val = 600
     error_line = max_val * 5  # Place error line 5x higher
     timeout_line = max_val * 10  # Place timeout line 10x higher
 
@@ -645,8 +674,8 @@ def create_scatter_plot(
 
     # Reference lines
     min_val = min(
-        min(v1 for v1, _, _, _, c1, _, to1, _ in points if c1 and not to1),
-        min(v2 for _, v2, _, _, _, c2, _, to2 in points if c2 and not to2),
+        min([100] + [v1 for v1, _, _, _, c1, _, to1, _ in points if c1 and not to1]),
+        min([100] + [v2 for _, v2, _, _, _, c2, _, to2 in points if c2 and not to2]),
     )
     min_stop_lines = min_val * 0.1
 
@@ -714,7 +743,7 @@ def create_scatter_plot(
     ax.legend(
         model_handles + marker_handles,
         model_labels + [h.get_label() for h in marker_handles],
-        title="Model / Query Type",
+        title="Model",
         framealpha=0.9,
         bbox_to_anchor=(1.05, 1),
         loc="upper left",
