@@ -142,3 +142,9 @@ dmypy.json
 *.txt
 
 out/
+
+premise/examples/monitoring-cond-mdps/full-airportB-7.drn
+
+premise/examples/monitoring-cond-mdps/full-airportA-7.drn
+premise/examples/transformed-mdp/crowds_10-5.drn
+premise/examples/transformed-mdp/crowds_12-5.drn
