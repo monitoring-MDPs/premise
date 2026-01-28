@@ -30,60 +30,60 @@ class Benchmark:
 
 # Benchmarks
 benchmarks = [
-    Benchmark(
-        "airportA-7-400-60",
-        "premise/examples/airportA-7.nm",
-        "DMAX=400,PMAX=60",
-        'Pmax=? [F "crash"]',
-    ),
+    # Benchmark(
+    #     "airportA-7-400-60",
+    #     "premise/examples/airportA-7.nm",
+    #     "DMAX=400,PMAX=60",
+    #     'Pmax=? [F "crash"]',
+    # ),
     Benchmark(
         "airportB-3-300-30",
         "premise/examples/airportB-3.nm",
         "DMAX=300,PMAX=30",
         'Pmax=? [F "crash"]',
     ),
-    Benchmark(
-        "airportB-7-300-30",
-        "premise/examples/airportB-7.nm",
-        "DMAX=300,PMAX=30",
-        'Pmax=? [F "crash"]',
-    ),
+    # Benchmark(
+    #     "airportB-7-300-30",
+    #     "premise/examples/airportB-7.nm",
+    #     "DMAX=300,PMAX=30",
+    #     'Pmax=? [F "crash"]',
+    # ),
     Benchmark(
         "evadeI-10",
         "premise/examples/hidden-incentive.nm",
         "N=10",
         'Pmax=? [F<=12 "crash"]',
     ),
-    Benchmark(
-        "evadeI-20",
-        "premise/examples/hidden-incentive.nm",
-        "N=20",
-        'Pmax=? [F<=21 "crash"]',
-    ),
+    # Benchmark(
+    #     "evadeI-20",
+    #     "premise/examples/hidden-incentive.nm",
+    #     "N=20",
+    #     'Pmax=? [F<=21 "crash"]',
+    # ),
     Benchmark(
         "evadeV-9-3",
         "premise/examples/evade-monitoring.nm",
         "N=9,RADIUS=3",
         'Pmax=? [F<=12 "crash"]',
     ),
-    Benchmark(
-        "evadeV-14-4",
-        "premise/examples/evade-monitoring.nm",
-        "N=14,RADIUS=4",
-        'Pmax=? [F<=12 "crash"]',
-    ),
+    # Benchmark(
+    #     "evadeV-14-4",
+    #     "premise/examples/evade-monitoring.nm",
+    #     "N=14,RADIUS=4",
+    #     'Pmax=? [F<=12 "crash"]',
+    # ),
     Benchmark(
         "refuelA-50-80",
         "premise/examples/refuel.nm",
         "N=50,ENERGY=80",
         'Pmax=? [F<=20 "empty"]',
     ),
-    Benchmark(
-        "refuelB-30-200",
-        "premise/examples/refuelB.nm",
-        "N=30,ENERGY=200",
-        'Pmax=? [F<=8 "empty"]',
-    ),
+    # Benchmark(
+    #     "refuelB-30-200",
+    #     "premise/examples/refuelB.nm",
+    #     "N=30,ENERGY=200",
+    #     'Pmax=? [F<=8 "empty"]',
+    # ),
 ]
 
 
