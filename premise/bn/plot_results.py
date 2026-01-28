@@ -471,16 +471,33 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
     # Calculate number of columns: Model, States, Transitions
     col_spec = "l"
     if show_model_desc:
-        col_spec += "rrr"
-    col_spec += "|"
+        col_spec += "rr@{\\hskip 12pt}r@{\\hskip 12pt}"
+    
     if query_type == "quantitative":
-        col_spec += "".join(
-            ["".join("rr" for _ in methods) for _ in arithmetic_modes]
-        )
+        # For quantitative: each method has 2 columns (Time, Iters), except restart which has 1
+        method_cols = []
+        for i, (method, arith) in enumerate(configs):
+            if method == "restart":
+                # Restart only has time column
+                if i == len(configs) - 1:
+                    method_cols.append("r")
+                else:
+                    method_cols.append("r@{\\hskip 12pt}")
+            else:
+                # Other methods have time and iters
+                method_cols.append("r@{\\hskip 4pt}l@{\\hskip 12pt}")
+        col_spec += "".join(method_cols)
     elif query_type == "bounded":
-        col_spec += "".join(
-            ["".join("r" for _ in methods) for _ in arithmetic_modes]
-        )
+        # For bounded: each method has 1 column
+        method_cols = []
+        for i, (method, arith) in enumerate(configs):
+            if i == len(configs) - 1:
+                # Last method: just r
+                method_cols.append("r")
+            else:
+                # Other methods: r@{\hskip 12pt}
+                method_cols.append("r@{\\hskip 12pt}")
+        col_spec += "".join(method_cols)
 
     lines.append(f"\\begin{{longtable}}{{{col_spec}}}")
     lines.append("\\toprule")
@@ -504,6 +521,22 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
                 header1 += f" & {get_arithmetic_mode_name(arithmetic_mode)}"
         header1 += " \\\\"
         lines.append(header1)
+        
+        # Add cmidrule lines after header1 (arithmetic modes) when there are multiple arithmetic modes
+        col_offset = 1  # Start after ID column
+        if show_model_desc:
+            col_offset += 3  # Account for Model, States, Transitions columns
+        
+        current_col = col_offset + 1
+        cmidrule_line = ""
+        for arithmetic_mode in arithmetic_modes:
+            span = arith_spans[arithmetic_mode]
+            if span > 0:
+                start_col = current_col
+                end_col = current_col + span - 1
+                cmidrule_line += f"\\cmidrule(lr){{{start_col}-{end_col}}}"
+                current_col += span
+        lines.append(cmidrule_line)
 
         if show_model_desc:
             header2 = " & & & "
@@ -517,7 +550,11 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
         for method in methods:
             if (method, arith) in configs:
                 if query_type == "quantitative":
-                    header2 += f" & \\multicolumn{{2}}{{c}}{{{method}}}"
+                    if method == "restart":
+                        # Restart only has 1 column (no iterations)
+                        header2 += f" & {method}"
+                    else:
+                        header2 += f" & \\multicolumn{{2}}{{c}}{{{method}}}"
                 else:
                     header2 += f" & {method}"
 
@@ -526,13 +563,39 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
 
     # Header: time and iterations for quantitative
     if query_type == "quantitative":
+        # Add cmidrule lines after header2 (method names) for quantitative queries
+        col_offset = 1  # Start after ID column
+        if show_model_desc:
+            col_offset += 3  # Account for Model, States, Transitions columns
+        
+        current_col = col_offset + 1
+        cmidrule_line = ""
+        for arith in arithmetic_modes:
+            for method in methods:
+                if (method, arith) in configs:
+                    if method == "restart":
+                        # Restart has only 1 column
+                        cmidrule_line += f"\\cmidrule(lr){{{current_col}-{current_col}}}"
+                        current_col += 1
+                    else:
+                        # Other methods have 2 columns (Time, Iters)
+                        start_col = current_col
+                        end_col = current_col + 1
+                        cmidrule_line += f"\\cmidrule(lr){{{start_col}-{end_col}}}"
+                        current_col += 2
+        lines.append(cmidrule_line)
+        
         header3 = ""
         if show_model_desc:
             header3 += " & & & "
         for arith in arithmetic_modes:
             for method in methods:
                 if (method, arith) in configs:
-                    header3 += " & Time (s) &  Iters"
+                    if method == "restart":
+                        # Restart only shows time
+                        header3 += " & Time (s)"
+                    else:
+                        header3 += " & Time (s) &  Iters"
 
         header3 += " \\\\"
         lines.append(header3)
@@ -557,7 +620,14 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
         elif id_counter > 1 and len(props) > 1:
             cmidrule_start = 5 if show_model_desc else 2
             if query_type == "quantitative":
-                cmidrule_end = cmidrule_start + len(configs) * 2 - 1
+                # Calculate the end column considering restart has only 1 column
+                num_cols = 0
+                for method, arith in configs:
+                    if method == "restart":
+                        num_cols += 1
+                    else:
+                        num_cols += 2
+                cmidrule_end = cmidrule_start + num_cols - 1
             else:
                 cmidrule_end = cmidrule_start + len(configs) - 1
             lines.append(f"\\cmidrule{{{cmidrule_start}-{cmidrule_end}}}")
@@ -614,8 +684,8 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
                         if time_val < 0.01:
                             cell = r"\textbf{<0.01}"
                         else:
-                            # Format time with at most 3 decimal places
-                            cell = f"{time_val:.3f}"
+                            # Format time with at most 2 decimal places
+                            cell = f"{time_val:.2f}"
                             # Remove trailing zeros after decimal point
                             if "." in cell:
                                 cell = cell.rstrip("0").rstrip(".")
@@ -626,18 +696,22 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
                                 cell = f"\\textbf{{{cell}}}"
 
                     if query_type == "quantitative":
-                        if is_timeout:
-                            cell += " & TO"
-                        elif is_correct is False:
-                            cell += " & $\\times$"
-                        elif iters is not None:
-                            cell += f" & {iters}"
-                        else:
-                            cell += " & ---"
+                        # Only add iters column for non-restart methods
+                        if config[0] != "restart":
+                            if is_timeout:
+                                cell += " & TO"
+                            elif is_correct is False:
+                                cell += " & $\\times$"
+                            elif iters is not None:
+                                cell += f" & {iters}"
+                            else:
+                                cell += " & ---"
                 else:
                     cell = "---"
                     if query_type == "quantitative":
-                        cell += " & ---"
+                        # Only add iters column for non-restart methods
+                        if config[0] != "restart":
+                            cell += " & ---"
 
                 row += f" & {cell}"
 
@@ -861,8 +935,6 @@ def plot_method_scatter(results, output_dir, correctness):
 
     Incorrect results are placed on a line above all other points.
     """
-    from itertools import combinations
-
     # Include both successful results and timeouts
     plottable = [r for r in results if r["success"] or r["timeout"]]
 
@@ -1247,7 +1319,7 @@ def plot_speedup_heatmap(
                 is_baseline_timeout = baseline_results[0]["timeout"]
                 is_correct = key in correctness and (correctness[key] is None or correctness[key])
                 quan_key = (model, method, mode, "quantitative", path_prop)
-                is_quan_correct = not quan_key in correctness or (correctness[quan_key] is None or correctness[quan_key])
+                is_quan_correct = quan_key not in correctness or (correctness[quan_key] is None or correctness[quan_key])
 
                 timeout_matrix[i, j] = is_timeout
                 baseline_timeout_matrix[i, j] = is_baseline_timeout
@@ -1833,11 +1905,11 @@ def main():
 
     # Generate plots
     print("\nGenerating plots...")
-    plot_speedup_heatmap(results, args.output, correctness, query_type="quantitative")
-    plot_speedup_heatmap(results, args.output, correctness, query_type="bounded")
-    plot_iterations_scatter(results, args.output, correctness)
-    plot_speedup_vs_marginal(results, args.output, correctness)
-    plot_method_scatter(results, args.output, correctness)
+    # plot_speedup_heatmap(results, args.output, correctness, query_type="quantitative")
+    # plot_speedup_heatmap(results, args.output, correctness, query_type="bounded")
+    # plot_iterations_scatter(results, args.output, correctness)
+    # plot_speedup_vs_marginal(results, args.output, correctness)
+    # plot_method_scatter(results, args.output, correctness)
 
     print(f"\nAll plots and tables saved to {args.output}/")
 
