@@ -4,6 +4,7 @@ Plot benchmark results from JSON file.
 """
 
 import argparse
+from email import header
 from email.mime import base
 from itertools import product
 import json
@@ -354,7 +355,7 @@ def get_model_source(model_name):
     return ("Monitoring-MDP", 4)
 
 
-def generate_latex_table(results, output_file, correctness, query_type="quantitative"):
+def generate_latex_table(results, output_file, correctness, query_type="quantitative", arithmetic_mode=None):
     """Generate a LaTeX table comparing runtimes for all models, methods, and arithmetic modes.
 
     Args:
@@ -365,6 +366,11 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
     """
     # Filter results by query type
     filtered_results = [r for r in results if r["query_type"] == query_type]
+
+    if arithmetic_mode:
+        filtered_results = [
+            r for r in filtered_results if r["arithmetic_mode"] == arithmetic_mode
+        ]
 
     if not filtered_results:
         print(f"No results for query type {query_type}")
@@ -393,7 +399,7 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
     properties_map = get_properties_from_results(filtered_results)
 
     # Create method×arithmetic combinations
-    configs = [(method, arith) for method in methods for arith in arithmetic_modes]
+    configs = [(method, arith) for arith in arithmetic_modes for method in methods]
 
     # Build data structure: model -> property -> config -> (time, is_correct, is_timeout)
     # Also collect model stats (states, transitions) and property marginals
@@ -429,19 +435,10 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
                             print(f"WARNING: key {key} not found in correctness.")
                             is_correct = None
 
-                    quan_key = (model, method, arith, "quantitative", prop)
-                    if quan_key in correctness:
-                        is_quan_correct = correctness[
-                            (model, method, arith, "quantitative", prop)
-                        ]
-                    else:
-                        is_quan_correct = None
-
                     time_val = r["time"]
                     data[model][prop][(method, arith)] = (
                         time_val,
                         is_correct,
-                        is_quan_correct,
                         is_timeout,
                     )
 
@@ -460,9 +457,9 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
     # Start building LaTeX table
     lines = []
 
-    # Calculate number of columns: Model, States, Transitions, Property, Marginal, then num_configs for data
+    # Calculate number of columns: Model, States, Transitions
     num_configs = len(configs)
-    col_spec = "lrrrr" + "".join(
+    col_spec = "lrrr" + "".join(
         ["|" + "".join("r" for _ in arithmetic_modes) for _ in methods]
     )  # Model (left), States (right), Transitions (right), Property (right), Marginal (right), then data columns
 
@@ -470,35 +467,40 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
     lines.append("\\toprule")
 
     # Header: method names spanning columns
-    header1 = "Model & States & Trans. & Prop & Marg."
-    method_spans = {}
-    for method in methods:
-        count = sum(1 for m, a in configs if m == method)
-        method_spans[method] = count
+    header1 = "ID & Model & States & Trans."
+    if not arithmetic_mode:
+        arith_spans = {}
+        for arithmetic_mode in arithmetic_modes:
+            count = sum(1 for m, a in configs if a == arithmetic_mode)
+            arith_spans[arithmetic_mode] = count
 
-    for i, method in enumerate(methods):
-        span = method_spans[method]
-        vline = "|" if i != len(methods) - 1 else ""
-        if span > 1:
-            header1 += f" & \\multicolumn{{{span}}}{{c{vline}}}{{{method}}}"
-        else:
-            header1 += f" & {method}"
-    header1 += " \\\\"
-    lines.append(header1)
+        for i, arithmetic_mode in enumerate(arithmetic_modes):
+            span = arith_spans[arithmetic_mode]
+            vline = "|" if i != len(arithmetic_modes) - 1 and not arithmetic_mode else ""
+            if span > 1:
+                header1 += f" & \\multicolumn{{{span}}}{{c{vline}}}{{{get_arithmetic_mode_name(arithmetic_mode)}}}"
+            else:
+                header1 += f" & {get_arithmetic_mode_name(arithmetic_mode)}"
+        header1 += " \\\\"
+        lines.append(header1)
+        header2 = " & & & "
+    else:
+        header2 = header1
 
     # Header: arithmetic mode names
-    header2 = " & & & &"
-    for method in methods:
-        for arith in arithmetic_modes:
+    for arith in arithmetic_modes:
+        for method in methods:
             if (method, arith) in configs:
-                header2 += f" & {get_arithmetic_mode_name(arith)}"
+                header2 += f" & {method}"
     header2 += " \\\\"
     lines.append(header2)
+    
     lines.append("\\midrule")
 
     # Data rows
     prev_source = None
-    for model_idx, model in enumerate(models):
+    id_counter = 1
+    for model in models:
         if model not in properties_map:
             raise ValueError(f"Model {model} not found in properties_map")
         props = properties_map[model]
@@ -512,46 +514,45 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
         prev_source = current_source
 
         for i, prop in enumerate(props):
+            row = f"{id_counter} & "
+            id_counter += 1
+
             # Model name, states, and transitions only on first row for this model
             if i == 0:
                 # Get display name for model (with LaTeX escaping)
                 model_tex = get_model_name(model)
-                lines.append(f"\\multirow{{{len(props)}}}{{*}}{{{model_tex}}}")
+                row += f"\\multirow{{{len(props)}}}{{*}}{{{model_tex}}}"
 
                 # Add states and transitions
                 if model in model_stats:
                     states, transitions = model_stats[model]
-                    lines[
-                        -1
-                    ] += f" & \\multirow{{{len(props)}}}{{*}}{{{states}}} & \\multirow{{{len(props)}}}{{*}}{{{transitions}}}"
+                    row += f" & \\multirow{{{len(props)}}}{{*}}{{{states}}} & \\multirow{{{len(props)}}}{{*}}{{{transitions}}}"
                 else:
-                    lines[
-                        -1
-                    ] += f" & \\multirow{{{len(props)}}}{{*}}{{---}} & \\multirow{{{len(props)}}}{{*}}{{---}}"
+                    row += f" & \\multirow{{{len(props)}}}{{*}}{{---}} & \\multirow{{{len(props)}}}{{*}}{{---}}"
             else:
-                lines.append(" & &")
+                row += " &  & "
 
             # Property number (1-indexed) and marginal
-            marginal = property_marginals.get((model, prop))
-            if marginal is not None:
-                # Format marginal to 3 decimal places
-                marginal_str = f"{marginal:.3f}"
-            else:
-                marginal_str = "---"
-            row = f" & {i+1} & {marginal_str}"
+            # marginal = property_marginals.get((model, prop))
+            # if marginal is not None:
+            #     # Format marginal to 3 decimal places
+            #     marginal_str = f"{marginal:.3f}"
+            # else:
+            #     marginal_str = "---"
+            # row = f" & {i+1} & {marginal_str}"
 
             # Find best time for this row (excluding timeouts and incorrect results)
             best_time = min(
                 (t
-                for t, c, qc, to in data[model][prop].values()
-                if c and qc and not to and t is not None),
+                for t, c, to in data[model][prop].values()
+                if c and not to and t is not None),
                 default=None,
             )
 
             # Add data cells
             for config in configs:
                 if config in data[model][prop]:
-                    time_val, is_correct, is_quan_correct, is_timeout = data[model][
+                    time_val, is_correct, is_timeout = data[model][
                         prop
                     ][config]
 
@@ -559,8 +560,6 @@ def generate_latex_table(results, output_file, correctness, query_type="quantita
                         cell = "TO"
                     elif is_correct is False:
                         cell = "$\\times$"
-                    elif is_quan_correct is False:
-                        cell = "$\\dagger$"
                     elif time_val is None:
                         cell = "---"
                     else:
@@ -1734,9 +1733,24 @@ def main():
     print("\nGenerating LaTeX tables...")
     generate_latex_table(
         results,
-        args.output / "runtime_table_quantitative.tex",
+        args.output / "runtime_table_quantitative_float.tex",
         correctness,
         query_type="quantitative",
+        arithmetic_mode="float",
+    )
+    generate_latex_table(
+        results,
+        args.output / "runtime_table_quantitative_exact.tex",
+        correctness,
+        query_type="quantitative",
+        arithmetic_mode="exact",
+    )
+    generate_latex_table(
+        results,
+        args.output / "runtime_table_quantitative_eps_exact.tex",
+        correctness,
+        query_type="quantitative",
+        arithmetic_mode="exact-tolerance",
     )
     generate_latex_table(
         results,
