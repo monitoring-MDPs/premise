@@ -508,7 +508,7 @@ def main():
     parser.add_argument(
         "--timeout",
         type=int,
-        default=300,
+        default=10,
         help="Timeout in seconds for each model checking call (default: 300)",
     )
     parser.add_argument(

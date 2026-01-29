@@ -17,8 +17,22 @@ import numpy as np
 
 from benchmark import PROPERTIES
 
+from matplotlib.colors import ListedColormap, BoundaryNorm
+
+plt.rcParams.update({
+    "pgf.texsystem": "pdflatex",
+    "text.usetex": True,
+    "font.family": "serif",
+    "font.size": 9,        # base font size
+    "axes.labelsize": 9,
+    "legend.fontsize": 8,
+    "xtick.labelsize": 8,
+    "ytick.labelsize": 8,
+    #"pgf.preamble": r"\providecommand{\scattererr}{\mathrm{err}}\providecommand{\scatterto}{\mathrm{to}}"
+})
+
 # Configuration: Colormap for model colors
-COLORMAP_NAME = "tab20"  # Can be changed to any matplotlib discrete colormap (e.g., 'tab10', 'Set3', 'Paired')
+COLORMAP_NAME = "tab10"  # Can be changed to any matplotlib discrete colormap (e.g., 'tab10', 'Set3', 'Paired')
 
 # Arithmetic mode display names
 ARITHMETIC_MODE_NAMES = {
@@ -102,8 +116,8 @@ def get_model_colors(models):
     cmap = matplotlib.colormaps.get_cmap(COLORMAP_NAME)
     num_models = len(models)
     # For qualitative colormaps like tab20, use discrete indices
-    colors = [cmap(i % cmap.N) for i in range(num_models)]
-    return {model: colors[i] for i, model in enumerate(models)}
+    colors = [cmap(i % cmap.N) for i in range(5)]
+    return {model: colors[get_model_source(model)[1]] for i, model in enumerate(models)}
 
 
 def get_properties_from_results(results):
@@ -328,7 +342,7 @@ def get_model_source(model_name):
             return ("BN-benchmarks", 1)
 
     # Transformed MDPs: brp, crowds variations
-    if model_name.startswith("brp") or model_name.startswith("crowds"):
+    if model_name.startswith("brp") or model_name.startswith("crowds") or model_name.startswith("egl"):
         return ("Transformed-MDP", 2)
 
     # Concrete MDPs: wlan, other concrete models
@@ -752,7 +766,7 @@ def create_scatter_plot(
         filename: Output filename
         output_dir: Output directory path
     """
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, ax = plt.subplots(figsize=(2.3, 2.3))
 
     # Find max value to place incorrect points on a line above
     # max_val = max(
@@ -766,15 +780,21 @@ def create_scatter_plot(
     #     ),
     # )
     max_val = 600
-    error_line = max_val * 5  # Place error line 5x higher
-    timeout_line = max_val * 10  # Place timeout line 10x higher
+    error_line = max_val * 10  # Place error line 5x higher
+    timeout_line = max_val * 4  # Place timeout line 10x higher
+
+    min_val = 0.05
 
     # Plot points
     labeled_models = set()
+    x = []
+    y = []
+    c = []
+    v = []
     for v1, v2, model, qtype, c1, c2, to1, to2 in points:
-        label = get_model_name(model) if model not in labeled_models else None
-        if label:
-            labeled_models.add(model)
+        label = get_model_source(model)
+        c.append(label[0])
+        v.append(label[1])
         # Timeouts go to timeout_line, wrong results go to error_line
 
         if to1:
@@ -783,6 +803,8 @@ def create_scatter_plot(
             pass
         elif not c1:
             v1 = error_line
+        elif v1 < min_val:
+            v1 = min_val
 
         if to2:
             v2 = timeout_line
@@ -790,18 +812,24 @@ def create_scatter_plot(
             pass
         elif not c2:
             v2 = error_line
+        elif v2 < min_val:
+            v2 = min_val
+        x.append(v1)
+        y.append(v2)
 
-        ax.scatter(
-            v1,
-            v2,
-            color=color_map[model],
-            marker=markers[qtype],
-            s=110,
-            alpha=0.75,
-            edgecolors="k",
-            linewidths=0.4,
-            label=label,
-        )
+
+        #
+        # ax.scatter(
+        #     v1,
+        #     v2,
+        #     color=color_map[model],
+        #     marker=markers[qtype],
+        #     s=110,
+        #     alpha=0.75,
+        #     edgecolors="k",
+        #     linewidths=0.4,
+        #     label=label,
+        # )
 
     # Draw horizontal error line and timeout line
     ax.axvline(x=error_line, color="k", linestyle="--", alpha=0.3, linewidth=1)
@@ -810,45 +838,41 @@ def create_scatter_plot(
     ax.axhline(y=timeout_line, color="orange", linestyle=":", alpha=0.4, linewidth=1.5)
 
     # Reference lines
-    min_val = min(
-        min([100] + [v1 for v1, _, _, _, c1, _, to1, _ in points if c1 and not to1]),
-        min([100] + [v2 for _, v2, _, _, _, c2, _, to2 in points if c2 and not to2]),
-    )
-    min_stop_lines = min_val * 0.1
+    min_stop_lines = min_val
 
     ax.plot(
-        [min_stop_lines, error_line],
-        [min_stop_lines, error_line],
+        [min_stop_lines, max_val],
+        [min_stop_lines, max_val],
         "k-",
-        linewidth=1,
+        linewidth=0.8,
         label="1:1",
     )
     ax.plot(
-        [min_stop_lines / 10, error_line / 10],
-        [min_stop_lines, error_line],
+        [min_stop_lines / 10, max_val / 10],
+        [min_stop_lines, max_val],
         "k--",
         linewidth=0.6,
         alpha=0.5,
         label="10x",
     )
     ax.plot(
-        [min_stop_lines, error_line],
-        [min_stop_lines / 10, error_line / 10],
+        [min_stop_lines, max_val],
+        [min_stop_lines / 10, max_val / 10],
         "k--",
         linewidth=0.6,
         alpha=0.5,
     )
     ax.plot(
-        [min_stop_lines / 100, error_line / 100],
-        [min_stop_lines, error_line],
+        [min_stop_lines / 100, max_val / 100],
+        [min_stop_lines, max_val],
         "k:",
         linewidth=0.6,
         alpha=0.5,
         label="100x",
     )
     ax.plot(
-        [min_stop_lines, error_line],
-        [min_stop_lines / 100, error_line / 100],
+        [min_stop_lines, max_val],
+        [min_stop_lines / 100, max_val / 100],
         "k:",
         linewidth=0.6,
         alpha=0.5,
@@ -858,33 +882,65 @@ def create_scatter_plot(
     ax.set_yscale("log")
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    ax.set_title(title)
 
-    # Build legend
-    model_handles, model_labels = ax.get_legend_handles_labels()
-    marker_handles = [
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    #ax.set_title(title)
+
+
+    colors = ['r', 'g', 'b', 'y'] #ListedColormap(['r', 'g', 'b', 'y'])
+    cmap = ListedColormap(['r', 'g', 'b', 'y'])
+    bounds = [0.5, 1.5, 2.5, 3.5, 4.5]
+    norm = BoundaryNorm(bounds, cmap.N)
+    scatter = ax.scatter(x, y, c=v, norm=norm, cmap=cmap, s=22,
+            alpha=0.75,
+             edgecolors="k",
+             linewidths=0.2,)
+
+    handles = [
         Line2D(
-            [0],
-            [0],
-            marker=markers[qt],
-            color="k",
-            linestyle="",
-            markerfacecolor="w",
-            markeredgecolor="k",
-            markersize=9,
-            label=marker_labels[qt],
+            [0], [0],
+            marker='o',
+            linestyle='None',
+            markersize=8,
+            markerfacecolor=c,
+            markeredgecolor='k',
+            alpha=0.75
         )
-        for qt in markers.keys()
+        for c in colors
     ]
 
-    ax.legend(
-        model_handles + marker_handles,
-        model_labels + [h.get_label() for h in marker_handles],
-        title="Model",
-        framealpha=0.9,
-        bbox_to_anchor=(1.05, 1),
-        loc="upper left",
-    )
+   # plt.legend(handles, ['BN', 'iMC', 'MDP', 'RunM'], bbox_to_anchor=(1.05, 1),
+    #    loc="upper left")
+        #     v1,
+        #     v2,
+        #     color=color_map[model],
+        #     marker=markers[qtype],
+        #     s=110,
+        #     alpha=0.75,
+        #     edgecolors="k",
+        #     linewidths=0.4,
+        #     label=label,
+        # )
+
+   # plt.legend(handles=scatter.legend_elements()[0], labels=classes)
+    # Build legend
+    # model_handles, model_labels = ax.get_legend_handles_labels()
+    # marker_handles = [
+    #     Line2D(
+    #         [0],
+    #         [0],
+    #         marker=markers[qt],
+    #         color="k",
+    #         linestyle="",
+    #         markerfacecolor="w",
+    #         markeredgecolor="k",
+    #         markersize=9,
+    #         label=marker_labels[qt],
+    #     )
+    #     for qt in markers.keys()
+    # ]
+
 
     # Add tick labels for incorrect results on the error line and timeout line
     yticks = list(t for t in ax.get_yticks() if t < error_line)
@@ -895,7 +951,7 @@ def create_scatter_plot(
         (
             rf"$10^{{{int(np.log10(t))}}}$"
             if t not in [error_line, timeout_line]
-            else (r"$\times$" if t == error_line else r"$\mathcal{T}$")
+            else (r"Er" if t == error_line else r"TO")
         )
         for t in ax.get_yticks()
     ]
@@ -909,17 +965,17 @@ def create_scatter_plot(
         (
             rf"$10^{{{int(np.log10(t))}}}$"
             if t not in [error_line, timeout_line]
-            else (r"$\times$" if t == error_line else r"$\mathcal{T}$")
+            else (r"Er" if t == error_line else r"TO")
         )
         for t in ax.get_xticks()
     ]
     ax.set_xticklabels(tick_labels)
 
     # Set limits, ensuring they're positive for log scale
-    left_lim = max(min_val * 0.5, 1e-6)
-    right_lim = timeout_line * 2
-    bottom_lim = max(min_val * 0.5, 1e-6)
-    top_lim = timeout_line * 2
+    left_lim = min_val
+    right_lim = error_line * 1.3
+    bottom_lim = min_val
+    top_lim = error_line * 1.3
 
     ax.set_xlim(left=left_lim, right=right_lim)
     ax.set_ylim(bottom=bottom_lim, top=top_lim)
@@ -930,7 +986,7 @@ def create_scatter_plot(
     print(f"Saved: {output_dir / filename}")
 
 
-def plot_method_scatter(results, output_dir, correctness):
+def plot_method_scatter(results, output_dir, correctness, requested_query_type = "bounded" ):
     """Create scatter plots for all method×arithmetic combinations.
 
     Incorrect results are placed on a line above all other points.
@@ -942,21 +998,27 @@ def plot_method_scatter(results, output_dir, correctness):
         print("No results with arithmetic_mode to plot")
         return
 
-    # Get all method×arithmetic combinations
-    combinations_set = sorted(
-        set((r["method"], r["arithmetic_mode"]) for r in plottable)
-    )
 
-    baselines = [combo for combo in combinations_set if combo[0] == "restart"]
 
-    if len(combinations_set) < 2:
-        print(
-            f"Scatter plot requires at least 2 method×arithmetic combinations, found {len(combinations_set)}"
+    if requested_query_type == "bounded":
+        combo_pairs = [(("bisection", "exact"),("restart", "exact")),
+                       (("bisection", "float"),("restart", "float"))]
+    else:
+        # Get all method×arithmetic combinations
+        combinations_set = sorted(
+            set((r["method"], r["arithmetic_mode"]) for r in plottable)
         )
-        return
 
-    # Create scatter plots for all combination pairs
-    combo_pairs = list(product(combinations_set, baselines))
+        baselines = [combo for combo in combinations_set if combo[0] in ["bisection-pt"]]
+
+        if len(combinations_set) < 2:
+            print(
+                f"Scatter plot requires at least 2 method×arithmetic combinations, found {len(combinations_set)}"
+            )
+            return
+
+        # Create scatter plots for all combination pairs
+        combo_pairs = list(product(baselines, combinations_set))
 
     for (method1, arith1), (method2, arith2) in combo_pairs:
         if (method1, arith1) == (method2, arith2):
@@ -964,6 +1026,8 @@ def plot_method_scatter(results, output_dir, correctness):
 
         combo1_name = f"{method1}/{get_arithmetic_mode_name(arith1)}"
         combo2_name = f"{method2}/{get_arithmetic_mode_name(arith2)}"
+        combo1_label = f"{method1}".replace("_", "").replace("-","")
+        combo2_label = f"{method2}".replace("_", "").replace("-","")
 
         combo1_results = [
             r
@@ -1009,6 +1073,8 @@ def plot_method_scatter(results, output_dir, correctness):
                     f"Model {model} not found in properties_map for scatter plot"
                 )
             for qtype in query_types:
+                if qtype != requested_query_type:
+                    continue
                 for path_formula in properties_map[model]:
                     r1_list = [
                         r
@@ -1062,15 +1128,15 @@ def plot_method_scatter(results, output_dir, correctness):
             .replace("\\", "")
             .replace("varepsilon", "eps")
         )
-        filename = f"scatter_{combo1_file}_vs_{combo2_file}.pdf"
+        filename = f"scatter_{requested_query_type}_{combo1_file}_vs_{combo2_file}.pgf"
 
         create_scatter_plot(
             points=points,
             color_map=color_map,
             markers=markers,
             marker_labels=marker_labels,
-            xlabel=f"Time for {combo1_name} (s)",
-            ylabel=f"Time for {combo2_name} (s)",
+            xlabel=f"{combo1_label} (s)",
+            ylabel=f"{combo2_label} (s)",
             title=f"Method Comparison: {combo1_name} vs {combo2_name}",
             filename=filename,
             output_dir=output_dir,
@@ -1219,7 +1285,7 @@ def plot_speedup_heatmap(
     output_dir,
     correctness,
     query_type="quantitative",
-    baseline=("restart", "exact"),
+    baseline=("bisection", "float"),
 ):
     """Plot heatmap showing speedup relative to exact restart baseline for all method×arithmetic combinations."""
     from matplotlib.colors import LogNorm
@@ -1357,10 +1423,10 @@ def plot_speedup_heatmap(
             f"No valid speedup data for {query_type} heatmap (all timeout/incorrect/missing)"
         )
         return
-
-    fig_width = max(num_columns * 0.7, 8) + 3
-    fig_height = len(combinations) * 0.5 + 2
-    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+    #
+    # fig_width = max(num_columns * 0.7, 8) + 3
+    # fig_height = len(combinations) * 0.5 + 2
+    fig, ax = plt.subplots(figsize=(2.3, 2.3))
 
     # Use LogNorm centered at 1.0 for better visualization
     # Values < 1 (slower) appear red, values > 1 (faster) appear green
@@ -1910,6 +1976,12 @@ def main():
     # plot_iterations_scatter(results, args.output, correctness)
     # plot_speedup_vs_marginal(results, args.output, correctness)
     # plot_method_scatter(results, args.output, correctness)
+    #plot_speedup_heatmap(results, args.output, correctness, query_type="quantitative")
+    #plot_speedup_heatmap(results, args.output, correctness, query_type="bounded")
+    #plot_iterations_scatter(results, args.output, correctness)
+    #plot_speedup_vs_marginal(results, args.output, correctness)
+    plot_method_scatter(results, args.output, correctness, "bounded")
+    plot_method_scatter(results, args.output, correctness, "quantitative")
 
     print(f"\nAll plots and tables saved to {args.output}/")
 

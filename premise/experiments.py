@@ -107,7 +107,6 @@ def make_environment(exact: bool, mode : str, threshold : bool|None) -> sp.Envir
         env.model_checker_environment.conditional_algorithm = (sp.ConditionalAlgorithmSetting.restart)
     elif mode == "bisection":
         env.model_checker_environment.conditional_algorithm = (sp.ConditionalAlgorithmSetting.bisection)
-
     return env
 
 configurations = [
