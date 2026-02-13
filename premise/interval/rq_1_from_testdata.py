@@ -11,6 +11,7 @@ import numpy as np
 #from premise.interval.maximum_likelihood import *
 from itertools import groupby
 from operator import itemgetter
+from matplotlib.ticker import LogLocator, FuncFormatter
 
 from premise.interval.loading import build_suo_args_parser
 
@@ -200,7 +201,7 @@ def fn_fp_comparison(coarse,
     imc_fpr_auc = np.mean(imc_fpr_aucs, axis=0)
 
 
-    ax.plot(thresholds, imc_fnr_mean, label=f'iHMM mean FNR: (AUC {imc_fnr_auc:.3f})', color='red', linestyle= ':', marker ='P', markersize=4, markevery=18)
+    ax.plot(thresholds, imc_fnr_mean, label=f'iHMM FNR: (AUC {imc_fnr_auc:.3f})', color='red', linestyle= ':', marker ='P', markersize=4, markevery=18)
 
     plt.fill_between(
     thresholds,
@@ -215,7 +216,7 @@ def fn_fp_comparison(coarse,
     imc_fpr_mean = np.mean(imc_FPRs, axis=0)
     imc_fpr_std = np.std(imc_FPRs, axis=0)
 
-    ax.plot(thresholds, imc_fpr_mean, label=f'iHMM mean FPR: (AUC {imc_fpr_auc:.3f})', color='red', linestyle= '--', marker ='P', markersize=4, markevery=18)
+    ax.plot(thresholds, imc_fpr_mean, label=f'iHMM FPR: (AUC {imc_fpr_auc:.3f})', color='red', linestyle= '--', marker ='P', markersize=4, markevery=18)
 
     plt.fill_between(
     thresholds,
@@ -251,7 +252,7 @@ def fn_fp_comparison(coarse,
     mc_fpr_auc = np.mean(mc_fpr_aucs, axis=0)
 
 
-    ax.plot(thresholds, mc_fnr_mean, label=f'HMM mean FNR: (AUC {mc_fnr_auc:.3f})', color='green', linestyle= ':', marker ='d', markersize=4, markevery=18)
+    ax.plot(thresholds, mc_fnr_mean, label=f'HMM FNR: (AUC {mc_fnr_auc:.3f})', color='green', linestyle= ':', marker ='d', markersize=4, markevery=18)
 
     plt.fill_between(
     thresholds,
@@ -266,7 +267,7 @@ def fn_fp_comparison(coarse,
     mc_fpr_mean = np.mean(mc_FPRs, axis=0)
     mc_fpr_std = np.std(mc_FPRs, axis=0)
 
-    ax.plot(thresholds, mc_fpr_mean, label=f'HMM mean FPR: (AUC {mc_fpr_auc:.3f})', color='green', linestyle= '--', marker ='d', markersize=4, markevery=18)
+    ax.plot(thresholds, mc_fpr_mean, label=f'HMM FPR: (AUC {mc_fpr_auc:.3f})', color='green', linestyle= '--', marker ='d', markersize=4, markevery=18)
 
     plt.fill_between(
     thresholds,
@@ -295,15 +296,11 @@ def fn_fp_comparison(coarse,
         else:
             ax.axvspan(start, end, color='peachpuff', alpha=0.5) 
 
-    print()
-
-
-    ax.set_xlabel('Threshold', fontsize=15)
-    ax.set_ylabel('Rate', fontsize=15)
-    ax.legend(fontsize=13)
+    ax.set_xlabel('Threshold', fontsize=18)
+    ax.set_ylabel('Rate', fontsize=18)
+    ax.legend(fontsize=18)
     ax.grid(True)
     plt.tight_layout()
-    plt.show()
 
 
     if coarse:
@@ -327,6 +324,7 @@ def fn_fp_comparison(coarse,
                     bbox_inches="tight",
                 )
         else: 
+            print(f"{out_path}/rq_1_{args.mc}_FN_FP_multi.pdf")
             fig.savefig(
                     f"{out_path}/rq_1_{args.mc}_FN_FP_multi.pdf",
                     dpi=300,
@@ -530,7 +528,7 @@ def distance_graph(
         x_values,
         mean_distance,
         color="red",
-        label=f"No refinement, (Average final distance: {np.mean(final_distances):.3f})",
+        label=f"No refinement: (Final distance: {np.mean(final_distances):.3f})",
         linewidth=3,
         linestyle="--",
         marker ='P', markersize=10, markevery=18
@@ -588,7 +586,7 @@ def distance_graph(
         ref_x_values,
         ref_mean_distance,
         color="blue",
-        label=f"Refinement, (Average final distance: {np.mean(ref_final_distances):.3f})",
+        label=f"Refinement: (Final distance: {np.mean(ref_final_distances):.3f})",
         linewidth=3,
         linestyle="--",
         marker ='o', markersize=10, markevery=18
@@ -641,7 +639,7 @@ def distance_graph(
     refsplit_std_distance = np.std(refsplit_distance_array, axis=0)
 
     # Plot mean line
-    ax.plot(
+    """ ax.plot(
         refsplit_x_values,
         refsplit_mean_distance,
         color="aqua",
@@ -658,21 +656,27 @@ def distance_graph(
         refsplit_mean_distance + refsplit_std_distance,
         alpha=0.2,
         color="aqua",
-    )
+    ) """
 
     formatter = ticker.ScalarFormatter(useMathText=True)
     formatter.set_powerlimits((4, 4))  # Force 10^4 scale
     ax.xaxis.set_major_formatter(formatter)
-    ax.tick_params(axis="both", labelsize=25)
-    ax.xaxis.get_offset_text().set_size(25)
+    ax.tick_params(axis="both", labelsize=30)
+    ax.xaxis.get_offset_text().set_size(30)
 
-    ax.set_xlabel("Explored states", fontsize=25)
-    ax.set_ylabel("Distance to Target", fontsize=25)
-    ax.legend(loc="upper right", fontsize=25)
+    ax.set_xlabel("Explored states", fontsize=40)
+    ax.set_ylabel("Distance to Target", fontsize=40)
+    ax.legend(loc="upper right", fontsize=36)
     if log:
         plt.yscale("log")
+        
     else:
-        plt.ylim(bottom=0)
+        plt.yscale("log")
+        ax.yaxis.set_major_locator(LogLocator(base=10.0))
+        ax.yaxis.set_major_formatter(
+            FuncFormatter(lambda y, _: f"{y:g}")
+        )
+        ax.set_ylim(1e-3, 1) 
     ax.grid(True)
     plt.subplots_adjust(bottom=0.25)
 
@@ -711,11 +715,10 @@ def overestimation_graph(
     coarse,
     target_risks,
     imc_risks,
-    imc_transition_counts,
     mc_risks,
-    mc_transition_counts,
     out_path,
-    high_st
+    high_st,
+    mc_model
 ):
 
     plt.figure()
@@ -758,7 +761,7 @@ def overestimation_graph(
                                         target_risks[x],
                                         color="greenyellow",
                                         marker="s",
-                                        s=5,
+                                        s=8,
                                         label=f"HMM under ({((hmm_under/(hmm_under + hmm_over+ hmm_equal))*100):.2f}%)",       
                                 )
                                 count_u += 1 
@@ -768,7 +771,7 @@ def overestimation_graph(
                                         target_risks[x],
                                         color="greenyellow",
                                         marker="s",
-                                        s=5,
+                                        s=8,
                                 )
                     if mc_risks[key][x] > target_risks[x]:
                         if count_o < 1:
@@ -777,7 +780,7 @@ def overestimation_graph(
                                     target_risks[x],
                                     color="darkgreen",
                                     marker="s",
-                                    s=5,
+                                    s=8,
                                     label=f"HMM over ({((hmm_over/(hmm_under + hmm_over + hmm_equal))*100):.2f}%)",
                             )
                             count_o += 1 
@@ -787,10 +790,9 @@ def overestimation_graph(
                                     target_risks[x],
                                     color="darkgreen",
                                     marker="s",
-                                    s=5,
+                                    s=8,
                             )
 
-    
 
     imc_ys = []
 
@@ -800,6 +802,8 @@ def overestimation_graph(
     ihmm_under = 0 
     ihmm_over = 0 
     ihmm_even = 0 
+
+    
 
     for key in imc_risks.keys():
         if key.split("-")[1] == str(max(imc_ys)):
@@ -811,7 +815,7 @@ def overestimation_graph(
                 if imc_risks[key][x] == target_risks[x]:
                         ihmm_even += 1
     
-    
+
     count_u = 0 
     count_o = 0 
 
@@ -826,7 +830,7 @@ def overestimation_graph(
                                         target_risks[x],
                                         color="orange",
                                         marker="o",
-                                        s=5,
+                                        s=8,
                                         label=f"iHMM under ({((ihmm_under/(ihmm_under + ihmm_over+ ihmm_even))* 100):.2f} %)",
                                 )
                                 count_u += 1 
@@ -836,7 +840,7 @@ def overestimation_graph(
                                         target_risks[x],
                                         color="orange",
                                         marker="o",
-                                        s=5
+                                        s=8
                                 )
                     if imc_risks[key][x] > target_risks[x]:
                             if count_o < 1:
@@ -845,7 +849,7 @@ def overestimation_graph(
                                         target_risks[x],
                                         color="red",
                                         marker="o",
-                                        s=5,
+                                        s=8,
                                         label=f"iHMM over ({((ihmm_over / (ihmm_under + ihmm_over + ihmm_even))*100):.2f}%)",
                                 )
                                 count_o += 1 
@@ -855,37 +859,42 @@ def overestimation_graph(
                                         target_risks[x],
                                         color="red",
                                         marker="o", 
-                                        s=5
+                                        s=8
                                 )
 
     
-    plt.legend(fontsize=15)
+    plt.legend(fontsize=18)
 
-    plt.xlabel("iHMM and HMM risks", fontsize=15)
-    plt.ylabel("Target risks", fontsize=15)
+    plt.xlabel("iHMM and HMM risks", fontsize=18)
+    plt.ylabel("Target risks", fontsize=18)
     plt.tick_params(axis="both", labelsize=12)
 
     plt.tight_layout()
+
+
+    import os
+    os.makedirs(out_path, exist_ok=True)
+
     if coarse:
         if high_st:
             plt.savefig(
-                f"{out_path}/rq_1_{args.mc}_high_st_coarse_overestimation.pdf",
+                f"{out_path}/rq_1_{mc_model}_high_st_coarse_overestimation.pdf",
                 dpi=300,
             )
         else:
             plt.savefig(
-                    f"{out_path}/rq_1_{args.mc}_coarse_overestimation.pdf",
+                    f"{out_path}/rq_1_{mc_model}_coarse_overestimation.pdf",
                     dpi=300,
                 )
     else:
         if high_st:
             plt.savefig(
-                f"{out_path}/rq_1_{args.mc}_high_st_overestimation.pdf",
+                f"{out_path}/rq_1_{mc_model}_high_st_overestimation.pdf",
                 dpi=300,
             )
         else: 
             plt.savefig(
-                    f"{out_path}/rq_1_{args.mc}_overestimation.pdf",
+                    f"{out_path}/rq_1_{mc_model}_overestimation.pdf",
                     dpi=300,
                 )
     plt.show()
@@ -1090,6 +1099,7 @@ def roc_curve_imc_mc(
 def main_imc(args: argparse.Namespace):
     #setup_logging("rq1_from_testdata:" + args.mc)
 
+
     with open(args.testdata_rq_1, 'rb') as f:
         data = pickle.load(f)
 
@@ -1105,13 +1115,16 @@ def main_imc(args: argparse.Namespace):
     alarms = data['alarms']
     target_risks = data['target_risks']
     imc_risks = data['imc_risks']
+
+    mc_transition_counts = data['mc_transition_counts']
     imc_transition_counts = data['imc_transition_counts']
     mc_risks = data['mc_risks']
-    mc_transition_counts = data['mc_transition_counts']
     imc_risks_ref = data['imc_risks_ref']
     imc_transition_counts_ref = data['imc_transition_counts_ref']
     imc_risks_refsplit = data['imc_risks_refsplit']
     imc_transition_counts_refsplit = data['imc_transition_counts_refsplit']
+
+
 
 
     if len(imc_risks) == 0 or len(mc_risks) == 0:
@@ -1123,11 +1136,10 @@ def main_imc(args: argparse.Namespace):
         coarse,
         target_risks,
         imc_risks,
-        imc_transition_counts,
         mc_risks,
-        mc_transition_counts,
         args.out,
-        high_st
+        high_st, 
+        args.mc
     )
 
     roc_curve_imc_mc(
@@ -1138,7 +1150,7 @@ def main_imc(args: argparse.Namespace):
         target_risks,
         args.out,
         high_st
-    )
+    ) 
     
     fn_fp_comparison(
         coarse,
@@ -1148,7 +1160,7 @@ def main_imc(args: argparse.Namespace):
         target_risks,
         args.out,
         high_st
-    )
+    )  
     
 
     distance_graph(
@@ -1163,7 +1175,7 @@ def main_imc(args: argparse.Namespace):
         imc_transition_counts_refsplit,
         args.out,
         high_st
-    )
+    )   
 
 
 def testing_argsparser():
@@ -1205,3 +1217,15 @@ if __name__ == "__main__":
     parser = testing_argsparser()
     args = parser.parse_args()
     main_imc(args)
+
+
+
+# python -m premise.interval.rq_1_from_testdata --testdata_rq_1 /workspaces/premise/premise/results/testdata_rq_1_evadeV-6-3-coarse_coarse.pkl --mc evadeV-6-3-coarse  --out /workspaces/premise/premise/results
+
+## python -m premise.interval.rq_1_from_testdata --testdata_rq_1 /workspaces/premise/premise/results/testdata_rq_1_airportA-7-10-10.pkl --mc airportA-7-10-10 --out /workspaces/premise/premise/results
+
+
+#python -m premise.interval.rq_1_from_testdata --testdata_rq_1 /workspaces/premise/premise/results/testdata_rq_1_evadeV-5-3.pkl --mc evadeV-5-3 --out workspaces/premise/premise/results
+
+
+#python -m premise.interval.rq_1_from_testdata --testdata_rq_1 /workspaces/premise/premise/analysis/testdata_rq_1_unlikely-15.pkl --mc unlikely-15 --out /workspaces/premise/premise/results

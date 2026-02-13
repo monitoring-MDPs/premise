@@ -1,0 +1,27 @@
+pomdp
+
+const int DEPTH;
+const int WIDTH = 10;
+
+const int X0 = 1000;   // start of neighborhood
+const int K  = 100;    // size of neighborhood
+
+// Define neighborhood condition globally
+formula neigh = (y=DEPTH) & (x >= X0) & (x < X0 + K);
+
+module game
+    s : [0..3] init 0;
+
+    [step] s=0 -> (s'=1);
+
+    // Mode A risky
+    [step] s=1 & neigh & m=0 -> 0.9:(s'=2) + 0.1:(s'=3);
+    [step] s=1 & !neigh & m=0 -> 0.05:(s'=2) + 0.95:(s'=3);
+
+    // Mode B safer
+    [step] s=1 & neigh & m=1 -> 0.1:(s'=2) + 0.9:(s'=3);
+    [step] s=1 & !neigh & m=1 -> 0.05:(s'=2) + 0.95:(s'=3);
+
+    [step] s=2 -> (s'=2);
+    [step] s=3 -> (s'=3);
+endmodule

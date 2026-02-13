@@ -167,14 +167,14 @@ def fn_fp_comparison_model_based(
     ax.plot(
         thresholds,
         target_fnr,
-        label=f"Target FNR: (AUC {auc_fnr_target:.3f})",
+        label=f"Ideal Monitor FNR: (AUC {auc_fnr_target:.3f})",
         color="black",
         linestyle=":",
     )
     ax.plot(
         thresholds,
         target_fpr,
-        label=f"Target FPR: (AUC {auc_fpr_target:.3f})",
+        label=f"Ideal Monitor FPR: (AUC {auc_fpr_target:.3f})",
         color="black",
         linestyle="--",
     )
@@ -212,7 +212,7 @@ def fn_fp_comparison_model_based(
     ax.plot(
         thresholds,
         imc_fnr_mean,
-        label=f"No refinement mean FNR: (AUC {imc_fnr_auc:.3f})",
+        label=f"No refinement FNR: (AUC {imc_fnr_auc:.3f})",
         color="red",
         linestyle=":",
         marker="P",
@@ -236,7 +236,7 @@ def fn_fp_comparison_model_based(
     ax.plot(
         thresholds,
         imc_fpr_mean,
-        label=f"No refinement mean FPR: (AUC {imc_fpr_auc:.3f})",
+        label=f"No refinement FPR: (AUC {imc_fpr_auc:.3f})",
         color="red",
         linestyle="--",
         marker="P",
@@ -280,7 +280,7 @@ def fn_fp_comparison_model_based(
     ax.plot(
         thresholds,
         imc_ref_fnr_mean,
-        label=f"Refinement mean FNR: (AUC {imc_ref_fnr_auc:.3f})",
+        label=f"Refinement FNR: (AUC {imc_ref_fnr_auc:.3f})",
         color="blue",
         linestyle=":",
         marker="o",
@@ -304,7 +304,7 @@ def fn_fp_comparison_model_based(
     ax.plot(
         thresholds,
         imc_ref_fpr_mean,
-        label=f"Refinement mean FPR: (AUC {imc_ref_fpr_auc:.3f})",
+        label=f"Refinement FPR: (AUC {imc_ref_fpr_auc:.3f})",
         color="blue",
         linestyle="--",
         marker="o",
@@ -366,7 +366,7 @@ def fn_fp_comparison_model_based(
         imc_ref_splitting_fnr_mean + imc_ref_splitting_fnr_std,
         color="aqua",
         alpha=0.2,
-    )
+    ) 
 
     imc_ref_splitting_FPRs = np.array(imc_ref_splitting_FPRs)
 
@@ -390,11 +390,18 @@ def fn_fp_comparison_model_based(
         imc_ref_splitting_fpr_mean + imc_ref_splitting_fpr_std,
         color="aqua",
         alpha=0.2,
+    ) 
+
+    ax.set_xlabel("Threshold", fontsize=24)
+    ax.set_ylabel("Rate", fontsize=24)
+    ax.tick_params(axis="both", which="major", labelsize=16)
+
+    ax.legend(
+    loc="center right",
+    fontsize=16,
+    bbox_to_anchor=(1.0, 0.45)  # ↓ smaller value moves it down
     )
 
-    ax.set_xlabel("Threshold")
-    ax.set_ylabel("Rate")
-    ax.legend(loc="right", fontsize=10)
     ax.grid(True)
     plt.tight_layout()
     plt.show()
@@ -766,7 +773,7 @@ def fn_fp_AUC_model_based(
     ax.plot(
         mean_ref_x,
         mean_fnr_rf_y,
-        label=f"Refinement FNR AUC  (Final AUC: {float(mean_fnr_rf_y[-1]):.3f})",
+        label=f"Refinement FNR AUC (Final AUC: {float(mean_fnr_rf_y[-1]):.3f})",
         color="blue",
         linestyle="--",
         marker="o",
@@ -776,7 +783,7 @@ def fn_fp_AUC_model_based(
     ax.plot(
         mean_ref_x,
         mean_fpr_rf_y,
-        label=f"Refinement FPR AUC  (Final AUC: {float(mean_fpr_rf_y[-1]):.3f})",
+        label=f"Refinement FPR AUC (Final AUC: {float(mean_fpr_rf_y[-1]):.3f})",
         color="blue",
         linestyle=":",
         marker="o",
@@ -1142,14 +1149,14 @@ def fn_fp_comparison_model_based_vs_model_free(
     ax.plot(
         thresholds,
         target_fnr,
-        label=f"Target FNR: (AUC {float(auc_fnr_target):.3f})",
+        label=f"Ideal Monitor FNR: (AUC {float(auc_fnr_target):.3f})",
         color="black",
         linestyle=":",
     )
     ax.plot(
         thresholds,
         target_fpr,
-        label=f"Target FPR: (AUC {float(auc_fpr_target):.3f})",
+        label=f"Ideal Monitor FPR: (AUC {float(auc_fpr_target):.3f})",
         color="black",
         linestyle="--",
     )
@@ -1182,7 +1189,7 @@ def fn_fp_comparison_model_based_vs_model_free(
     ax.plot(
         thresholds,
         imc_ref_fnr_mean,
-        label=f"Refinement mean FNR: (AUC {imc_ref_fnr_auc:.3f})",
+        label=f"Refinement FNR: (AUC {imc_ref_fnr_auc:.3f})",
         color="blue",
         linestyle=":",
         marker="o",
@@ -1196,7 +1203,7 @@ def fn_fp_comparison_model_based_vs_model_free(
         imc_ref_fnr_mean + imc_ref_fnr_std,
         color="blue",
         alpha=0.2,
-    )
+    ) 
 
     imc_ref_FPRs = np.array(imc_ref_FPRs)
 
@@ -1206,7 +1213,7 @@ def fn_fp_comparison_model_based_vs_model_free(
     ax.plot(
         thresholds,
         imc_ref_fpr_mean,
-        label=f"Refinement mean FPR: (AUC {imc_ref_fpr_auc:.3f})",
+        label=f"Refinement FPR: (AUC {imc_ref_fpr_auc:.3f})",
         color="blue",
         linestyle="--",
         marker="o",
@@ -1220,7 +1227,7 @@ def fn_fp_comparison_model_based_vs_model_free(
         imc_ref_fpr_mean + imc_ref_fpr_std,
         color="blue",
         alpha=0.2,
-    )
+    ) 
 
     # Refinement with splitting
 
@@ -1251,11 +1258,11 @@ def fn_fp_comparison_model_based_vs_model_free(
     imc_ref_splitting_fpr_aucs = np.array(imc_ref_splitting_fpr_aucs)
     imc_ref_splitting_fpr_auc = np.mean(imc_ref_splitting_fpr_aucs, axis=0)
 
-    ax.plot(
+    """ ax.plot(
         thresholds,
         imc_ref_splitting_fnr_mean,
-        label=f"Refinement with Splitting mean FNR: (AUC {imc_ref_splitting_fnr_auc:.3f})",
-        color="aqua",
+        label=f"iHMM Monitor mean FNR: (AUC {imc_ref_splitting_fnr_auc:.3f})",
+        color="red",
         linestyle=":",
         marker="s",
         markersize=4,
@@ -1266,20 +1273,20 @@ def fn_fp_comparison_model_based_vs_model_free(
         thresholds,
         imc_ref_splitting_fnr_mean - imc_ref_splitting_fnr_std,
         imc_ref_splitting_fnr_mean + imc_ref_splitting_fnr_std,
-        color="aqua",
+        color="red",
         alpha=0.2,
-    )
+    ) """
 
     imc_ref_splitting_FPRs = np.array(imc_ref_splitting_FPRs)
 
     imc_ref_splitting_fpr_mean = np.mean(imc_ref_splitting_FPRs, axis=0)
     imc_ref_splitting_fpr_std = np.std(imc_ref_splitting_FPRs, axis=0)
 
-    ax.plot(
+    """ ax.plot(
         thresholds,
         imc_ref_splitting_fpr_mean,
-        label=f"Refinement with Splitting mean FPR: (AUC {imc_ref_splitting_fpr_auc:.3f})",
-        color="aqua",
+        label=f"iHMM Monitor mean FPR: (AUC {imc_ref_splitting_fpr_auc:.3f})",
+        color="red",
         linestyle="--",
         marker="s",
         markersize=4,
@@ -1290,9 +1297,9 @@ def fn_fp_comparison_model_based_vs_model_free(
         thresholds,
         imc_ref_splitting_fpr_mean - imc_ref_splitting_fpr_std,
         imc_ref_splitting_fpr_mean + imc_ref_splitting_fpr_std,
-        color="aqua",
+        color="red",
         alpha=0.2,
-    )
+    ) """
 
     # Regression
 
@@ -1322,7 +1329,7 @@ def fn_fp_comparison_model_based_vs_model_free(
     ax.plot(
         thresholds,
         reg_fnr_mean,
-        label=f"Regression mean FNR: (AUC {reg_fnr_auc:.3f})",
+        label=f"Regression FNR: (AUC {reg_fnr_auc:.3f})",
         color="pink",
         linestyle=":",
         marker="D",
@@ -1336,7 +1343,7 @@ def fn_fp_comparison_model_based_vs_model_free(
         reg_fnr_mean + reg_fnr_std,
         color="pink",
         alpha=0.2,
-    )
+    )  
 
     reg_FPRs = np.array(reg_FPRs)
 
@@ -1346,7 +1353,7 @@ def fn_fp_comparison_model_based_vs_model_free(
     ax.plot(
         thresholds,
         reg_fpr_mean,
-        label=f"Regression mean FPR: (AUC {reg_fpr_auc:.3f})",
+        label=f"Regression FPR: (AUC {reg_fpr_auc:.3f})",
         color="pink",
         linestyle="--",
         marker="D",
@@ -1360,7 +1367,7 @@ def fn_fp_comparison_model_based_vs_model_free(
         reg_fpr_mean + reg_fpr_std,
         color="pink",
         alpha=0.2,
-    )
+    )  
 
     # Conformal Prediction
 
@@ -1390,7 +1397,7 @@ def fn_fp_comparison_model_based_vs_model_free(
     ax.plot(
         thresholds,
         conformal_fnr_mean,
-        label=f"Conformal prediction mean FNR: (AUC {conformal_fnr_auc:.3f})",
+        label=f"Conformal P. FNR: (AUC {conformal_fnr_auc:.3f})",
         color="orange",
         linestyle=":",
         marker="x",
@@ -1404,7 +1411,7 @@ def fn_fp_comparison_model_based_vs_model_free(
         conformal_fnr_mean + conformal_fnr_std,
         color="orange",
         alpha=0.2,
-    )
+    ) 
 
     conformal_FPRs = np.array(conformal_FPRs)
 
@@ -1414,7 +1421,7 @@ def fn_fp_comparison_model_based_vs_model_free(
     ax.plot(
         thresholds,
         conformal_fpr_mean,
-        label=f"Conformal prediction mean FPR: (AUC {conformal_fpr_auc:.3f})",
+        label=f"Conformal P. FPR: (AUC {conformal_fpr_auc:.3f})",
         color="orange",
         linestyle="--",
         marker="x",
@@ -1428,11 +1435,18 @@ def fn_fp_comparison_model_based_vs_model_free(
         conformal_fpr_mean + conformal_fpr_std,
         color="orange",
         alpha=0.2,
+    ) 
+
+    ax.set_xlabel("Threshold", fontsize=18)
+    ax.set_ylabel("Rate", fontsize=18)
+    ax.tick_params(axis="both", which="major", labelsize=12)
+
+    ax.legend(
+    loc="center right",
+    fontsize=14,
+    bbox_to_anchor=(1.0, 0.35)  
     )
 
-    ax.set_xlabel("Threshold", fontsize=14)
-    ax.set_ylabel("Rate", fontsize=14)
-    ax.legend(loc="right", fontsize=9)
     ax.grid(True)
     plt.tight_layout()
     plt.show()
@@ -1483,8 +1497,8 @@ def main_imc(args: argparse.Namespace):
     imc_risks = data["imc_risks"]
     imc_risks_ref = data["imc_risks_ref"]
     imc_risks_ref_splitting = data["imc_risks_ref_splitting"]
-    # regression_risks = data['regression_risks']
-    # conformal_risks = data['conformal_risks']
+    regression_risks = data['regression_risks']
+    conformal_risks = data['conformal_risks']
     imc_transition_counts = data["imc_transition_counts"]
     imc_transition_counts_ref = data["imc_transition_counts_ref"]
     imc_transition_counts_ref_splitting = data["imc_transition_counts_ref_splitting"]
@@ -1514,7 +1528,7 @@ def main_imc(args: argparse.Namespace):
         high_st,
     )
 
-    """ fn_fp_comparison_model_based_vs_model_free(
+    fn_fp_comparison_model_based_vs_model_free(
         high_st,
         coarse,
         alarms,
@@ -1523,7 +1537,7 @@ def main_imc(args: argparse.Namespace):
         regression_risks,
         conformal_risks,
         target_risks,
-        args.out)   """
+        args.out)    
 
 
 def testing_argsparser():
@@ -1556,9 +1570,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     main_imc(args)
 
-# python -m premise.interval.rq_3_from_testdata --testdata_rq_3 /workspaces/premise/premise/results/testdata_rq_3_airportA-7-10-10.pkl --mc airportA-7-10-10
-# python -m premise.interval.rq_3_from_testdata --testdata_rq_3 /workspaces/premise/premise/results/testdata_rq_3_airportA-7-10-10_high_st.pkl --mc airportA-7-10-10
+# python -m premise.interval.rq_3_from_testdata --testdata_rq_3 /workspaces/premise/premise/results/testdata_rq_3_airportA-7-10-10.pkl --mc airportA-7-10-10 --out /workspaces/premise/premise/results
+# python -m premise.interval.rq_3_from_testdata --testdata_rq_3 /workspaces/premise/premise/results/testdata_rq_3_airportA-7-10-10_coarse.pkl --mc airportA-7-10-10 --out /workspaces/premise/premise/results
 
-# python -m premise.interval.rq_3_from_testdata  --testdata_rq_3  /workspaces/premise/premise/results/testdata_rq_3_evadeV-6-3_high_st.pkl --mc evadeV-6-3
-# python -m premise.interval.rq_3_from_testdata  --testdata_rq_3  /workspaces/premise/premise/results/testdata_rq_3_evadeV-6-3.pkl --mc evadeV-6-3
+# python -m premise.interval.rq_3_from_testdata  --testdata_rq_3  /workspaces/premise/premise/results/testdata_rq_3_evadeV-6-3_high_st.pkl --mc evadeV-6-3 
+# python -m premise.interval.rq_3_from_testdata  --testdata_rq_3  /workspaces/premise/premise/results/testdata_rq_3_evadeV-6-3-coarse_coarse.pkl --mc evadeV-6-3-coarse --out /workspaces/premise/premise/results
 # python -m premise.interval.rq_3_from_testdata  --testdata_rq_3 /workspaces/premise/out/results/testdata_rq_3_unlikely-15.pkl --mc unlikely-15
+
+# python -m premise.interval.rq_3_from_testdata  --testdata_rq_3 /workspaces/premise/premise/results/testdata_rq_3_SnL-10x10_coarse.pkl --mc SnL-10x10 --out /workspaces/premise/premise/results

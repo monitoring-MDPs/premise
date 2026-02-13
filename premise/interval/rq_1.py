@@ -1177,15 +1177,8 @@ def main_imc(args: argparse.Namespace):
             testing_samples_weights.append(float(path[0][1]))
             print(f"Sample {x}: weight {path[0][1]} on path {path[0][0]}")
 
-    # if args.mc == "unlikely-15":
-    #     testing_samples += [
-    #         ((0, 36, False), (1, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False), (4, 14, False)),
-    #         ((0, 36, False), (1, 14, False), (5, 11, False), (10, 11, False), (9, 11, False), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True), (16, 38, True)),
-    #         ((0, 36, False), (1, 14, False), (3, 21, False), (8, 1, False), (15, 1, False), (14, 1, False), (23, 18, True), (23, 18, True), (23, 18, True), (23, 18, True), (23, 18, True), (23, 18, True), (23, 18, True), (23, 18, True), (23, 18, True), (23, 18, True), (23, 18, True)),
-    #         ((0, 36, False), (1, 14, False), (5, 11, False), (9, 11, False), (10, 11, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False)), #99/1000000
-    #         ((0, 36, False), (1, 14, False), (5, 11, False), (9, 11, False), (10, 11, False), (9, 11, False), (10, 11, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False)), #99/6250000>
-    #         ((0, 36, False), (1, 14, False), (5, 11, False), (10, 11, False), (9, 11, False), (10, 11, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False), (17, 38, False)), # 99/1250000
-    #     ]
+
+    
 
     if args.sys_vars != None:
         coarse = True
@@ -1215,6 +1208,8 @@ def main_imc(args: argparse.Namespace):
         testing_samples,
     )
 
+
+
     mc_risks, mc_transition_counts = aggregated_stats_mc(
         coarse,
         args.stats_path,
@@ -1223,6 +1218,7 @@ def main_imc(args: argparse.Namespace):
         args,
         testing_samples,
     )
+
 
     if len(imc_risks) == 0 or len(mc_risks) == 0:
         print("No data for IMC or MC risks, skipping graph generation.")
@@ -1236,7 +1232,7 @@ def main_imc(args: argparse.Namespace):
         mc_risks,
         mc_transition_counts,
         args.out,
-    )
+    ) 
 
     fn_fp_comparison(
         coarse,
@@ -1277,7 +1273,7 @@ def main_imc(args: argparse.Namespace):
         imc_risks_refsplit,
         imc_transition_counts_refsplit,
         args.out,
-    )
+    ) 
 
     test_data = {}
     test_data["model"] = args.mc
@@ -1353,3 +1349,5 @@ if __name__ == "__main__":
 
 # python -m premise.interval.rq_1 --mc evadeV-5-3 --stats-path /workspaces/premise/out/stats/2025-08-01_08-37-30 --out /workspaces/premise/premise/analysis
 # python -m premise.interval.rq_1 --mc all-rare-3 --stats-path /workspaces/premise/out/stats/2025-11-28_12-26-02
+
+# python -m premise.interval.rq_1 --mc unlikely-15 --stats-path /workspaces/premise/out/stats/2026-02-13_00-00-00 --out /workspaces/premise/premise/analysis
