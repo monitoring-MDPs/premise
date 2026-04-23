@@ -398,7 +398,7 @@ def run_monitor(
     if not os.path.isdir(stats_folder):
         os.makedirs(stats_folder)
     else:
-         logger.warning(f"We are writing to an existing folder '{stats_folder}'.")
+        logger.warning(f"We are writing to an existing folder '{stats_folder}'.")
 
     use_forward_filtering = isinstance(options, ForwardFilteringOptions)
     use_unfolding = isinstance(options, UnfoldingOptions)
@@ -423,34 +423,16 @@ def run_monitor(
         assert isinstance(options, UnfoldingOptions)
         logger.info("Initialize unfolder...")
         stormpy_environment = options.stormpy_environment
-        print(stormpy_environment.model_checker_environment.conditional_algorithm)
         expr_manager = stormpy.ExpressionManager()
         unfolding_options = stormpy.pomdp.ObservationTraceUnfolderOptions()
-        unfolding_options.rejection_sampling = options.use_rejection_sampling
-
-        # if options.conditional_method is not None:
-        #     stormpy_environment.model_checker_environment.conditional_algorithm = (
-        #         options.conditional_method
-        #     )
-
-        # if options.model_checking_method is not None:
-        #     stormpy_environment.solver_environment.minmax_solver_environment.method = (
-        #         options.model_checking_method
-        #     )
-
-        # if options.exact_arithmetic:
-        #     stormpy_environment.solver_environment.set_force_exact()
-        #
-
+        unfolding_options.restart_semantics = options.use_rejection_sampling
 
         unfolder = stormpy.pomdp.create_observation_trace_unfolder(
             model, risk_assessment, expr_manager, unfolding_options
         )
 
         ura = monitor.UnfoldingRiskAssessment(
-            stormpy_environment,
-            unfolder,
-            options.threshold
+            stormpy_environment, unfolder, options.threshold
         )
 
         mon = monitor.Monitor(ura, promptness_deadline)
@@ -540,9 +522,7 @@ def create_benchmark_models(
     )
     sp.export_to_drn(
         model,
-        model_path
-        + f"full-{Path(path).stem}"
-        + ".drn",
+        model_path + f"full-{Path(path).stem}" + ".drn",
     )
     fraction_risks = [Fraction(str(risk)) for risk in risk_assessment]
     avg_risk = mean(fraction_risks)
@@ -573,9 +553,7 @@ def create_benchmark_models(
 
         logger.info(f"Creating unrolled model for seed {seed}")
         mdp = unfolder.transform(observations)
-        prop = sp.parse_properties(
-            f'Pmax=? [F "_end"]'
-        )[0]
+        prop = sp.parse_properties(f'Pmax=? [F "_end"]')[0]
         result = sp.model_checking(
             mdp,
             prop,
@@ -597,7 +575,7 @@ def create_benchmark_models(
             + (f"-{seed}" if len(seeds) > 1 else "")
             + ".drn",
         )
-    
+
     with open(model_path + Path(path).stem + "-stats.out", "w") as file:
         file.write(f"states={model.nr_states}\n")
         file.write(f"transitions={model.nr_transitions}\n")

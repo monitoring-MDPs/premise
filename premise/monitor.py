@@ -34,7 +34,7 @@ class UnfoldingRiskAssessment:
         self._unfolder = unfolder
         self._mdp = None
         self._current_step = 0
-        use_conditional_method = not unfolder.is_rejection_sampling_set()
+        use_conditional_method = not unfolder.is_restart_semantics_set()
 
         self._threshold = threshold
         if threshold is not None:
@@ -70,7 +70,7 @@ class UnfoldingRiskAssessment:
         sp.reset_timeout()
         if deadline:
             pass
-            #sp.set_timeout(int(deadline / 1000))
+            # sp.set_timeout(int(deadline / 1000))
         try:
             result = sp.model_checking(
                 self._mdp,
