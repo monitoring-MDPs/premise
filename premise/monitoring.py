@@ -398,7 +398,7 @@ def run_monitor(
     if not os.path.isdir(stats_folder):
         os.makedirs(stats_folder)
     else:
-        logger.warning(f"We are writing to an existing folder '{stats_folder}'.")
+        logger.info(f"We are writing to an existing folder '{stats_folder}'.")
 
     use_forward_filtering = isinstance(options, ForwardFilteringOptions)
     use_unfolding = isinstance(options, UnfoldingOptions)
@@ -450,7 +450,7 @@ def run_monitor(
     times_taken = {}
     time_per_step = {}
 
-    for seed in simulator_seed_range:
+    for seed in tqdm(simulator_seed_range):
         logger.info(
             f"Running monitor for seed ({len(times_taken)}/{len(simulator_seed_range)}) {seed}..."
         )
@@ -542,7 +542,7 @@ def create_benchmark_models(
     logger.info("Looping over seeds to create benchmark models")
 
     marginals = {}
-    for seed in seeds:
+    for seed in tqdm(seeds):
         logger.info(f"Creating benchmark model for seed {seed}")
         stg = trace_generator.make_simulation_wrapper(model, trace_length, seed)
 

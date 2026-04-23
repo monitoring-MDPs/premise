@@ -103,7 +103,7 @@ configurations = [
 def run_benchmark_with_config(args):
     benchmark, config, seed, trace_length, promptness_deadline, stats_path = args
 
-    print(f"Running {benchmark.name} with {str(config)}")
+    # print(f"Running {benchmark.name} with {str(config)}")
 
     # Set logger to output to file in stats_path
     log_file = stats_path / "logs" / f"{benchmark.name}-{str(config._numstr)}.log"
@@ -176,8 +176,13 @@ if __name__ == "__main__":
 
     if args.smoke_test:
         benchmarks = [benchmarks[0]]
+        configurations = [configurations[0]]
+        print(
+            "Running in smoke test mode with only one benchmark and one configuration."
+        )
 
     bar = tqdm(total=len(benchmarks) * len(configurations))
+    n = 0
     for benchmark in benchmarks:
         pre_generate_traces(
             benchmark.name,
@@ -191,7 +196,7 @@ if __name__ == "__main__":
         )
 
         for config in configurations:
-            bar.set_description(f"Running {benchmark.name} with {str(config)}")
+            # bar.set_description(f"Running {benchmark.name} with {str(config)}")
             monitoring.run_monitor(
                 benchmark.modelpath,
                 benchmark.risk_def,
@@ -204,4 +209,6 @@ if __name__ == "__main__":
                 model_id=benchmark.name,
                 stats_path=stats_path,
             )
-            bar.update(1)
+            n += 1
+            bar.update(n)
+    print("All experiments completed.")

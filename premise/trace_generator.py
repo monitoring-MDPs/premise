@@ -116,7 +116,7 @@ def pre_generate_traces(
     base_cache_path: Path,
     seed_list: list[int],
 ):
-    print(f"Pre-generating traces for model {path}...")
+    # print(f"Pre-generating traces for model {path}...")
 
     cached_seeds = []
     cache_path = base_cache_path / f"simulator-caches-{name}"
