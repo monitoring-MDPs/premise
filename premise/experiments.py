@@ -99,6 +99,21 @@ configurations = [
     # if not (not exact and force_exact)
 ]
 
+fast_configurations = [
+    monitoring.UnfoldingOptions(
+        env=make_environment(exact, conditional_mode, threshold),
+        exact_arithmetic=exact,
+        use_rejection_sampling=(conditional_mode == "rejection"),
+        conditional_method=conditional_mode,
+        model_checking_method=None,
+        threshold=threshold,
+        custom_str=create_custom_str(exact, conditional_mode, threshold),
+    )
+    for exact in [True]
+    for conditional_mode in ["bisection", "rejection", "restart"]
+    for threshold in [0.05]
+]
+
 
 def run_benchmark_with_config(args):
     benchmark, config, seed, trace_length, promptness_deadline, stats_path = args
@@ -162,6 +177,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Run a quick smoke test with only one configuration to verify setup.",
     )
+    parser.add_argument(
+        "--fast",
+        action="store_true",
+        help="Run a quick test with only the fast configurations to verify setup.",
+    )
     args = parser.parse_args()
 
     nr_traces = args.number_traces
@@ -180,6 +200,10 @@ if __name__ == "__main__":
         print(
             "Running in smoke test mode with only one benchmark and one configuration."
         )
+
+    if args.fast:
+        configurations = fast_configurations
+        print("Running in fast mode with only fast configurations.")
 
     bar = tqdm(total=len(benchmarks) * len(configurations))
     n = 0
