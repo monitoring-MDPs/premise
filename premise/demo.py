@@ -3,7 +3,7 @@ import logging
 
 import stormpy
 
-import monitoring
+from premise import monitoring
 import random
 
 
@@ -118,9 +118,9 @@ def main():
         import os
 
         input(os.getpid())
-        stormpy.set_loglevel_trace()
+        stormpy.developer.set_log_level(stormpy.developer.LogLevel.TRACE)
 
-    stormpy.install_signal_handlers(1)
+    stormpy.developer.install_signal_handler(1)
 
     if args.create_benchmark is not None:
         monitoring.create_benchmark_models(

@@ -29,9 +29,15 @@ class UnfoldingRiskAssessment:
         stormpy_environment,
         unfolder,
         threshold=None,
+        uncertainty_resolution_mode=None,
     ):
+        """
+        :param uncertainty_resolution_mode: How the uncertainty is resolved, required if (and only if) the unfolder
+            is for an interval model (see stormpy.UncertaintyResolutionMode).
+        """
         self._stormpy_env = stormpy_environment
         self._unfolder = unfolder
+        self._uncertainty_resolution_mode = uncertainty_resolution_mode
         self._mdp = None
         self._current_step = 0
         use_conditional_method = not unfolder.is_restart_semantics_set()
@@ -43,11 +49,11 @@ class UnfoldingRiskAssessment:
             threshold_prop = "max=?"
 
         if use_conditional_method:
-            self._prop = sp.parse_properties(
-                f'P{threshold_prop} [F "_goal" || F "_end"]'
-            )[0]
+            self._prop = sp.parse_property(f'P{threshold_prop} [F "_goal" || F "_end"]')
         else:
-            self._prop = sp.parse_properties(f'P{threshold_prop} [F "_goal"]')[0]
+            self._prop = sp.parse_property(f'P{threshold_prop} [F "_goal"]')
+
+        self._trace_prop = sp.parse_property(f'P{threshold_prop} [F "_end"]')
         print(self._prop)
 
     def initialize(self, observation):
@@ -61,32 +67,51 @@ class UnfoldingRiskAssessment:
         if dump_model_to is not None:
             path = dump_model_to + f"-{self._current_step + 1}.drn"
             logger.info(f"Export MDP to {path}")
-            sp.export_to_drn(self._mdp, path)
+            sp.io.export_to_drn(self._mdp, path)
 
     def get_risk(self, deadline=None):
         """
         Computes the risk
         """
-        sp.reset_timeout()
+        return self._check(self._prop, deadline)
+
+    def get_prob(self, deadline=None):
+        """
+        Computes the probability of the current trace happening
+        """
+        return self._check(self._trace_prop, deadline)
+
+    def _check(self, prop, deadline=None):
+        """
+        Model checks the property on the current unfolding and returns the value in the initial state.
+
+        :return: A tuple (status, value), where status is False if the computation timed out.
+            With a threshold, the value is qualitative (a Boolean), otherwise quantitative.
+        """
+        if self._mdp is None:
+            raise RuntimeError("No unfolding available, call step() first.")
+        sp.developer.reset_timeout_alarm()
         if deadline:
             pass
-            # sp.set_timeout(int(deadline / 1000))
+            # sp.developer.set_timeout_alarm(int(deadline / 1000))
         try:
             result = sp.model_checking(
                 self._mdp,
-                self._prop,
+                prop,
                 environment=self._stormpy_env,
                 only_initial_states=True,
+                uncertainty_resolution_mode=self._uncertainty_resolution_mode,
             )
-            sp.reset_timeout()
-            risk = result.at(self._mdp.initial_states[0])
-        except RuntimeError:
-            print("What")
-            sp.reset_timeout()
-            logger.warning("Time out")
+        except RuntimeError as e:
+            logger.warning(f"Model checking failed (time out?): {e}")
             return False, 0
+        finally:
+            sp.developer.reset_timeout_alarm()
 
-        return True, risk
+        initial_state = self._mdp.initial_states[0]
+        if result.is_qualitative():
+            return True, result[initial_state]
+        return True, result.get_value(initial_state)
 
 
 class FilterBasedRiskAssessment:
@@ -103,7 +128,7 @@ class FilterBasedRiskAssessment:
             raise RuntimeError("Tracking failed")
 
     def get_risk(self, deadline=None):
-        return self._tracker.obtain_current_risk()
+        return True, self._tracker.get_current_risk()
 
 
 class Monitor:
@@ -140,12 +165,13 @@ class Monitor:
 
 def initialize_monitor(model, risk_structure, premise_options) -> Monitor:
     stormpy_environment = premise_options.stormpy_environment
-    expr_manager = sp.ExpressionManager()
+    expr_manager = sp.expressions.ExpressionManager()
     if premise_options.use_unfolding:
-        otu_options = sp.pomdp.ObservationTraceUnfolderOptions()
-        otu_options.rejection_sampling = premise_options.rejection_sampling
         unfolder = sp.pomdp.create_observation_trace_unfolder(
-            model, risk_structure, expr_manager, options=otu_options
+            model,
+            risk_structure,
+            expr_manager,
+            use_restart_semantics=premise_options.use_rejection,
         )
         ura = UnfoldingRiskAssessment(stormpy_environment, unfolder)
     else:

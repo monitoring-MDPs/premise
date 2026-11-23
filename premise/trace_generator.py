@@ -7,7 +7,7 @@ import stormpy as sp
 import stormpy.simulator
 from tqdm import tqdm
 
-import models
+from premise import models
 
 logger = logging.getLogger(__name__)
 

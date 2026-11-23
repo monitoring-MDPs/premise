@@ -8,24 +8,19 @@ from pathlib import Path
 from statistics import mean, stdev
 import time
 
-from matplotlib.pylab import f
 import stormpy as sp
 import stormpy.pomdp
+import stormpy.simulator
 from tqdm import tqdm
 
-import models
-import monitor
-import trace_generator
-import traces
+from premise import models, monitor, trace_generator, traces
 
 logger = logging.getLogger(__name__)
 
 
 def filtering(
-    stormpy_environment,
-    simulator,
+    trace_generator,
     tracker,
-    trace_length,
     convex_reduction,
     stats_file,
     verbose,
@@ -34,21 +29,23 @@ def filtering(
     deadline=None,
 ):
     """
+    Runs forward filtering on a single trace.
 
-    :param simulator: The simulator that spits out the observations
+    :param trace_generator: The (fixed-length) trace generator that spits out the observations
     :param tracker: The tracker that keeps track of the state estimation
-    :param trace_length: How many steps to take.
     :param convex_reduction: If True, apply reduction after each step (recommended).
     :param stats_file: The file to output all the statistics to.
     :param verbose: If True, print some additional information
-    :param observation_valuations:
-    :param deadline: How long can each step take.
+    :param observation_valuations: Used to print the high-level observations if verbose is set.
+    :param deadline: How long can each step take (in ms).
     :param terminate_on_deadline: Can we abort if we took longer than deadline?
-    :return:
+    :return: A tuple (completed, step_times) where completed indicates whether the whole trace was monitored
+        and step_times contains the time (in seconds) taken for each step.
     """
     # TODO make stats files optional.
-    observation, _ = simulator.restart()
+    observation = trace_generator.initialize()
     tracker.reset(observation)
+    step_times = []
 
     with open(stats_file, "w") as file:
         writer = csv.writer(file)
@@ -66,34 +63,31 @@ def filtering(
                 "TimedOut",
             ]
         )
-        iterator = tqdm(range(trace_length))
-        for i in iterator:
-            observation, _, _ = simulator.random_step()
+        i = 0
+        while not trace_generator.finished():
+            observation = trace_generator.step()
             if verbose:
-                hl_obs = observation_valuations.get_string(observation, pretty=True)[
-                    1:-1
-                ].replace("\t", " ")
-                for belief in tracker.obtain_beliefs():
+                print(observation_valuations.to_string(observation, pretty=True))
+                for belief in tracker.get_current_beliefs():
                     print(belief)
             start_time = time.monotonic()
             passed = tracker.track(observation)
             if not passed:
                 writer.writerow([i, observation, 0, 0, 0, 0, 0, 0, 0, True])
                 file.flush()
-
-                iterator.close()
-                return False
-            risk = tracker.obtain_current_risk()
+                return False, step_times
+            risk = tracker.get_current_risk()
             end_time = time.monotonic()
             track_time = end_time - start_time
             start_time = time.monotonic()
-            sizeBR = tracker.size()
+            sizeBR = tracker.get_number_of_beliefs()
             if convex_reduction:
                 tracker.reduce()
             end_time = time.monotonic()
             reduce_time = end_time - start_time
-            timed_out = tracker.reduction_timed_out()
+            timed_out = tracker.has_timed_out()
             total_time = track_time + reduce_time
+            step_times.append(total_time)
             if deadline is not None and total_time * 1000 > deadline:
                 timed_out = True
             writer.writerow(
@@ -105,17 +99,16 @@ def filtering(
                     reduce_time,
                     total_time,
                     sizeBR,
-                    tracker.size(),
-                    tracker.dimension(),
+                    tracker.get_number_of_beliefs(),
+                    tracker.get_current_dimension(),
                     timed_out,
                 ]
             )
             file.flush()
+            i += 1
             if deadline and terminate_on_deadline and timed_out:
-                iterator.close()
-                return False
-        iterator.close()
-    return True
+                return False, step_times
+    return True, step_times
 
 
 def unfolding(
@@ -165,30 +158,30 @@ def unfolding(
         for i in tqdm(range(trace_length)):
             observation, _, _ = simulator.random_step()
             start_time = time.monotonic()
-            mdp = unfolder.extend(observation)
+            mdp = unfolder.extend([observation])
             end_time = time.monotonic()
             unfold_time = end_time - start_time
             if dump_file_path is not None and (i + 1) % (int(trace_length / 10)) == 0:
                 path = dump_file_path + f"-{i+1}.drn"
                 logging.info(f"Export MDP to {path}")
-                stormpy.export_to_drn(mdp, path)
+                sp.io.export_to_drn(mdp, path)
             timeout = False
             start_time = time.monotonic()
             if do_model_checking:
-                stormpy.reset_timeout()
-                stormpy.set_timeout(int(deadline / 1000))
+                sp.developer.reset_timeout_alarm()
+                sp.developer.set_timeout_alarm(int(deadline / 1000))
 
                 try:
-                    result = stormpy.model_checking(
+                    result = sp.model_checking(
                         mdp,
                         prop,
                         environment=stormpy_environment,
                         only_initial_states=True,
                     )
-                    risk = result.at(mdp.initial_states[0])
+                    risk = result.get_value(mdp.initial_states[0])
                 except RuntimeError:
                     timeout = True
-                stormpy.reset_timeout()
+                sp.developer.reset_timeout_alarm()
                 end_time = time.monotonic()
                 mc_time = end_time - start_time
                 total_time = unfold_time + mc_time
@@ -270,7 +263,7 @@ class UnfoldingOptions(StormConfigOptions):
         env: sp.Environment | None = sp.Environment(),
         exact_arithmetic=True,
         use_rejection_sampling=True,
-        conditional_method=sp.ConditionalAlgorithmSetting.default,
+        conditional_method=sp.environments.ConditionalAlgorithmSetting.DEFAULT,
         model_checking_method=None,
         custom_str=None,
         export_models_path=None,
@@ -298,30 +291,30 @@ class UnfoldingOptions(StormConfigOptions):
             )
 
     @staticmethod
-    def _map_conditional_method(method: str) -> sp.ConditionalAlgorithmSetting:
+    def _map_conditional_method(method: str) -> sp.environments.ConditionalAlgorithmSetting:
         if method in ["default", "rejection"]:
-            return sp.ConditionalAlgorithmSetting.default
+            return sp.environments.ConditionalAlgorithmSetting.DEFAULT
         elif method == "restart":
-            return sp.ConditionalAlgorithmSetting.restart
+            return sp.environments.ConditionalAlgorithmSetting.RESTART
         elif method == "bisection":
-            return sp.ConditionalAlgorithmSetting.bisection
+            return sp.environments.ConditionalAlgorithmSetting.BISECTION
         elif method == "bisection-advanced":
-            return sp.ConditionalAlgorithmSetting.bisection_advanced
+            return sp.environments.ConditionalAlgorithmSetting.BISECTION_ADVANCED
         elif method == "pi":
-            return sp.ConditionalAlgorithmSetting.policy_iteration
+            return sp.environments.ConditionalAlgorithmSetting.POLICY_ITERATION
         else:
             raise ValueError(f"Unknown conditional method: {method}")
 
     @staticmethod
-    def _map_mc_method(method: str) -> sp.MinMaxMethod:
+    def _map_mc_method(method: str) -> sp.environments.MinMaxMethod:
         if method == "value_iteration":
-            return sp.MinMaxMethod.value_iteration
+            return sp.environments.MinMaxMethod.VALUE_ITERATION
         elif method == "policy_iteration":
-            return sp.MinMaxMethod.policy_iteration
+            return sp.environments.MinMaxMethod.POLICY_ITERATION
         elif method == "sound_value_iteration":
-            return sp.MinMaxMethod.sound_value_iteration
+            return sp.environments.MinMaxMethod.SOUND_VALUE_ITERATION
         elif method == "optimistic_value_iteration":
-            return sp.MinMaxMethod.optimistic_value_iteration
+            return sp.environments.MinMaxMethod.OPTIMISTIC_VALUE_ITERATION
         elif method == "":
             return None
         else:
@@ -343,8 +336,8 @@ class UnfoldingOptions(StormConfigOptions):
                 else f"vio-{self.conditional_method}"
             )
             if self.conditional_method in [
-                sp.ConditionalAlgorithmSetting.bisection_advanced,
-                sp.ConditionalAlgorithmSetting.bisection,
+                sp.environments.ConditionalAlgorithmSetting.BISECTION_ADVANCED,
+                sp.environments.ConditionalAlgorithmSetting.BISECTION,
             ]:
                 rej += f"-{self.model_checking_method}"
 
@@ -411,10 +404,13 @@ def run_monitor(
         models.ModelDescription(path, constants, risk_property), options
     )
 
+    stormpy_environment = options.stormpy_environment
     if use_forward_filtering:
         logger.info("Initialize tracker...")
-        tracker = stormpy.pomdp.create_nondeterminstic_belief_tracker(
-            model, promptness_deadline, promptness_deadline
+        tracker = sp.pomdp.create_nondeterministic_belief_tracker(
+            model,
+            reduction_timeout=promptness_deadline,
+            track_timeout=promptness_deadline,
         )
         tracker.set_risk(risk_assessment)
         mon = None
@@ -422,13 +418,12 @@ def run_monitor(
         assert use_unfolding
         assert isinstance(options, UnfoldingOptions)
         logger.info("Initialize unfolder...")
-        stormpy_environment = options.stormpy_environment
-        expr_manager = stormpy.ExpressionManager()
-        unfolding_options = stormpy.pomdp.ObservationTraceUnfolderOptions()
-        unfolding_options.restart_semantics = options.use_rejection_sampling
-
-        unfolder = stormpy.pomdp.create_observation_trace_unfolder(
-            model, risk_assessment, expr_manager, unfolding_options
+        expr_manager = sp.expressions.ExpressionManager()
+        unfolder = sp.pomdp.create_observation_trace_unfolder(
+            model,
+            risk_assessment,
+            expr_manager,
+            use_restart_semantics=options.use_rejection_sampling,
         )
 
         ura = monitor.UnfoldingRiskAssessment(
@@ -438,9 +433,6 @@ def run_monitor(
         mon = monitor.Monitor(ura, promptness_deadline)
 
     initialize_time = time.monotonic() - start_time
-
-    logger.info("Initialize simulator...")
-    simulator = sp.simulator.create_simulator(model)
 
     if isinstance(simulator_seed, Iterable):
         simulator_seed_range = simulator_seed
@@ -467,17 +459,17 @@ def run_monitor(
         stats_file = f"{stats_folder}/stats-{model_id}-{options.method_id}-{seed}.csv"
 
         if use_forward_filtering:
-            filtering(
-                stormpy_environment,
-                simulator,
+            _, step_times = filtering(
+                stg,
                 tracker,
-                trace_length,
                 options.convex_hull_reduction,
                 stats_file,
                 deadline=promptness_deadline,
                 verbose=verbose,
                 observation_valuations=model.observation_valuations,
             )
+            time_per_step[seed] = step_times
+            times_taken[seed] = sum(step_times)
         else:
             assert use_unfolding and mon is not None
             annotated_trace = monitor.execute_monitor(stg, mon, tqdm_bar=False)
@@ -520,7 +512,7 @@ def create_benchmark_models(
     model, risk_assessment = models.build_model_and_risk(
         models.ModelDescription(path, constants, risk_property), options
     )
-    sp.export_to_drn(
+    sp.io.export_to_drn(
         model,
         model_path + f"full-{Path(path).stem}" + ".drn",
     )
@@ -531,12 +523,9 @@ def create_benchmark_models(
 
     logger.info("Initialize unfolder")
     stormpy_environment = options.stormpy_environment
-    expr_manager = stormpy.ExpressionManager()
-    unfolding_options = stormpy.pomdp.ObservationTraceUnfolderOptions()
-    unfolding_options.rejection_sampling = False
-
-    unfolder = stormpy.pomdp.create_observation_trace_unfolder(
-        model, risk_assessment, expr_manager, unfolding_options
+    expr_manager = sp.expressions.ExpressionManager()
+    unfolder = sp.pomdp.create_observation_trace_unfolder(
+        model, risk_assessment, expr_manager, use_restart_semantics=False
     )
 
     logger.info("Looping over seeds to create benchmark models")
@@ -560,7 +549,7 @@ def create_benchmark_models(
             environment=stormpy_environment,
             only_initial_states=True,
         )
-        marginal = result.at(mdp.initial_states[0])
+        marginal = result.get_value(mdp.initial_states[0])
         marginals[seed] = marginal
         print(f"Seed {seed}, marginal: {marginal}")
         if marginal == 0:
@@ -568,7 +557,7 @@ def create_benchmark_models(
                 "The marginal risk of reaching the condition is 0, incorrect benchmark model."
             )
 
-        sp.export_to_drn(
+        sp.io.export_to_drn(
             mdp,
             model_path
             + f"{Path(path).stem}"

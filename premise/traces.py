@@ -1,5 +1,17 @@
 import csv
 
+
+def _observation_variables(observation_valuations):
+    return observation_valuations.get_all_variables()
+
+
+def observation_names(model):
+    """
+    Gives the names of the high-level observations (i.e., the observable variables)
+    """
+    return [var.name for var in _observation_variables(model.observation_valuations)]
+
+
 class TraceMapper:
     """
     Class that helps to translate between low-level observations and high-level observations.
@@ -8,16 +20,14 @@ class TraceMapper:
         self._model = model
         self._inverse_observation_valuations = None # Is constructed below.
         self._obsval = self._model.observation_valuations # Caching for efficiency (due to some stormpy issue)
+        self._obsvars = _observation_variables(self._obsval)
         self._construct_inverse_observation_valuations()
 
     def get_observation_names(self):
         """
         Gives the names of the high-level observations
         """
-        obs_tuple = model.observation_valuations.get_string(0, pretty=True)[1:-1].replace("\t", " ").split(" & ")
-        obs_tuple_pruned = [obs.split("=")[0] if "=" in obs else obs if "!" not in obs else obs[1:] for obs
-                            in obs_tuple]
-        return obs_tuple_pruned
+        return observation_names(self._model)
 
     def _construct_inverse_observation_valuations(self):
         """
@@ -26,13 +36,11 @@ class TraceMapper:
         TODO: This implementation is not particularly efficient.
         """
         self._inverse_observation_valuations = {}
-        for o in range(self._obsval.get_nr_of_states()):
+        for o in range(self._obsval.get_number_of_entities()):
             self._inverse_observation_valuations[self._lowlevel_to_highlevel(o)] = o
 
     def _lowlevel_to_highlevel(self, observation:int):
-        obs_tuple = self._obsval.get_string(observation, pretty=True)[1:-1].replace("\t", " ").split(" & ")
-        return tuple(int(obs.split("=")[1]) if "=" in obs else True if "!" not in obs else False for obs in
-                            obs_tuple)
+        return tuple(self._obsval.get_value(observation, var) for var in self._obsvars)
 
     def annotated_trace_to_highlevel(self, trace):
         high_level_trace = []
@@ -64,9 +72,6 @@ def export_annotated_high_level(annotated_trace, model, trace_file):
     with open(trace_file, 'w', newline='') as csvfile:
         csvfilewriter = csv.writer(csvfile, delimiter=',',
                                    quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        obs_tuple = model.observation_valuations.get_string(0, pretty=True)[1:-1].replace("\t", " ").split(" & ")
-        obs_tuple_pruned = [obs.split("=")[0] if "=" in obs else obs if "!" not in obs else obs[1:] for obs
-                            in obs_tuple]
-        csvfilewriter.writerow(obs_tuple_pruned + ["risk"])
+        csvfilewriter.writerow(observation_names(model) + ["risk"])
         for (obs, risk) in annotated_trace:
             csvfilewriter.writerow(list(obs) + [risk])

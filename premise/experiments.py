@@ -11,8 +11,9 @@ import stormpy as sp
 import argparse
 
 from tqdm import tqdm
-import monitoring
-from trace_generator import pre_generate_traces
+from premise import monitoring
+from premise.models import EXAMPLES_DIR
+from premise.trace_generator import pre_generate_traces
 
 
 class Benchmark:
@@ -31,25 +32,25 @@ class Benchmark:
 benchmarks = [
     Benchmark(
         "airportB-3-300-30",
-        "premise/examples/airportB-3.nm",
+        EXAMPLES_DIR / "airportB-3.nm",
         "DMAX=300,PMAX=30",
         'Pmax=? [F "crash"]',
     ),
     Benchmark(
         "evadeI-10",
-        "premise/examples/hidden-incentive.nm",
+        EXAMPLES_DIR / "hidden-incentive.nm",
         "N=10",
         'Pmax=? [F<=12 "crash"]',
     ),
     Benchmark(
         "evadeV-9-3",
-        "premise/examples/evade-monitoring.nm",
+        EXAMPLES_DIR / "evade-monitoring.nm",
         "N=9,RADIUS=3",
         'Pmax=? [F<=12 "crash"]',
     ),
     Benchmark(
         "refuelA-50-80",
-        "premise/examples/refuel.nm",
+        EXAMPLES_DIR / "refuel.nm",
         "N=50,ENERGY=80",
         'Pmax=? [F<=20 "empty"]',
     ),
@@ -68,16 +69,16 @@ def create_custom_str(exact, conditional_mode, threshold):
 def make_environment(exact: bool, mode: str, threshold: bool | None) -> sp.Environment:
     env = sp.Environment()
     if exact:
-        env.solver_environment.set_force_exact()
+        env.solver().force_exact = True
     if threshold is None:
-        env.model_checker_environment.conditional.precision = sp.Rational(1e-2)
+        env.modelchecker().conditional().precision = sp.Rational(1e-2)
     if mode == "restart":
-        env.model_checker_environment.conditional.algorithm = (
-            sp.ConditionalAlgorithmSetting.restart
+        env.modelchecker().conditional().algorithm = (
+            sp.environments.ConditionalAlgorithmSetting.RESTART
         )
     elif mode == "bisection":
-        env.model_checker_environment.conditional.algorithm = (
-            sp.ConditionalAlgorithmSetting.bisection
+        env.modelchecker().conditional().algorithm = (
+            sp.environments.ConditionalAlgorithmSetting.BISECTION
         )
     return env
 
@@ -146,7 +147,7 @@ def run_benchmark_with_config(args):
 
 if __name__ == "__main__":
     # Wait for termination, never crash.
-    sp.set_settings(["--signal-timeout", "100000"])
+    sp.developer.install_signal_handler(100000)
     parser = argparse.ArgumentParser(description="Run experiments with premise.")
     parser.add_argument(
         "--number-traces", default=10, type=int, help="How many traces to run"
