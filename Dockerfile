@@ -1,19 +1,23 @@
-FROM sjunges/stormpy:1.8.0
+FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim
 
-RUN apt-get update && apt-get install texlive-latex-recommended texlive-latex-extra -y 
+# Runtime libraries needed by the stormpy wheel that are not part of the slim image.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir /opt/premise
 WORKDIR /opt/premise
 
-ENV VIRTUAL_ENV=/opt/venv
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Install the dependencies first (stormpy ships as a binary wheel), so this layer is cached.
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --no-dev
 
+# Install premise itself.
 COPY . .
+RUN uv sync --frozen --no-dev
 
-RUN python setup.py install
+ENV PATH="/opt/premise/.venv/bin:$PATH"
 
-
-
+CMD ["bash"]
