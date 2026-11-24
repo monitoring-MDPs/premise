@@ -151,3 +151,6 @@ premise/examples/transformed-mdp/crowds_12-5.drn
 
 # Monitoring output
 stats/
+
+# Rendered visualisations
+*.gif

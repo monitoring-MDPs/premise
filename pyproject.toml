@@ -22,3 +22,11 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["premise"]
 
+[tool.uv.sources]
+gridstorm = { git = "https://github.com/lukovdm/gridworld-by-storm", branch = "master" }
+
+[dependency-groups]
+viz = [
+    "gridstorm",
+]
+
