@@ -54,7 +54,7 @@ class PolicyBenchmark:
 
 # Step 1: the inputs, a POMDP model and a list of properties (one per hypothesis).
 benchmarks = {
-    # The drone is the agent: it either flies to target A (away from the ego) or target B (across the path of the ego).
+    # The drone is the agent: it starts at the top in the middle and flies to target A (bottom left) or B (bottom right).
     # The drone reaches both targets with probability 1 from every state, so maximising the probability does not make
     # it fly to the target; instead, it minimises the expected number of moves to reach the target.
     "evade": PolicyBenchmark(

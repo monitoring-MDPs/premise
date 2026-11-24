@@ -19,11 +19,15 @@ const int dxMIN = 0;
 const int dyMIN = 0;
 const double slippery = 0.2;
 
-// Possible target locations of the drone, each target defines a different drone policy.
-const int TAX = xMAX;
-const int TAY = 0;
-const int TBX = 0;
+// Possible target locations of the drone, each target defines a different drone policy:
+// A is the bottom left and B the bottom right corner.
+const int TAX = 0;
+const int TAY = yMAX;
+const int TBX = xMAX;
 const int TBY = yMAX;
+// The drone starts at the top in the middle.
+const int dxINIT = floor(xMAX/2);
+const int dyINIT = 0;
 
 formula done = ax = aXMIN & ay = aYMIN;
 observable "done" = done;
@@ -59,8 +63,8 @@ module ego
 endmodule
 
 module drone
-    dx : [dxMIN..dxMAX] init 0;
-    dy : [dyMIN..dyMAX] init 0;
+    dx : [dxMIN..dxMAX] init dxINIT;
+    dy : [dyMIN..dyMAX] init dyINIT;
 
     [adv] true -> (1-slippery): (dx'=max(dx-1,dxMIN)) + slippery: (dx'=max(dx,dxMIN));
     [adv] true -> (1-slippery): (dx'=min(dx+1,dxMAX)) + slippery: (dx'=min(dx,dxMAX));
