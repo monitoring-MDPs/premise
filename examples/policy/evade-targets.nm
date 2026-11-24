@@ -74,3 +74,8 @@ label "notbad" =  !crash;
 label "targetA" = dx = TAX & dy = TAY;
 label "targetB" = dx = TBX & dy = TBY;
 label "targets" = (dx = TAX & dy = TAY) | (dx = TBX & dy = TBY);
+
+// Counts the moves of the drone; the hypotheses minimise the expected number of moves to reach a target.
+rewards "dronemoves"
+    [adv] true : 1;
+endrewards
